@@ -1,14 +1,19 @@
 import React from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { motion } from 'framer-motion';
+import { motion, useScroll, useTransform } from 'framer-motion';
 import { User, Calendar, MapPin, Sparkles, ArrowRight } from 'lucide-react';
 import About from './About';
 import ThreeDEventBackground from '../components/ThreeDEventBackground';
-import ThreeDTicket from '../components/ThreeDTicket';
+import ThreeDPageScrollTicket from '../components/ThreeDPageScrollTicket';
 
 const LandingPage = () => {
   const { isAuthenticated, user } = useAuth();
+
+  const { scrollYProgress } = useScroll();
+  const heroOpacity = useTransform(scrollYProgress, [0, 0.15], [0, 1]);
+  const heroScale = useTransform(scrollYProgress, [0, 0.15], [0.95, 1]);
+  const heroY = useTransform(scrollYProgress, [0, 0.15], [40, 0]);
 
   if (isAuthenticated && user) {
     const dashboardPath = user.role === 'admin' ? '/admin-dashboard' : user.role === 'organizer' ? '/organizer/events' : user.role === 'plot_owner' ? '/venues/manage' : '/bookings';
@@ -34,14 +39,16 @@ const LandingPage = () => {
   };
 
   return (
-    <div className="relative min-h-screen flex flex-col items-center overflow-hidden z-10">
+    <div className="relative min-h-screen flex flex-col items-center overflow-hidden">
       <ThreeDEventBackground interactive={false} />
+      <ThreeDPageScrollTicket />
       {/* Hero Section */}
       <motion.section 
-        className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center"
+        className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center"
         initial="hidden"
         animate="visible"
         variants={containerVariants}
+        style={{ opacity: heroOpacity, scale: heroScale, y: heroY }}
       >
         {/* Left Column: Hero Text */}
         <div className="lg:col-span-7 text-left flex flex-col items-start justify-center">
@@ -108,7 +115,7 @@ const LandingPage = () => {
           </motion.div>
         </div>
 
-        {/* Right Column: Interactive 3D WebGL Ticket */}
+        {/* Right Column: Placeholder space for page-wide 3D Scroll Ticket */}
         <motion.div 
           className="lg:col-span-5 flex items-center justify-center w-full"
           variants={itemVariants}
@@ -116,13 +123,12 @@ const LandingPage = () => {
           <div className="w-full max-w-[400px] h-[400px] relative rounded-3xl overflow-visible">
             {/* Soft backdrop glow matching BookMyShow primary color */}
             <div className="absolute inset-0 bg-gradient-to-tr from-brand-primary/20 to-blue-500/20 blur-[60px] -z-10 rounded-full scale-75 animate-pulse" />
-            <ThreeDTicket />
           </div>
         </motion.div>
       </motion.section>
 
       {/* Roles Grid Section */}
-      <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+      <section className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="text-center mb-12">
           <h2 className="text-2xl sm:text-4xl font-bold tracking-tight">One Platform, Endless Possibilities</h2>
           <p className="text-dark-muted mt-2">Tailored experiences for every stakeholder</p>
@@ -204,9 +210,12 @@ const LandingPage = () => {
       </section>
 
       {/* About Section */}
-      <section className="w-full border-t border-white/5">
+      <section className="relative z-10 w-full border-t border-white/5">
         <About />
       </section>
+
+      {/* Dedicated ticket spacing just above the footer */}
+      <div className="relative z-10 w-full h-[460px] pointer-events-none mb-20" />
     </div>
   );
 };
