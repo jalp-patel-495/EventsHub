@@ -359,18 +359,18 @@ const Navbar = () => {
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: 10 }}
                             transition={{ duration: 0.15 }}
-                            className="glass-panel absolute right-0 mt-2 w-56 rounded-xl shadow-lg focus:outline-none z-20 py-2"
+                            className="bg-slate-950 border border-slate-800/80 absolute right-0 mt-2 w-56 rounded-xl shadow-2xl focus:outline-none z-20 py-2"
                           >
-                            <div className="px-4 py-2 border-b border-white/5">
-                              <p className="text-sm font-semibold text-dark-text truncate">{user.first_name} {user.last_name}</p>
-                              <p className="text-xs text-dark-muted truncate">{user.email}</p>
+                            <div className="px-4 py-2 border-b border-slate-800/50">
+                              <p className="text-sm font-semibold text-slate-200 truncate">{user.first_name} {user.last_name}</p>
+                              <p className="text-xs text-slate-400 truncate">{user.email}</p>
                               <span className="inline-block mt-1.5 px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase bg-brand-primary/10 text-brand-primary rounded">
                                 {user.role}
                               </span>
                             </div>
                             <Link
                               to={user?.role === 'admin' ? '/admin-dashboard' : user?.role === 'organizer' ? '/organizer/events' : user?.role === 'plot_owner' ? '/venues/manage' : '/bookings'}
-                              className="flex items-center space-x-2 px-4 py-2 text-sm text-dark-muted hover:text-dark-text hover:bg-white/5 transition-colors"
+                              className="flex items-center space-x-2 px-4 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-900 transition-colors"
                               onClick={() => setDropdownOpen(false)}
                             >
                               <LayoutDashboard className="w-4 h-4 text-brand-primary" />
@@ -378,15 +378,15 @@ const Navbar = () => {
                             </Link>
                             <Link
                               to="/profile"
-                              className="flex items-center space-x-2 px-4 py-2 text-sm text-dark-muted hover:text-dark-text hover:bg-white/5 transition-colors"
+                              className="flex items-center space-x-2 px-4 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-900 transition-colors"
                               onClick={() => setDropdownOpen(false)}
                             >
-                              <UserIcon className="w-4 h-4" />
+                              <UserIcon className="w-4 h-4 text-brand-primary" />
                               <span>My Profile</span>
                             </Link>
                             <button
                               onClick={handleLogout}
-                              className="w-full flex items-center space-x-2 px-4 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-white/5 transition-colors text-left"
+                              className="w-full flex items-center space-x-2 px-4 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors text-left"
                             >
                               <LogOut className="w-4 h-4" />
                               <span>Sign Out</span>
