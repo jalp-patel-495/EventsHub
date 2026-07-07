@@ -1,0 +1,226 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-color: #0A0E1A;
+  --text-color: #F8FAFC;
+  --card-color: #121A2E;
+  --border-color: #1E293B;
+  --muted-color: #94A3B8;
+  --glass-nav-bg: rgba(10, 14, 26, 0.75);
+  --glass-panel-bg: rgba(18, 26, 46, 0.6);
+  --glass-card-bg: rgba(18, 26, 46, 0.45);
+  --glass-input-bg: rgba(10, 14, 26, 0.5);
+  --glass-border: rgba(255, 255, 255, 0.04);
+  --glass-panel-border: rgba(255, 255, 255, 0.06);
+}
+
+:root.light {
+  --bg-color: #E2E8F0;
+  --text-color: #0F172A;
+  --card-color: #FFFFFF;
+  --border-color: #CBD5E1;
+  --muted-color: #475569;
+  --glass-nav-bg: rgba(226, 232, 240, 0.85);
+  --glass-panel-bg: rgba(255, 255, 255, 0.85);
+  --glass-card-bg: rgba(255, 255, 255, 0.7);
+  --glass-input-bg: rgba(255, 255, 255, 0.95);
+  --glass-border: rgba(15, 23, 42, 0.08);
+  --glass-panel-border: rgba(15, 23, 42, 0.1);
+}
+
+@layer base {
+  body {
+    @apply bg-dark-bg text-dark-text font-sans antialiased overflow-x-hidden;
+    background-image: 
+      radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.05) 0%, transparent 40%),
+      radial-gradient(circle at 90% 80%, rgba(16, 185, 129, 0.05) 0%, transparent 40%),
+      radial-gradient(circle at 50% 50%, rgba(139, 92, 246, 0.03) 0%, transparent 50%);
+    background-attachment: fixed;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+  
+  :root.light body {
+    background-image: 
+      radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.02) 0%, transparent 40%),
+      radial-gradient(circle at 90% 80%, rgba(16, 185, 129, 0.02) 0%, transparent 40%),
+      radial-gradient(circle at 50% 50%, rgba(139, 92, 246, 0.01) 0%, transparent 50%);
+  }
+}
+
+/* Reusable Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-color);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #10B981;
+}
+
+/* Glassmorphism Styles */
+.glass-nav {
+  background: var(--glass-nav-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--glass-border);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.glass-panel {
+  background: var(--glass-panel-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-panel-border);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.glass-card {
+  background: var(--glass-card-bg);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--glass-border);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s ease;
+}
+
+.glass-card-hover:hover {
+  border-color: rgba(16, 185, 129, 0.2);
+  box-shadow: 0 12px 30px -10px rgba(16, 185, 129, 0.15);
+  transform: translateY(-2px);
+}
+
+.glass-input {
+  background: var(--glass-input-bg);
+  border: 1px solid var(--glass-panel-border);
+  color: var(--text-color);
+  transition: all 0.2s ease-in-out, background-color 0.3s ease;
+}
+
+.glass-input:focus {
+  border-color: #10B981;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+  outline: none;
+}
+
+/* Custom Text Gradient */
+.text-gradient-emerald {
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-rose-500 via-pink-500 to-amber-500;
+}
+:root:not(.light) .text-gradient-emerald {
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-rose-400 via-pink-400 to-amber-400;
+}
+
+.text-gradient-purple {
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-purple-500 via-pink-500 to-rose-400;
+}
+
+/* 3D Payment Card Flip Utilities */
+.flip-card {
+  perspective: 1000px;
+}
+.flip-card-inner {
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-style: preserve-3d;
+}
+.flip-card.flipped .flip-card-inner {
+  transform: rotateY(180deg);
+}
+.flip-card-front, .flip-card-back {
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+.flip-card-back {
+  transform: rotateY(180deg);
+}
+
+/* Dynamic Theme Utility Overrides to bypass Tailwind opacity compiler bugs */
+.bg-dark-bg {
+  background-color: var(--bg-color) !important;
+}
+.text-dark-text {
+  color: var(--text-color) !important;
+}
+.text-dark-muted {
+  color: var(--muted-color) !important;
+}
+.border-dark-border {
+  border-color: var(--border-color) !important;
+}
+.bg-dark-card {
+  background-color: var(--card-color) !important;
+}
+
+/* Page, Drawer, and Footer Dynamic Theme Containers */
+.theme-bg {
+  background-color: var(--bg-color) !important;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.theme-footer {
+  background-color: var(--glass-nav-bg) !important;
+  border-top: 1px solid var(--glass-border) !important;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.theme-drawer {
+  background-color: var(--bg-color) !important;
+  border-top: 1px solid var(--border-color) !important;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Global Light Mode Contrast Overrides for Hardcoded Tailwind classes */
+:root.light .text-white,
+:root.light .text-slate-100,
+:root.light .text-gray-100 {
+  color: var(--text-color) !important;
+}
+
+:root.light .text-slate-300,
+:root.light .text-gray-300,
+:root.light .text-slate-400,
+:root.light .text-gray-400,
+:root.light .text-slate-200,
+:root.light .text-gray-200 {
+  color: var(--muted-color) !important;
+}
+
+:root.light .border-white\/10,
+:root.light .border-white\/5,
+:root.light .border-slate-800,
+:root.light .border-slate-700 {
+  border-color: var(--border-color) !important;
+}
+
+:root.light .bg-white\/5,
+:root.light .bg-white\/10,
+:root.light .bg-slate-900\/50,
+:root.light .bg-slate-950\/50,
+:root.light .bg-slate-900,
+:root.light .bg-slate-950,
+:root.light .bg-black\/30,
+:root.light .bg-black\/50,
+:root.light .bg-indigo-950\/20 {
+  background-color: var(--card-color) !important;
+  border-color: var(--border-color) !important;
+}
+
+:root.light .hover\:bg-white\/10:hover,
+:root.light .hover\:bg-white\/5:hover,
+:root.light .hover\:bg-slate-800:hover {
+  background-color: rgba(0, 0, 0, 0.04) !important;
+}
+
