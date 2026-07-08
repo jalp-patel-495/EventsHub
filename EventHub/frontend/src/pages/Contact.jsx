@@ -187,8 +187,8 @@ const Contact = () => {
                           type="button"
                           onClick={() => handleRoleChange(r.id)}
                           className={`px-4 py-3 rounded-xl text-xs font-bold transition-all duration-300 border flex-1 text-center ${formData.role === r.id
-                              ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white border-transparent shadow-lg shadow-emerald-500/10'
-                              : 'glass-card border-white/5 text-dark-muted hover:text-dark-text hover:border-white/10'
+                            ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white border-transparent shadow-lg shadow-emerald-500/10'
+                            : 'glass-card border-white/5 text-dark-muted hover:text-dark-text hover:border-white/10'
                             }`}
                         >
                           {r.label}
@@ -212,7 +212,7 @@ const Contact = () => {
                         required
                         value={formData.name}
                         onChange={handleInputChange}
-                        placeholder="Jalp Patel"
+                        placeholder="Enter your full name"
                         className="w-full px-4 py-3 rounded-xl glass-input text-sm"
                       />
                     </div>
@@ -228,7 +228,7 @@ const Contact = () => {
                         required
                         value={formData.email}
                         onChange={handleInputChange}
-                        placeholder="jalppatel1580@gmail.com"
+                        placeholder="Enter your email address"
                         className="w-full px-4 py-3 rounded-xl glass-input text-sm"
                       />
                     </div>
@@ -244,7 +244,7 @@ const Contact = () => {
                       name="subject"
                       value={formData.subject}
                       onChange={handleInputChange}
-                      placeholder={formData.role === 'customer' ? 'Help with ticket refund' : formData.role === 'organizer' ? 'Integrating custom payments' : 'Updating venue location coordinates'}
+                      placeholder="Enter subject of your message"
                       className="w-full px-4 py-3 rounded-xl glass-input text-sm"
                     />
                   </div>
@@ -260,7 +260,7 @@ const Contact = () => {
                       rows={5}
                       value={formData.message}
                       onChange={handleInputChange}
-                      placeholder="Type your message here..."
+                      placeholder="Enter your message here..."
                       className="w-full px-4 py-3 rounded-xl glass-input text-sm resize-none"
                     />
                   </div>
