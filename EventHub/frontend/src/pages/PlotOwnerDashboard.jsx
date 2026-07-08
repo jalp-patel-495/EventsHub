@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import api from '../api/api';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, Trash2, Edit2, Plus, Sparkles, Building, CheckCircle, XCircle, IndianRupee, Calendar, Upload, X, ShieldAlert, BadgeCheck, MapPin, UtensilsCrossed, Music2, Palette } from 'lucide-react';
+import { Home, Trash2, Edit2, Plus, Sparkles, Building, CheckCircle, XCircle, IndianRupee, Calendar, Upload, X, ShieldAlert, BadgeCheck, MapPin, UtensilsCrossed, Music2, Palette, Star } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const CUISINE_TEMPLATES = {
@@ -530,6 +530,20 @@ const PlotOwnerDashboard = () => {
   const totalRefundedToOrg = cancelledBookings.reduce((sum, b) => sum + parseFloat(b.total_price) * 0.9, 0);
   const cancellationRetainedProfit = cancelledBookings.reduce((sum, b) => sum + parseFloat(b.total_price) * 0.1, 0);
 
+  const allReviews = venues.reduce((arr, v) => {
+    if (v.reviews && Array.isArray(v.reviews)) {
+      v.reviews.forEach(r => {
+        arr.push({ ...r, venueName: v.name });
+      });
+    }
+    return arr;
+  }, []).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+  const averageRating = venues.length > 0
+    ? (venues.reduce((sum, v) => sum + parseFloat(v.rating_avg || 0), 0) / venues.length).toFixed(1)
+    : '0.0';
+
+
   if (loading) {
     return (
       <div className="min-h-[70vh] flex items-center justify-center bg-dark-bg">
@@ -558,7 +572,7 @@ const PlotOwnerDashboard = () => {
       </div>
 
       {/* Grid Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-10">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
         {/* Total Income */}
         <div className="glass-panel rounded-2xl p-6 flex items-start space-x-4">
           <div className="p-3 bg-emerald-500/10 text-emerald-400 rounded-xl mt-1">
@@ -613,6 +627,17 @@ const PlotOwnerDashboard = () => {
             <h3 className="text-2xl font-bold mt-1">{venues.length}</h3>
           </div>
         </div>
+
+        {/* Average Rating */}
+        <div className="glass-panel rounded-2xl p-6 flex items-center space-x-4">
+          <div className="p-3 bg-amber-500/10 text-amber-400 rounded-xl">
+            <Star className="w-6 h-6 animate-pulse" />
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-dark-muted uppercase tracking-wider">Average Rating</p>
+            <h3 className="text-2xl font-bold mt-1">{averageRating} <span className="text-xs text-dark-muted">/ 5</span></h3>
+          </div>
+        </div>
       </div>
 
       {/* Tabs */}
@@ -620,6 +645,7 @@ const PlotOwnerDashboard = () => {
         {[
           { id: 'venues', label: 'My Venues', count: venues.length },
           { id: 'requests', label: 'Rental Requests', count: bookings.length },
+          { id: 'reviews', label: 'Customer Reviews', count: allReviews.length },
           { id: 'calendar', label: 'Availability Calendar', count: null }
         ].map((tab) => (
           <button
@@ -675,7 +701,13 @@ const PlotOwnerDashboard = () => {
                     
                     <div className="p-6 flex flex-col flex-grow">
                       <div className="flex items-start justify-between gap-2">
-                        <h4 className="font-bold text-lg text-dark-text">{venue.name}</h4>
+                        <div>
+                          <h4 className="font-bold text-lg text-dark-text">{venue.name}</h4>
+                          <div className="flex items-center space-x-1 mt-1 text-xs text-amber-400">
+                            <Star className="w-3.5 h-3.5 fill-amber-400" />
+                            <span>{venue.rating_avg || '0.0'} ({venue.rating_count || 0})</span>
+                          </div>
+                        </div>
                         {venue.is_approved ? (
                           <span className="text-[9px] font-bold bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded uppercase flex-shrink-0">Approved</span>
                         ) : (
@@ -840,6 +872,59 @@ const PlotOwnerDashboard = () => {
                       ))}
                     </tbody>
                   </table>
+                </div>
+              )}
+            </motion.div>
+          )}
+
+          {activeTab === 'reviews' && (
+            <motion.div
+              key="reviews"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 15 }}
+              className="space-y-4"
+            >
+              {allReviews.length === 0 ? (
+                <div className="glass-panel text-center py-16 rounded-2xl">
+                  <Star className="w-12 h-12 text-dark-muted mx-auto mb-4" />
+                  <p className="text-dark-muted">No reviews received yet for your venues.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {allReviews.map((rev) => (
+                    <div key={rev.id} className="glass-card rounded-2xl p-6 border border-white/5 space-y-4 bg-dark-bg/30">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h5 className="font-bold text-dark-text text-sm">{rev.user_details?.first_name} {rev.user_details?.last_name}</h5>
+                          <span className="text-[10px] text-dark-muted block mt-0.5">{rev.user_details?.email}</span>
+                        </div>
+                        <div className="flex items-center space-x-0.5 text-amber-400">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              className={`w-3.5 h-3.5 ${
+                                i < rev.rating ? 'text-amber-400 fill-amber-400' : 'text-dark-muted opacity-30'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+                        <span className="text-[9px] font-semibold text-brand-primary uppercase tracking-wider block">Venue reviewed</span>
+                        <p className="font-bold text-xs text-dark-text mt-0.5">{rev.venueName}</p>
+                      </div>
+
+                      <p className="text-xs text-dark-muted italic leading-relaxed">
+                        "{rev.comment}"
+                      </p>
+
+                      <span className="block text-[9px] text-dark-muted text-right">
+                        {new Date(rev.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               )}
             </motion.div>

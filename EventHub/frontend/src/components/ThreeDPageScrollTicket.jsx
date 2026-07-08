@@ -407,14 +407,13 @@ const ThreeDPageScrollTicket = () => {
       const targetY = 0.0;
       const targetZ = 0.0;
       const targetScale = 1.1; // Standard fit scale
-      const targetRotX = 0.12;
-      const targetRotY = -0.2;
-      const targetRotZ = 0.05;
+      const targetRotX = 0.0;
+      const targetRotY = 0.0;
+      const targetRotZ = 0.0;
       const targetSeparation = 0.0; // Unsplit static
       const localSplitFactor = 0.0; // Static unsplit
 
-      const hoverOffset = Math.sin(elapsedTime * 1.5) * 0.06;
-      const calculatedTargetY = targetY + hoverOffset;
+      const calculatedTargetY = targetY;
 
       // 2. Smoothly interpolate group translation and scale
       ticketGroup.position.x += (targetX - ticketGroup.position.x) * 0.08;
