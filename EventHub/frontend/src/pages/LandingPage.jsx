@@ -11,9 +11,9 @@ const LandingPage = () => {
   const { isAuthenticated, user } = useAuth();
 
   const { scrollYProgress } = useScroll();
-  const heroOpacity = useTransform(scrollYProgress, [0, 0.15], [0, 1]);
-  const heroScale = useTransform(scrollYProgress, [0, 0.15], [0.95, 1]);
-  const heroY = useTransform(scrollYProgress, [0, 0.15], [40, 0]);
+  const heroOpacity = useTransform(scrollYProgress, [0, 0.20], [1, 0]);
+  const heroScale = useTransform(scrollYProgress, [0, 0.20], [1, 0.95]);
+  const heroY = useTransform(scrollYProgress, [0, 0.20], [0, -40]);
 
   if (isAuthenticated && user) {
     const dashboardPath = user.role === 'admin' ? '/admin-dashboard' : user.role === 'organizer' ? '/organizer/events' : user.role === 'plot_owner' ? '/venues/manage' : '/bookings';
@@ -39,9 +39,8 @@ const LandingPage = () => {
   };
 
   return (
-    <div className="relative min-h-screen flex flex-col items-center overflow-hidden">
-      <ThreeDEventBackground interactive={false} />
-      <ThreeDPageScrollTicket />
+    <div className="relative min-h-screen flex flex-col items-center overflow-hidden z-10">
+      <ThreeDEventBackground />
       {/* Hero Section */}
       <motion.section 
         className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center"
@@ -115,7 +114,7 @@ const LandingPage = () => {
           </motion.div>
         </div>
 
-        {/* Right Column: Placeholder space for page-wide 3D Scroll Ticket */}
+        {/* Right Column: Embedded 3D Ticket */}
         <motion.div 
           className="lg:col-span-5 flex items-center justify-center w-full"
           variants={itemVariants}
@@ -123,6 +122,7 @@ const LandingPage = () => {
           <div className="w-full max-w-[400px] h-[400px] relative rounded-3xl overflow-visible">
             {/* Soft backdrop glow matching BookMyShow primary color */}
             <div className="absolute inset-0 bg-gradient-to-tr from-brand-primary/20 to-blue-500/20 blur-[60px] -z-10 rounded-full scale-75 animate-pulse" />
+            <ThreeDPageScrollTicket />
           </div>
         </motion.div>
       </motion.section>
@@ -155,12 +155,6 @@ const LandingPage = () => {
                 Discover local festivals, conferences, concerts, and workshops. Book tickets instantly with Razorpay and secure your entry passes.
               </p>
             </div>
-            <div className="mt-auto pt-4 border-t border-white/5">
-              <span className="text-xs font-semibold text-blue-400 flex items-center space-x-1 hover:text-blue-300 transition-colors">
-                <span>Book Events</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </span>
-            </div>
           </motion.div>
 
           {/* Organizer Role Card */}
@@ -176,12 +170,6 @@ const LandingPage = () => {
               <p className="text-sm text-dark-muted mt-2 leading-relaxed">
                 Create and manage events effortlessly. Keep track of sales, verify attendee tickets with QR codes, and analyze event performance.
               </p>
-            </div>
-            <div className="mt-auto pt-4 border-t border-white/5">
-              <span className="text-xs font-semibold text-brand-primary flex items-center space-x-1 hover:text-brand-primary/80 transition-colors">
-                <span>List Events</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </span>
             </div>
           </motion.div>
 
@@ -199,12 +187,6 @@ const LandingPage = () => {
                 Register your event plots, halls, or lawns. Rent them out to event planners in Ahmedabad and secure high utilization rates.
               </p>
             </div>
-            <div className="mt-auto pt-4 border-t border-white/5">
-              <span className="text-xs font-semibold text-purple-400 flex items-center space-x-1 hover:text-purple-300 transition-colors">
-                <span>List Venues</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </span>
-            </div>
           </motion.div>
         </motion.div>
       </section>
@@ -213,9 +195,6 @@ const LandingPage = () => {
       <section className="relative z-10 w-full border-t border-white/5">
         <About />
       </section>
-
-      {/* Dedicated ticket spacing just above the footer */}
-      <div className="relative z-10 w-full h-[460px] pointer-events-none mb-20" />
     </div>
   );
 };

@@ -5,8 +5,8 @@ from django.shortcuts import get_object_or_404
 from django.db.models import Q
 from datetime import datetime
 
-from .models import Venue, VenueBooking
-from .serializers import VenueSerializer, VenueBookingSerializer
+from .models import Venue, VenueBooking, VenueReview
+from .serializers import VenueSerializer, VenueBookingSerializer, VenueReviewSerializer
 from notifications.models import Notification
 
 class VenueViewSet(viewsets.ModelViewSet):
@@ -270,4 +270,28 @@ class ApprovePaymentView(APIView):
             return Response({"error": "Token required"}, status=status.HTTP_400_BAD_REQUEST)
         MOCK_PAYMENTS[token] = "approved"
         return Response({"status": "success", "message": "Payment approved"})
+
+
+class VenueReviewCreateView(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def post(self, request, venue_id):
+        venue = get_object_or_404(Venue, pk=venue_id)
+        
+        # 1. Enforce that customer has booked this venue (status='approved')
+        has_booked = VenueBooking.objects.filter(organizer=request.user, venue=venue, status='approved').exists()
+        if not has_booked:
+            return Response({"error": "You can only review venues you have booked and rented."}, status=status.HTTP_400_BAD_REQUEST)
+            
+        # 2. Check duplicate review
+        already_reviewed = VenueReview.objects.filter(user=request.user, venue=venue).exists()
+        if already_reviewed:
+            return Response({"error": "You have already reviewed this venue."}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = VenueReviewSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        review = serializer.save(user=request.user, venue=venue)
+        return Response(VenueReviewSerializer(review).data, status=status.HTTP_201_CREATED)
+
 

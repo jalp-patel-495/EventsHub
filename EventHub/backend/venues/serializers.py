@@ -1,11 +1,28 @@
 from rest_framework import serializers
 from django.utils import timezone
-from .models import Venue, VenueBooking
+from .models import Venue, VenueBooking, VenueReview
 from accounts.serializers import UserSerializer
+
+
+class VenueReviewSerializer(serializers.ModelSerializer):
+    user_details = UserSerializer(source='user', read_only=True)
+
+    class Meta:
+        model = VenueReview
+        fields = ('id', 'user', 'user_details', 'venue', 'rating', 'comment', 'created_at')
+        read_only_fields = ('user', 'venue')
+
+    def validate_rating(self, value):
+        if value < 1 or value > 5:
+            raise serializers.ValidationError("Rating must be between 1 and 5.")
+        return value
 
 
 class VenueSerializer(serializers.ModelSerializer):
     owner_details = UserSerializer(source='owner', read_only=True)
+    rating_avg = serializers.SerializerMethodField()
+    rating_count = serializers.SerializerMethodField()
+    reviews = VenueReviewSerializer(many=True, read_only=True)
 
     class Meta:
         model = Venue
@@ -19,10 +36,22 @@ class VenueSerializer(serializers.ModelSerializer):
             'has_dj', 'dj_price', 'dj_equipment',
             # Decor
             'has_decor', 'decor_price', 'decor_themes',
+            # Ratings
+            'rating_avg', 'rating_count', 'reviews',
         )
         read_only_fields = ('owner', 'is_approved')
 
+    def get_rating_avg(self, obj):
+        reviews = obj.reviews.all()
+        if not reviews:
+            return 0.0
+        return round(sum(r.rating for r in reviews) / len(reviews), 1)
+
+    def get_rating_count(self, obj):
+        return obj.reviews.count()
+
     def validate_price_per_day(self, value):
+
         if value <= 0:
             raise serializers.ValidationError("Price per day must be greater than 0.")
         if value > 500000:
