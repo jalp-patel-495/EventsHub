@@ -13,8 +13,8 @@ const ThreeDPageScrollTicket = () => {
 
   useMotionValueEvent(scrollYProgress, "change", (latest) => {
     scrollValRef.current = latest;
-    // Set ticket z-index: foreground (z-30) at top and bottom, background (z-0) in-between
-    if (latest < 0.15 || latest > 0.85) {
+    // Set ticket z-index: foreground (z-30) in Phase 1 (scroll < 0.15) and Phase 4 (scroll > 0.75); background (z-0) in Phases 2 and 3
+    if (latest < 0.15 || latest > 0.75) {
       setZIndexClass("z-30");
     } else {
       setZIndexClass("z-0");
@@ -432,68 +432,89 @@ const ThreeDPageScrollTicket = () => {
       let targetRotX, targetRotY, targetRotZ;
       let targetSeparation;
 
-      if (scrollProgress <= 0.25) {
-        // Phase 1: Full-Screen Intro (0.0) -> Hero Position (0.25)
-        const t = scrollProgress / 0.25; // 0 to 1
+      if (scrollProgress <= 0.15) {
+        // Phase 1: Side Placeholder (0.0 to 0.15)
+        const t = scrollProgress / 0.15; // 0 to 1
 
         if (isMobile) {
-          targetX = THREE.MathUtils.lerp(0.0, 0.0, t);
-          targetY = THREE.MathUtils.lerp(0.0, -0.35, t);
-          targetZ = THREE.MathUtils.lerp(1.3, -0.4, t);
-          targetScale = THREE.MathUtils.lerp(0.9, 0.8, t);
+          targetX = 0.0;
+          targetY = -0.35;
+          targetZ = -0.4;
+          targetScale = 0.85;
         } else {
-          targetX = THREE.MathUtils.lerp(0.0, 1.35, t);
-          targetY = THREE.MathUtils.lerp(0.0, 0.12, t);
-          targetZ = THREE.MathUtils.lerp(1.6, 0.2, t);
-          targetScale = THREE.MathUtils.lerp(1.1, 0.92, t);
+          targetX = 1.85; 
+          targetY = 0.12;
+          targetZ = 0.2;
+          targetScale = 1.0;
         }
 
         targetRotX = THREE.MathUtils.lerp(0.05, 0.12, t);
-        targetRotY = THREE.MathUtils.lerp(0.0, -0.3, t);
+        targetRotY = THREE.MathUtils.lerp(0.0, -0.2, t);
         targetRotZ = THREE.MathUtils.lerp(0.0, 0.05, t);
-        targetSeparation = THREE.MathUtils.lerp(0.0, 0.3, t);
+        targetSeparation = 0.0; // Remains unified
+
+      } else if (scrollProgress <= 0.45) {
+        // Phase 2: Split and Drift to Left (0.15 to 0.45)
+        const t = (scrollProgress - 0.15) / 0.30; // 0 to 1
+
+        if (isMobile) {
+          targetX = 0.0;
+          targetY = -0.35;
+          targetZ = -0.4;
+          targetScale = 0.85;
+        } else {
+          targetX = THREE.MathUtils.lerp(1.85, -1.0, t); // Drifts to the left to slide behind For Customers card
+          targetY = 0.12;
+          targetZ = 0.2;
+          targetScale = 1.0;
+        }
+
+        targetRotX = 0.12;
+        targetRotY = -0.2;
+        targetRotZ = 0.05;
+        targetSeparation = THREE.MathUtils.lerp(0.0, 0.8, t); // Splits on side
 
       } else if (scrollProgress <= 0.75) {
-        // Phase 2: Hero Position (0.25) -> Background Drift (0.75)
-        const t = (scrollProgress - 0.25) / 0.5; // 0 to 1
+        // Phase 3: Background Flip (0.45 to 0.75)
+        const t = (scrollProgress - 0.45) / 0.30; // 0 to 1
 
         if (isMobile) {
           targetX = THREE.MathUtils.lerp(0.0, 0.0, t);
           targetY = THREE.MathUtils.lerp(-0.35, -0.9, t);
           targetZ = THREE.MathUtils.lerp(-0.4, -2.5, t);
-          targetScale = THREE.MathUtils.lerp(0.8, 0.58, t);
+          targetScale = THREE.MathUtils.lerp(0.85, 0.58, t);
         } else {
-          targetX = THREE.MathUtils.lerp(1.35, -1.0, t);
+          targetX = -1.0; // Stays on the left side
           targetY = THREE.MathUtils.lerp(0.12, -0.5, t);
           targetZ = THREE.MathUtils.lerp(0.2, -1.8, t);
-          targetScale = THREE.MathUtils.lerp(0.92, 0.65, t);
+          targetScale = THREE.MathUtils.lerp(1.0, 0.65, t);
         }
 
         targetRotX = THREE.MathUtils.lerp(0.12, 0.35, t);
-        targetRotY = THREE.MathUtils.lerp(-0.3, Math.PI, t);
+        targetRotY = THREE.MathUtils.lerp(-0.2, Math.PI, t); // Flips to show back
         targetRotZ = THREE.MathUtils.lerp(0.05, -0.15, t);
-        targetSeparation = THREE.MathUtils.lerp(0.3, 1.4, t);
+        targetSeparation = 0.8; // Stays split
 
       } else {
-        // Phase 3: Background Drift (0.75) -> Footer Merge (1.0)
+        // Phase 4: Bottom Merge & Footer Clear (0.75 to 1.0)
         const t = (scrollProgress - 0.75) / 0.25; // 0 to 1
 
         if (isMobile) {
           targetX = THREE.MathUtils.lerp(0.0, 0.0, t);
-          targetY = THREE.MathUtils.lerp(-0.9, 0.38, t);
+          targetY = THREE.MathUtils.lerp(-0.9, 0.9, t);
           targetZ = THREE.MathUtils.lerp(-2.5, 0.6, t);
-          targetScale = THREE.MathUtils.lerp(0.58, 0.95, t);
+          targetScale = THREE.MathUtils.lerp(0.58, 0.65, t);
         } else {
           targetX = THREE.MathUtils.lerp(-1.0, 0.0, t);
-          targetY = THREE.MathUtils.lerp(-0.5, 0.42, t);
+          targetY = THREE.MathUtils.lerp(-0.5, 1.3, t); // Moves up above footer
           targetZ = THREE.MathUtils.lerp(-1.8, 0.8, t);
-          targetScale = THREE.MathUtils.lerp(0.65, 1.15, t);
+          targetScale = THREE.MathUtils.lerp(0.65, 0.85, t);
         }
 
         targetRotX = THREE.MathUtils.lerp(0.35, 0.12, t);
-        targetRotY = THREE.MathUtils.lerp(Math.PI, Math.PI * 2.0, t);
+        targetRotY = THREE.MathUtils.lerp(Math.PI, Math.PI * 2.0, t); // Completes 360-degree rotation back to front
         targetRotZ = THREE.MathUtils.lerp(-0.15, 0.0, t);
-        targetSeparation = THREE.MathUtils.lerp(1.4, 0.0, t);
+        targetSeparation = THREE.MathUtils.lerp(0.8, 0.0, t); // Merges back together
       }
 
       // Calculate a local visual split factor for mesh tilting animations
