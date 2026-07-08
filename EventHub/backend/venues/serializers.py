@@ -54,6 +54,12 @@ class VenueSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError({"decor_price": "Decoration price must be positive when decoration service is enabled."})
         return attrs
 
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        if instance.image and (instance.image.name.startswith('http://') or instance.image.name.startswith('https://')):
+            ret['image'] = instance.image.name
+        return ret
+
 
 class VenueBookingSerializer(serializers.ModelSerializer):
     organizer_details = UserSerializer(source='organizer', read_only=True)

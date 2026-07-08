@@ -51,6 +51,12 @@ class EventSerializer(serializers.ModelSerializer):
     def get_rating_count(self, obj):
         return obj.reviews.count()
 
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        if instance.image and (instance.image.name.startswith('http://') or instance.image.name.startswith('https://')):
+            ret['image'] = instance.image.name
+        return ret
+
 class CouponSerializer(serializers.ModelSerializer):
     class Meta:
         model = Coupon
