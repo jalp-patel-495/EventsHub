@@ -41,7 +41,6 @@ const LandingPage = () => {
   return (
     <div className="relative min-h-screen flex flex-col items-center overflow-hidden">
       <ThreeDEventBackground interactive={false} />
-      <ThreeDPageScrollTicket />
       {/* Hero Section */}
       <motion.section 
         className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center"
@@ -115,7 +114,7 @@ const LandingPage = () => {
           </motion.div>
         </div>
 
-        {/* Right Column: Placeholder space for page-wide 3D Scroll Ticket */}
+        {/* Right Column: Embedded 3D Ticket */}
         <motion.div 
           className="lg:col-span-5 flex items-center justify-center w-full"
           variants={itemVariants}
@@ -123,6 +122,7 @@ const LandingPage = () => {
           <div className="w-full max-w-[400px] h-[400px] relative rounded-3xl overflow-visible">
             {/* Soft backdrop glow matching BookMyShow primary color */}
             <div className="absolute inset-0 bg-gradient-to-tr from-brand-primary/20 to-blue-500/20 blur-[60px] -z-10 rounded-full scale-75 animate-pulse" />
+            <ThreeDPageScrollTicket />
           </div>
         </motion.div>
       </motion.section>
