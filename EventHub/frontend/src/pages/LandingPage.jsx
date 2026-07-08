@@ -39,8 +39,8 @@ const LandingPage = () => {
   };
 
   return (
-    <div className="relative min-h-screen flex flex-col items-center overflow-hidden">
-      <ThreeDEventBackground interactive={false} />
+    <div className="relative min-h-screen flex flex-col items-center overflow-hidden z-10">
+      <ThreeDEventBackground />
       {/* Hero Section */}
       <motion.section 
         className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center"
@@ -195,9 +195,6 @@ const LandingPage = () => {
       <section className="relative z-10 w-full border-t border-white/5">
         <About />
       </section>
-
-      {/* Dedicated ticket spacing just above the footer */}
-      <div className="relative z-10 w-full h-[460px] pointer-events-none mb-20" />
     </div>
   );
 };
