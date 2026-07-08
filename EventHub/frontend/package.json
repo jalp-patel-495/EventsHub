@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "backend": "cd ../backend && run_backend.bat",
+    "seed": "cd ../backend && .venv\\Scripts\\python.exe populate_events.py",
     "build": "vite build",
     "lint": "oxlint",
     "preview": "vite preview"
