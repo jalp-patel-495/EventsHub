@@ -11,9 +11,9 @@ const LandingPage = () => {
   const { isAuthenticated, user } = useAuth();
 
   const { scrollYProgress } = useScroll();
-  const heroOpacity = useTransform(scrollYProgress, [0, 0.15], [0, 1]);
-  const heroScale = useTransform(scrollYProgress, [0, 0.15], [0.95, 1]);
-  const heroY = useTransform(scrollYProgress, [0, 0.15], [40, 0]);
+  const heroOpacity = useTransform(scrollYProgress, [0, 0.20], [1, 0]);
+  const heroScale = useTransform(scrollYProgress, [0, 0.20], [1, 0.95]);
+  const heroY = useTransform(scrollYProgress, [0, 0.20], [0, -40]);
 
   if (isAuthenticated && user) {
     const dashboardPath = user.role === 'admin' ? '/admin-dashboard' : user.role === 'organizer' ? '/organizer/events' : user.role === 'plot_owner' ? '/venues/manage' : '/bookings';
@@ -155,12 +155,6 @@ const LandingPage = () => {
                 Discover local festivals, conferences, concerts, and workshops. Book tickets instantly with Razorpay and secure your entry passes.
               </p>
             </div>
-            <div className="mt-auto pt-4 border-t border-white/5">
-              <span className="text-xs font-semibold text-blue-400 flex items-center space-x-1 hover:text-blue-300 transition-colors">
-                <span>Book Events</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </span>
-            </div>
           </motion.div>
 
           {/* Organizer Role Card */}
@@ -177,12 +171,6 @@ const LandingPage = () => {
                 Create and manage events effortlessly. Keep track of sales, verify attendee tickets with QR codes, and analyze event performance.
               </p>
             </div>
-            <div className="mt-auto pt-4 border-t border-white/5">
-              <span className="text-xs font-semibold text-brand-primary flex items-center space-x-1 hover:text-brand-primary/80 transition-colors">
-                <span>List Events</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </span>
-            </div>
           </motion.div>
 
           {/* Plot Owner Role Card */}
@@ -198,12 +186,6 @@ const LandingPage = () => {
               <p className="text-sm text-dark-muted mt-2 leading-relaxed">
                 Register your event plots, halls, or lawns. Rent them out to event planners in Ahmedabad and secure high utilization rates.
               </p>
-            </div>
-            <div className="mt-auto pt-4 border-t border-white/5">
-              <span className="text-xs font-semibold text-purple-400 flex items-center space-x-1 hover:text-purple-300 transition-colors">
-                <span>List Venues</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </span>
             </div>
           </motion.div>
         </motion.div>
