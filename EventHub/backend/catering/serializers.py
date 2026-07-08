@@ -38,6 +38,13 @@ class CateringServiceSerializer(serializers.ModelSerializer):
             return 0
         return round(sum(r.rating for r in reviews) / len(reviews), 1)
 
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        if instance.image and (instance.image.name.startswith('http://') or instance.image.name.startswith('https://')):
+            ret['image'] = instance.image.name
+        return ret
+
+
 class CateringBookingSerializer(serializers.ModelSerializer):
     catering_service_details = CateringServiceSerializer(source='catering_service', read_only=True)
     catering_package_details = CateringPackageSerializer(source='catering_package', read_only=True)
