@@ -591,12 +591,72 @@ class BookingScanVerifyView(APIView):
         }, status=status.HTTP_200_OK)
 
 
+class LiveEventsFeedView(APIView):
+    """
+    GET  → Return real-time events from OpenWebNinja (primary) / Ticketmaster / fallback.
+    POST → Register a live-feed event into the DB so it becomes bookable (used by the frontend Buy Tickets flow).
+    """
+    permission_classes = (permissions.AllowAny,)
+
+    def get(self, request):
+        events = get_live_ahmedabad_events()
+        return Response(events, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        """Register a live-feed event card as a real Event in the database."""
+        if not request.user.is_authenticated:
+            return Response({"error": "Authentication required to book live events."}, status=status.HTTP_401_UNAUTHORIZED)
+
+        title       = request.data.get("title", "Live Event")
+        description = request.data.get("description", "A live feed event.")
+        date        = request.data.get("date", str(timezone.now().date()))
+        time        = request.data.get("time", "18:00:00")
+        location    = request.data.get("location", "Ahmedabad")
+        price       = request.data.get("price", 0)
+
+        # Fetch or create the 'Live Feed Events' category
+        live_category, _ = Category.objects.get_or_create(
+            name="Live Feed Events",
+            defaults={"slug": "live-feed-events"}
+        )
+
+        # Find an approved organizer to own live events (use any existing organizer)
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        organizer = User.objects.filter(role='organizer', is_approved=True).first()
+        if not organizer:
+            organizer = request.user  # Fallback: attach to the requesting user
+
+        # Check if this live event title is already registered (avoid duplicates)
+        existing = Event.objects.filter(title=title, category=live_category).first()
+        if existing:
+            return Response({"id": existing.id, "already_exists": True}, status=status.HTTP_200_OK)
+
+        # Create a new Event record for this live feed event
+        event = Event.objects.create(
+            title=title,
+            description=description,
+            date=date,
+            time=time,
+            location=location,
+            price=price,
+            total_tickets=500,
+            tickets_sold=0,
+            category=live_category,
+            organizer=organizer,
+            is_approved=True,
+        )
+
+        return Response({"id": event.id, "created": True}, status=status.HTTP_201_CREATED)
+
+
 class LiveWeatherFeedView(APIView):
     permission_classes = (permissions.AllowAny,)
 
     def get(self, request):
         weather = get_live_weather()
         return Response(weather, status=status.HTTP_200_OK)
+
 
 class ContactQueryCreateView(generics.CreateAPIView):
     queryset = ContactQuery.objects.all()

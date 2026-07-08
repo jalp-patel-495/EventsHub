@@ -467,8 +467,17 @@ const OrganizerDashboard = () => {
   const organizerNet = confirmedBookings.reduce((sum, b) => sum + parseFloat(b.total_price) * 0.80, 0) +
                         refundedBookings.reduce((sum, b) => sum + parseFloat(b.total_price) * 0.40, 0);
   const averageRating = events.length > 0 
-    ? (events.reduce((sum, e) => sum + parseFloat(e.rating_avg), 0) / events.length).toFixed(1)
+    ? (events.reduce((sum, e) => sum + parseFloat(e.rating_avg || 0), 0) / events.length).toFixed(1)
     : '0.0';
+
+  const allReviews = events.reduce((arr, e) => {
+    if (e.reviews && Array.isArray(e.reviews)) {
+      e.reviews.forEach(r => {
+        arr.push({ ...r, eventTitle: e.title });
+      });
+    }
+    return arr;
+  }, []).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
   // Venue stats calculations for organizer
   const activeVenues = venueBookings.filter(vb => vb.status === 'approved');
@@ -590,6 +599,7 @@ const OrganizerDashboard = () => {
           { id: 'events', label: 'My Listings', count: events.length },
           { id: 'bookings', label: 'Ticket Sales', count: bookings.length },
           { id: 'venue_rentals', label: 'Venue Rentals', count: venueBookings.length },
+          { id: 'reviews', label: 'Customer Reviews', count: allReviews.length },
           { id: 'analytics', label: 'Revenue Analytics', count: null }
         ].map((tab) => (
           <button
@@ -1027,6 +1037,59 @@ const OrganizerDashboard = () => {
                   </div>
                 )}
               </div>
+            </motion.div>
+          )}
+
+          {activeTab === 'reviews' && (
+            <motion.div
+              key="reviews"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 15 }}
+              className="space-y-4"
+            >
+              {allReviews.length === 0 ? (
+                <div className="glass-panel text-center py-16 rounded-2xl">
+                  <Star className="w-12 h-12 text-dark-muted mx-auto mb-4" />
+                  <p className="text-dark-muted">No reviews received yet for your events.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {allReviews.map((rev) => (
+                    <div key={rev.id} className="glass-card rounded-2xl p-6 border border-white/5 space-y-4 bg-dark-bg/30">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h5 className="font-bold text-dark-text text-sm">{rev.user_details?.first_name} {rev.user_details?.last_name}</h5>
+                          <span className="text-[10px] text-dark-muted block mt-0.5">{rev.user_details?.email}</span>
+                        </div>
+                        <div className="flex items-center space-x-0.5 text-amber-400">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              className={`w-3.5 h-3.5 ${
+                                i < rev.rating ? 'text-amber-400 fill-amber-400' : 'text-dark-muted opacity-30'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+                        <span className="text-[9px] font-semibold text-brand-primary uppercase tracking-wider block">Event reviewed</span>
+                        <p className="font-bold text-xs text-dark-text mt-0.5">{rev.eventTitle}</p>
+                      </div>
+
+                      <p className="text-xs text-dark-muted italic leading-relaxed">
+                        "{rev.comment}"
+                      </p>
+
+                      <span className="block text-[9px] text-dark-muted text-right">
+                        {new Date(rev.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>

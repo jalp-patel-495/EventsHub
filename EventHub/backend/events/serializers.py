@@ -30,6 +30,7 @@ class EventSerializer(serializers.ModelSerializer):
     venue_details = VenueSerializer(source='venue', read_only=True)
     rating_avg = serializers.SerializerMethodField()
     rating_count = serializers.SerializerMethodField()
+    reviews = ReviewSerializer(many=True, read_only=True)
 
     class Meta:
         model = Event
@@ -38,7 +39,7 @@ class EventSerializer(serializers.ModelSerializer):
             'category', 'category_details', 'price', 'tickets_total', 
             'tickets_sold', 'image', 'organizer', 'organizer_details', 
             'rating_avg', 'rating_count', 'is_approved', 'created_at',
-            'venue', 'venue_details'
+            'venue', 'venue_details', 'reviews',
         )
         read_only_fields = ('organizer', 'tickets_sold', 'is_approved')
 
