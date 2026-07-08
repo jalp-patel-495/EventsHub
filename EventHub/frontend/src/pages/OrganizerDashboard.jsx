@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar, Trash2, Edit2, Plus, Sparkles, TrendingUp, Users, IndianRupee, Star, FileText, Upload, X, ShieldAlert, MapPin, Building, CheckCircle, XCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import VenuePaymentModal from '../components/VenuePaymentModal';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 const OrganizerDashboard = () => {
   const { user } = useAuth();
@@ -15,8 +16,27 @@ const OrganizerDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [venueBookings, setVenueBookings] = useState([]);
   
-  // Tab states: events, bookings, reviews, analytics
-  const [activeTab, setActiveTab] = useState('events');
+  const routeLocation = useLocation();
+  const navigate = useNavigate();
+  const activeTab = routeLocation.pathname === '/organizer/sales'
+    ? 'bookings'
+    : routeLocation.pathname === '/organizer/rentals'
+      ? 'venue_rentals'
+      : routeLocation.pathname === '/organizer/reviews'
+        ? 'reviews'
+        : routeLocation.pathname === '/organizer/analytics'
+          ? 'analytics'
+          : 'events';
+  const setActiveTab = (tabId) => {
+    const paths = {
+      events: '/organizer/events',
+      bookings: '/organizer/sales',
+      venue_rentals: '/organizer/rentals',
+      reviews: '/organizer/reviews',
+      analytics: '/organizer/analytics'
+    };
+    navigate(paths[tabId] || '/organizer/events');
+  };
 
   // Modal states (Create/Edit)
   const [modalOpen, setModalOpen] = useState(false);
@@ -593,37 +613,8 @@ const OrganizerDashboard = () => {
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex border-b border-white/5 space-x-6 mb-8">
-        {[
-          { id: 'events', label: 'My Listings', count: events.length },
-          { id: 'bookings', label: 'Ticket Sales', count: bookings.length },
-          { id: 'venue_rentals', label: 'Venue Rentals', count: venueBookings.length },
-          { id: 'reviews', label: 'Customer Reviews', count: allReviews.length },
-          { id: 'analytics', label: 'Revenue Analytics', count: null }
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`pb-4 text-sm font-semibold relative transition-colors ${
-              activeTab === tab.id ? 'text-brand-primary' : 'text-dark-muted hover:text-dark-text'
-            }`}
-          >
-            <span>{tab.label}</span>
-            {tab.count !== null && (
-              <span className="ml-1.5 px-2 py-0.5 text-xs bg-white/5 text-dark-text rounded-full font-medium">
-                {tab.count}
-              </span>
-            )}
-            {activeTab === tab.id && (
-              <motion.div layoutId="orgTabUnderline" className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-primary" />
-            )}
-          </button>
-        ))}
-      </div>
-
       {/* Tab Panels */}
-      <div>
+      <div className="mt-8">
         <AnimatePresence mode="wait">
           {activeTab === 'events' && (
             <motion.div

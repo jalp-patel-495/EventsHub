@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Menu, X, LogOut, User as UserIcon, Calendar, Building, ShieldAlert, ChevronDown, Bell, Check, CheckCheck, Sun, Moon, QrCode, LayoutDashboard } from 'lucide-react';
+import { Menu, X, LogOut, User as UserIcon, Calendar, Building, ShieldAlert, ChevronDown, Bell, Check, CheckCheck, Sun, Moon, QrCode, LayoutDashboard, Mail } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../api/api';
 
@@ -122,11 +122,34 @@ const Navbar = () => {
   };
 
   const navLinks = isAuthenticated
-    ? [
-        { name: 'Explore', path: '/explore' },
-        { name: 'Live Feed', path: '/live-feed' },
-        { name: 'Contact', path: '/contact' },
-      ]
+    ? user?.role === 'plot_owner'
+      ? [
+          { name: 'My Venues', path: '/venues/manage' },
+          { name: 'Rental Requests', path: '/venues/requests' },
+          { name: 'Customer Reviews', path: '/venues/reviews' },
+          { name: 'Availability Calendar', path: '/venues/calendar' },
+        ]
+      : user?.role === 'organizer'
+        ? [
+            { name: 'My Listings', path: '/organizer/events' },
+            { name: 'Ticket Sales', path: '/organizer/sales' },
+            { name: 'Venue Rentals', path: '/organizer/rentals' },
+            { name: 'Customer Reviews', path: '/organizer/reviews' },
+            { name: 'Revenue Analytics', path: '/organizer/analytics' },
+            { name: 'Ticket Scanner', path: '/organizer/scanner' },
+          ]
+        : user?.role === 'admin'
+          ? [
+              { name: 'Overview', path: '/admin/overview' },
+              { name: 'Revenue', path: '/admin/revenue' },
+              { name: 'Approvals', path: '/admin/approvals' },
+              { name: 'All Events', path: '/admin/events' },
+              { name: 'All Venues', path: '/admin/venues' },
+            ]
+          : [
+              { name: 'Explore', path: '/explore' },
+              { name: 'Live Feed', path: '/live-feed' },
+            ]
     : [
         { name: 'Home', path: '/' },
         { name: 'Explore', path: '/explore' },
@@ -139,18 +162,11 @@ const Navbar = () => {
     if (!user) return [];
     switch (user.role) {
       case 'organizer':
-        return [
-          { name: 'My Events', path: '/organizer/events', icon: <Calendar className="w-4 h-4" /> },
-          { name: 'Ticket Scanner', path: '/organizer/scanner', icon: <QrCode className="w-4 h-4" /> },
-        ];
+        return [];
       case 'plot_owner':
-        return [
-          { name: 'My Venues', path: '/venues/manage', icon: <Building className="w-4 h-4" /> },
-        ];
+        return [];
       case 'admin':
-        return [
-          { name: 'Admin Portal', path: '/admin-dashboard', icon: <ShieldAlert className="w-4 h-4" /> },
-        ];
+        return [];
       default: // customer
         return [
           { name: 'My Bookings', path: '/bookings', icon: <Calendar className="w-4 h-4" /> },
@@ -159,7 +175,12 @@ const Navbar = () => {
   };
 
   const roleLinks = getRoleLinks();
-  const isActive = (path) => location.pathname === path;
+  const isActive = (path) => {
+    if (path === '/admin/overview' && (location.pathname === '/admin/overview' || location.pathname === '/admin-dashboard')) {
+      return true;
+    }
+    return location.pathname === path;
+  };
 
   return (
     <>
@@ -384,6 +405,14 @@ const Navbar = () => {
                               <UserIcon className="w-4 h-4 text-brand-primary" />
                               <span>My Profile</span>
                             </Link>
+                            <Link
+                              to="/contact"
+                              className="flex items-center space-x-2 px-4 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-900 transition-colors"
+                              onClick={() => setDropdownOpen(false)}
+                            >
+                              <Mail className="w-4 h-4 text-brand-primary" />
+                              <span>Contact Us</span>
+                            </Link>
                             <button
                               onClick={handleLogout}
                               className="w-full flex items-center space-x-2 px-4 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors text-left"
@@ -491,6 +520,13 @@ const Navbar = () => {
                       onClick={() => setMobileMenuOpen(false)}
                     >
                       My Profile ({user.role})
+                    </Link>
+                    <Link
+                      to="/contact"
+                      className="block px-3 py-2 rounded-md text-base font-medium text-dark-muted hover:bg-white/5 hover:text-dark-text"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Contact Us
                     </Link>
                     <button
                       onClick={handleLogout}

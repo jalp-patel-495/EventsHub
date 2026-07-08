@@ -3,6 +3,7 @@ import api from '../api/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Home, Trash2, Edit2, Plus, Sparkles, Building, CheckCircle, XCircle, IndianRupee, Calendar, Upload, X, ShieldAlert, BadgeCheck, MapPin, UtensilsCrossed, Music2, Palette, Star } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 const CUISINE_TEMPLATES = {
   'Gujarati Thali': '2 Sabzis (Paneer & Potato/Green), Dal/Kadhi, Rice/Khichdi, Roti/Puri, 2 Farsan, 1 Sweet, Butter Milk, Papad, Salad',
@@ -64,7 +65,24 @@ const PlotOwnerDashboard = () => {
   const [venues, setVenues] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('venues');
+  const routeLocation = useLocation();
+  const navigate = useNavigate();
+  const activeTab = routeLocation.pathname === '/venues/requests'
+    ? 'requests'
+    : routeLocation.pathname === '/venues/reviews'
+      ? 'reviews'
+      : routeLocation.pathname === '/venues/calendar'
+        ? 'calendar'
+        : 'venues';
+  const setActiveTab = (tabId) => {
+    const paths = {
+      venues: '/venues/manage',
+      requests: '/venues/requests',
+      reviews: '/venues/reviews',
+      calendar: '/venues/calendar'
+    };
+    navigate(paths[tabId] || '/venues/manage');
+  };
  
   // Sub-facilities configure states
   const [hasCatering, setHasCatering] = useState(false);
@@ -640,36 +658,10 @@ const PlotOwnerDashboard = () => {
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex border-b border-white/5 space-x-6 mb-8">
-        {[
-          { id: 'venues', label: 'My Venues', count: venues.length },
-          { id: 'requests', label: 'Rental Requests', count: bookings.length },
-          { id: 'reviews', label: 'Customer Reviews', count: allReviews.length },
-          { id: 'calendar', label: 'Availability Calendar', count: null }
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`pb-4 text-sm font-semibold relative transition-colors ${
-              activeTab === tab.id ? 'text-brand-primary' : 'text-dark-muted hover:text-dark-text'
-            }`}
-          >
-            <span>{tab.label}</span>
-            {tab.count !== null && (
-              <span className="ml-1.5 px-2 py-0.5 text-xs bg-white/5 text-dark-text rounded-full font-medium">
-                {tab.count}
-              </span>
-            )}
-            {activeTab === tab.id && (
-              <motion.div layoutId="ownerTabUnderline" className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-primary" />
-            )}
-          </button>
-        ))}
-      </div>
+
 
       {/* Panels */}
-      <div>
+      <div className="mt-8">
         <AnimatePresence mode="wait">
           {activeTab === 'venues' && (
             <motion.div
