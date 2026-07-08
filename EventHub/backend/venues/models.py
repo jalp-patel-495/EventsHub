@@ -88,3 +88,26 @@ class VenueBooking(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+
+
+class VenueReview(models.Model):
+    venue = models.ForeignKey(
+        Venue,
+        on_delete=models.CASCADE,
+        related_name='reviews'
+    )
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='venue_reviews'
+    )
+    rating = models.IntegerField()  # 1 to 5
+    comment = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'venue')
+
+    def __str__(self):
+        return f"Review ({self.rating}/5) for {self.venue.name} by {self.user.email}"
+

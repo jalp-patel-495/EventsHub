@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/api';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, Heart, Bell, Trash2, ShieldAlert, CheckCircle, Ticket, XCircle, Download, Sparkles, MapPin, Building } from 'lucide-react';
+import { Calendar, Heart, Bell, Trash2, ShieldAlert, CheckCircle, Ticket, XCircle, Download, Sparkles, MapPin, Building, Star, X } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import VenuePaymentModal from '../components/VenuePaymentModal';
 
 const CustomerDashboard = () => {
+  const { user } = useAuth();
   const [bookings, setBookings] = useState([]);
   const [wishlist, setWishlist] = useState([]);
   const [notifications, setNotifications] = useState([]);
@@ -16,6 +18,50 @@ const CustomerDashboard = () => {
   const [message, setMessage] = useState('');
   const [recommendations, setRecommendations] = useState(null);
   const [loadingRecommendations, setLoadingRecommendations] = useState(false);
+
+  // Review & Rating Modal States
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewType, setReviewType] = useState('event'); // 'event' or 'venue'
+  const [reviewTarget, setReviewTarget] = useState(null);
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState('');
+  const [submittingReview, setSubmittingReview] = useState(false);
+
+  const handleOpenReviewModal = (type, target) => {
+    setReviewType(type);
+    setReviewTarget(target);
+    setRating(5);
+    setComment('');
+    setShowReviewModal(true);
+  };
+
+  const handleReviewSubmit = async (e) => {
+    e.preventDefault();
+    if (!rating || rating < 1 || rating > 5) {
+      alert("Please select a rating between 1 and 5.");
+      return;
+    }
+    setSubmittingReview(true);
+    try {
+      if (reviewType === 'event') {
+        await api.post(`events/${reviewTarget.id}/review/`, { rating, comment });
+      } else {
+        await api.post(`venues/${reviewTarget.id}/review/`, { rating, comment });
+      }
+      setMessage(`${reviewType === 'event' ? 'Event' : 'Venue'} review submitted successfully.`);
+      setShowReviewModal(false);
+      // Refresh dashboard data
+      fetchDashboardData();
+      if (reviewType === 'venue' || activeTab === 'venues') {
+        fetchVenuesData();
+      }
+    } catch (err) {
+      alert(err.response?.data?.error || "Failed to submit review. You can only rate booked and approved items once.");
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
+
 
   // Direct Venue Booking States
   const [venues, setVenues] = useState([]);
@@ -412,6 +458,10 @@ const CustomerDashboard = () => {
                         <h4 className="font-bold text-lg text-dark-text">{booking.event_details.title}</h4>
                         <p className="text-xs text-dark-muted mt-1">{booking.event_details.date} at {booking.event_details.time}</p>
                         <p className="text-xs text-dark-muted">{booking.event_details.location}</p>
+                        <div className="flex items-center space-x-1.5 mt-1 text-[11px] text-amber-400 font-semibold">
+                          <Star className="w-3.5 h-3.5 fill-amber-400" />
+                          <span>{booking.event_details.rating_avg || '0.0'} ({booking.event_details.rating_count || 0} reviews)</span>
+                        </div>
                       </div>
                     </div>
 
@@ -457,6 +507,18 @@ const CustomerDashboard = () => {
                           >
                             <MapPin className="w-4 h-4" />
                           </a>
+                          <button
+                            onClick={() => handleOpenReviewModal('event', booking.event_details)}
+                            className={`p-2 rounded-xl transition-all ${
+                              booking.event_details.reviews?.some(r => r.user === user?.id)
+                                ? 'text-dark-muted bg-white/5 cursor-not-allowed border border-white/5'
+                                : 'text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20'
+                            }`}
+                            title={booking.event_details.reviews?.some(r => r.user === user?.id) ? "You already reviewed this event" : "Rate & Review Event"}
+                            disabled={booking.event_details.reviews?.some(r => r.user === user?.id)}
+                          >
+                            <Star className={`w-4 h-4 ${booking.event_details.reviews?.some(r => r.user === user?.id) ? '' : 'fill-amber-400'}`} />
+                          </button>
                           <button
                             onClick={() => handleDownloadTicket(booking)}
                             className="p-2 text-brand-primary hover:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-xl transition-all"
@@ -631,7 +693,13 @@ const CustomerDashboard = () => {
                           <div className="p-5 flex-grow flex flex-col justify-between space-y-4">
                             <div>
                               <div className="flex justify-between items-start gap-2">
-                                <h4 className="font-bold text-dark-text text-base leading-snug">{venue.name}</h4>
+                                <div>
+                                  <h4 className="font-bold text-dark-text text-base leading-snug">{venue.name}</h4>
+                                  <div className="flex items-center space-x-1 mt-1 text-[11px] text-amber-400 font-semibold">
+                                    <Star className="w-3.5 h-3.5 fill-amber-400" />
+                                    <span>{venue.rating_avg || '0.0'} ({venue.rating_count || 0} reviews)</span>
+                                  </div>
+                                </div>
                                 <span className="text-xs font-black text-brand-primary bg-brand-primary/10 px-2 py-1 rounded-lg flex-shrink-0">
                                   ₹{parseFloat(venue.price_per_day).toLocaleString('en-IN')}/day
                                 </span>
@@ -713,15 +781,29 @@ const CustomerDashboard = () => {
                           </div>
 
                           {vb.status === 'approved' && (
-                            <a
-                              href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(vb.venue_details?.location || vb.venue_details?.name)}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="w-full flex items-center justify-center space-x-1.5 bg-white/5 hover:bg-white/10 text-brand-primary hover:text-white py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all border border-white/5"
-                            >
-                              <MapPin className="w-3.5 h-3.5" />
-                              <span>Get Directions</span>
-                            </a>
+                            <div className="flex gap-2 w-full">
+                              <a
+                                href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(vb.venue_details?.location || vb.venue_details?.name)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex-1 flex items-center justify-center space-x-1.5 bg-white/5 hover:bg-white/10 text-brand-primary hover:text-white py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all border border-white/5"
+                              >
+                                <MapPin className="w-3.5 h-3.5" />
+                                <span>Get Directions</span>
+                              </a>
+                              <button
+                                onClick={() => handleOpenReviewModal('venue', vb.venue_details)}
+                                className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all border flex items-center justify-center gap-1 ${
+                                  vb.venue_details?.reviews?.some(r => r.user === user?.id)
+                                    ? 'bg-white/5 text-dark-muted border-white/5 cursor-not-allowed'
+                                    : 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border-amber-500/20'
+                                }`}
+                                disabled={vb.venue_details?.reviews?.some(r => r.user === user?.id)}
+                              >
+                                <Star className={`w-3.5 h-3.5 ${vb.venue_details?.reviews?.some(r => r.user === user?.id) ? '' : 'fill-amber-400'}`} />
+                                <span>{vb.venue_details?.reviews?.some(r => r.user === user?.id) ? 'Rated' : 'Rate'}</span>
+                              </button>
+                            </div>
                           )}
                         </div>
                       ))}
@@ -1143,6 +1225,96 @@ const CustomerDashboard = () => {
                   </div>
                 </div>
               )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Review & Rating Modal */}
+      <AnimatePresence>
+        {showReviewModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="glass-panel w-full max-w-md rounded-3xl p-6 border border-white/10 space-y-6 shadow-2xl bg-dark-bg/95"
+            >
+              <div className="flex justify-between items-center">
+                <h3 className="text-xl font-bold text-dark-text">
+                  Rate & Review {reviewType === 'event' ? 'Event' : 'Venue'}
+                </h3>
+                <button
+                  onClick={() => setShowReviewModal(false)}
+                  className="text-dark-muted hover:text-dark-text p-1.5 rounded-lg hover:bg-white/5 transition-all"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="text-center py-2 bg-white/5 rounded-2xl border border-white/5">
+                <span className="text-xs font-semibold text-dark-muted uppercase tracking-wider">Reviewing</span>
+                <p className="font-bold text-brand-primary mt-1">{reviewTarget?.title || reviewTarget?.name}</p>
+              </div>
+
+              <form onSubmit={handleReviewSubmit} className="space-y-6">
+                {/* Star Rating Selector */}
+                <div className="space-y-2">
+                  <label className="block text-xs font-semibold text-dark-muted uppercase tracking-wider text-center">
+                    Your Rating
+                  </label>
+                  <div className="flex justify-center space-x-2">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() => setRating(star)}
+                        className="transition-transform active:scale-90 p-1"
+                      >
+                        <Star
+                          className={`w-8 h-8 transition-colors ${
+                            star <= rating
+                              ? 'text-amber-400 fill-amber-400'
+                              : 'text-dark-muted hover:text-amber-400'
+                          }`}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Comment Box */}
+                <div className="space-y-2">
+                  <label className="block text-xs font-semibold text-dark-muted uppercase tracking-wider">
+                    Comments / Feedback
+                  </label>
+                  <textarea
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
+                    placeholder="Tell us about your experience..."
+                    required
+                    rows={4}
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-sm text-dark-text focus:outline-none focus:border-brand-primary placeholder-dark-muted transition-colors resize-none"
+                  />
+                </div>
+
+                <div className="flex space-x-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowReviewModal(false)}
+                    className="flex-1 bg-white/5 hover:bg-white/10 text-dark-text py-3 rounded-2xl font-bold text-xs uppercase tracking-wider transition-all border border-white/5"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submittingReview}
+                    className="flex-1 bg-brand-primary hover:bg-[#0ea5e9] text-white py-3 rounded-2xl font-bold text-xs uppercase tracking-wider transition-all shadow-md"
+                  >
+                    {submittingReview ? 'Submitting...' : 'Submit Review'}
+                  </button>
+                </div>
+              </form>
             </motion.div>
           </div>
         )}
