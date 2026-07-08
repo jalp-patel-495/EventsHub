@@ -5,12 +5,45 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Users, Calendar, Shield, IndianRupee, Activity, FileText, Send, 
   Check, X, Search, Filter, ShieldAlert, Award, Home, Lock, Unlock, 
-  RefreshCw, AlertCircle, Eye, CornerDownRight, Landmark, MessageSquare, Trash
+  RefreshCw, AlertCircle, Eye, CornerDownRight, Landmark, MessageSquare, Trash, Building
 } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 const AdminDashboard = () => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState('overview'); // overview, approvals, users, finance, broadcast, audit
+  const routeLocation = useLocation();
+  const navigate = useNavigate();
+  const activeTab = routeLocation.pathname === '/admin/approvals'
+    ? 'approvals'
+    : routeLocation.pathname === '/admin/events'
+      ? 'all_events'
+      : routeLocation.pathname === '/admin/venues'
+        ? 'all_venues'
+        : routeLocation.pathname === '/admin/revenue'
+          ? 'platform_revenue'
+          : routeLocation.pathname === '/admin/users'
+            ? 'users'
+            : routeLocation.pathname === '/admin/finance'
+              ? 'finance'
+              : routeLocation.pathname === '/admin/complaints'
+                ? 'complaints'
+                : routeLocation.pathname === '/admin/broadcast'
+                  ? 'broadcast'
+                  : 'overview';
+  const setActiveTab = (tabId) => {
+    const paths = {
+      overview: '/admin/overview',
+      platform_revenue: '/admin/revenue',
+      approvals: '/admin/approvals',
+      all_events: '/admin/events',
+      all_venues: '/admin/venues',
+      users: '/admin/users',
+      finance: '/admin/finance',
+      complaints: '/admin/complaints',
+      broadcast: '/admin/broadcast'
+    };
+    navigate(paths[tabId] || '/admin/overview');
+  };
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(null);
   
@@ -21,6 +54,13 @@ const AdminDashboard = () => {
   const [pendingVenues, setPendingVenues] = useState([]);
   const [bookingsList, setBookingsList] = useState([]);
   const [auditLogs, setAuditLogs] = useState([]);
+  const [allEvents, setAllEvents] = useState([]);
+  const [eventSearch, setEventSearch] = useState('');
+  const [allVenues, setAllVenues] = useState([]);
+  const [venueSearch, setVenueSearch] = useState('');
+  const [eventsPage, setEventsPage] = useState(1);
+  const [venuesPage, setVenuesPage] = useState(1);
+  const itemsPerPage = 10;
 
   // Search & Filter States
   const [userSearch, setUserSearch] = useState('');
@@ -86,6 +126,34 @@ const AdminDashboard = () => {
     }
   };
 
+  const fetchAllEvents = async () => {
+    try {
+      let url = 'events/listings/?page_size=1000';
+      if (eventSearch) {
+        url += `&search=${eventSearch}`;
+      }
+      const res = await api.get(url);
+      const data = Array.isArray(res.data) ? res.data : (res.data.results || []);
+      setAllEvents(data);
+    } catch (err) {
+      console.error("Failed to load all events:", err);
+    }
+  };
+
+  const fetchAllVenues = async () => {
+    try {
+      let url = 'venues/listings/';
+      if (venueSearch) {
+        url += `?search=${venueSearch}`;
+      }
+      const res = await api.get(url);
+      const data = Array.isArray(res.data) ? res.data : (res.data.results || []);
+      setAllVenues(data);
+    } catch (err) {
+      console.error("Failed to load all venues:", err);
+    }
+  };
+
   const fetchBookings = async () => {
     try {
       let url = 'admin/bookings/';
@@ -133,19 +201,21 @@ const AdminDashboard = () => {
 
   const loadTabContent = async () => {
     setLoading(true);
-    if (activeTab === 'overview') {
+    if (activeTab === 'overview' || activeTab === 'platform_revenue') {
       await fetchSummary();
     } else if (activeTab === 'approvals') {
       await fetchApprovals();
       await fetchUsers(); // Users are checked for pending registrations
+    } else if (activeTab === 'all_events') {
+      await fetchAllEvents();
+    } else if (activeTab === 'all_venues') {
+      await fetchAllVenues();
     } else if (activeTab === 'users') {
       await fetchUsers();
     } else if (activeTab === 'finance') {
       await fetchBookings();
     } else if (activeTab === 'complaints') {
       await fetchComplaints();
-    } else if (activeTab === 'audit') {
-      await fetchAuditLogs();
     }
     setLoading(false);
   };
@@ -160,16 +230,22 @@ const AdminDashboard = () => {
   }, [userSearch, userRoleFilter]);
 
   useEffect(() => {
+    setEventsPage(1);
+    if (activeTab === 'all_events') fetchAllEvents();
+  }, [eventSearch]);
+
+  useEffect(() => {
+    setVenuesPage(1);
+    if (activeTab === 'all_venues') fetchAllVenues();
+  }, [venueSearch]);
+
+  useEffect(() => {
     if (activeTab === 'finance') fetchBookings();
   }, [bookingSearch, bookingStatusFilter]);
 
   useEffect(() => {
     if (activeTab === 'complaints') fetchComplaints();
   }, [complaintSearch, complaintRoleFilter]);
-
-  useEffect(() => {
-    if (activeTab === 'audit') fetchAuditLogs();
-  }, [auditSearch, auditActionFilter]);
 
   const showFeedback = (text, type = 'success') => {
     setFeedbackMsg({ text, type });
@@ -211,9 +287,25 @@ const AdminDashboard = () => {
       const res = await api.post(`admin/events/${eventId}/decision/`, { decision });
       showFeedback(res.data.message);
       fetchApprovals();
+      fetchAllEvents();
       fetchSummary();
     } catch (err) {
       showFeedback("Failed to process event decision.", "error");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleEventDelete = async (eventId) => {
+    if (!window.confirm("Are you sure you want to delete this event?")) return;
+    setActionLoading(`delete-event-${eventId}`);
+    try {
+      await api.delete(`events/listings/${eventId}/`);
+      showFeedback("Event deleted successfully.");
+      fetchAllEvents();
+      fetchSummary();
+    } catch (err) {
+      showFeedback("Failed to delete event.", "error");
     } finally {
       setActionLoading(null);
     }
@@ -225,9 +317,25 @@ const AdminDashboard = () => {
       const res = await api.post(`admin/venues/${venueId}/decision/`, { decision });
       showFeedback(res.data.message);
       fetchApprovals();
+      fetchAllVenues();
       fetchSummary();
     } catch (err) {
       showFeedback("Failed to process venue decision.", "error");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleVenueDelete = async (venueId) => {
+    if (!window.confirm("Are you sure you want to delete this venue?")) return;
+    setActionLoading(`delete-venue-${venueId}`);
+    try {
+      await api.delete(`venues/listings/${venueId}/`);
+      showFeedback("Venue deleted successfully.");
+      fetchAllVenues();
+      fetchSummary();
+    } catch (err) {
+      showFeedback("Failed to delete venue.", "error");
     } finally {
       setActionLoading(null);
     }
@@ -367,6 +475,66 @@ const AdminDashboard = () => {
     );
   };
 
+  const paginatedEvents = allEvents.slice((eventsPage - 1) * itemsPerPage, eventsPage * itemsPerPage);
+  const totalEventPages = Math.ceil(allEvents.length / itemsPerPage);
+
+  const paginatedVenues = allVenues.slice((venuesPage - 1) * itemsPerPage, venuesPage * itemsPerPage);
+  const totalVenuePages = Math.ceil(allVenues.length / itemsPerPage);
+
+  const renderPagination = (currentPage, totalPages, onPageChange, totalItems) => {
+    if (totalItems === 0) return null;
+    
+    const startItem = (currentPage - 1) * itemsPerPage + 1;
+    const endItem = Math.min(currentPage * itemsPerPage, totalItems);
+    const pagesCount = Math.max(totalPages, 1);
+
+    return (
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-white/5 text-xs text-dark-muted font-semibold mt-4">
+        <div>
+          Showing <span className="text-white">{startItem}</span> to <span className="text-white">{endItem}</span> of <span className="text-white">{totalItems}</span> entries
+        </div>
+        <div className="flex items-center space-x-1">
+          <button
+            onClick={() => onPageChange(Math.max(currentPage - 1, 1))}
+            disabled={currentPage === 1}
+            className="px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-white disabled:opacity-40 disabled:hover:bg-white/5 transition-all"
+          >
+            Previous
+          </button>
+          {[...Array(pagesCount)].map((_, i) => {
+            const pageNum = i + 1;
+            if (pagesCount > 6 && Math.abs(currentPage - pageNum) > 2 && pageNum !== 1 && pageNum !== pagesCount) {
+              if (pageNum === 2 || pageNum === pagesCount - 1) {
+                return <span key={pageNum} className="px-2">...</span>;
+              }
+              return null;
+            }
+            return (
+              <button
+                key={pageNum}
+                onClick={() => onPageChange(pageNum)}
+                className={`w-8 h-8 rounded-lg transition-all ${
+                  currentPage === pageNum
+                    ? 'bg-red-500 text-white font-bold'
+                    : 'bg-white/5 hover:bg-white/10 text-dark-text'
+                }`}
+              >
+                {pageNum}
+              </button>
+            );
+          })}
+          <button
+            onClick={() => onPageChange(Math.min(currentPage + 1, pagesCount))}
+            disabled={currentPage === pagesCount}
+            className="px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-white disabled:opacity-40 disabled:hover:bg-white/5 transition-all"
+          >
+            Next
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
       
@@ -413,13 +581,10 @@ const AdminDashboard = () => {
         {/* Navigation Panel */}
         <div className="lg:col-span-1 flex flex-col space-y-2">
           {[
-            { id: 'overview', label: 'Overview Metrics', icon: Activity },
-            { id: 'approvals', label: 'Approvals Panel', icon: Check, countKey: 'approvals' },
             { id: 'users', label: 'User Control', icon: Users },
             { id: 'finance', label: 'Transactions & Refunds', icon: IndianRupee },
             { id: 'complaints', label: 'Complaints Panel', icon: MessageSquare },
-            { id: 'broadcast', label: 'Broadcast Alerts', icon: Send },
-            { id: 'audit', label: 'Security Audit Logs', icon: FileText }
+            { id: 'broadcast', label: 'Broadcast Alerts', icon: Send }
           ].map(tab => {
             const Icon = tab.icon;
             const hasBadge = tab.countKey && summary && (
@@ -477,7 +642,7 @@ const AdminDashboard = () => {
                   <div className="space-y-8">
                     
                     {/* Stat boxes */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
                       
                       <div className="glass-panel border border-white/10 rounded-2xl p-5 shadow-lg">
                         <div className="flex items-center justify-between">
@@ -501,6 +666,28 @@ const AdminDashboard = () => {
                         </div>
                         <h2 className="text-2xl font-extrabold text-white mt-3">{summary.finance.bookings_count}</h2>
                         <p className="text-[10px] text-dark-muted font-semibold mt-1">Confirmed event seats reserved</p>
+                      </div>
+
+                      <div className="glass-panel border border-white/10 rounded-2xl p-5 shadow-lg">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs text-dark-muted font-bold uppercase tracking-wider">Total Events</p>
+                          <div className="w-9 h-9 rounded-lg bg-pink-500/10 text-pink-400 flex items-center justify-center border border-pink-500/20">
+                            <Calendar className="w-4.5 h-4.5" />
+                          </div>
+                        </div>
+                        <h2 className="text-2xl font-extrabold text-white mt-3">{summary.total_events || 0}</h2>
+                        <p className="text-[10px] text-dark-muted font-semibold mt-1">Registered events in system</p>
+                      </div>
+
+                      <div className="glass-panel border border-white/10 rounded-2xl p-5 shadow-lg">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs text-dark-muted font-bold uppercase tracking-wider">Total Venues</p>
+                          <div className="w-9 h-9 rounded-lg bg-teal-500/10 text-teal-400 flex items-center justify-center border border-teal-500/20">
+                            <Building className="w-4.5 h-4.5" />
+                          </div>
+                        </div>
+                        <h2 className="text-2xl font-extrabold text-white mt-3">{summary.total_venues || 0}</h2>
+                        <p className="text-[10px] text-dark-muted font-semibold mt-1">Registered venue plots</p>
                       </div>
 
                       <div className="glass-panel border border-white/10 rounded-2xl p-5 shadow-lg">
@@ -533,6 +720,31 @@ const AdminDashboard = () => {
 
                     </div>
 
+                    {/* Chart Panels */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      
+                      <div className="glass-panel border border-white/10 rounded-2xl p-6 shadow-lg">
+                        <h3 className="text-sm font-bold text-dark-text uppercase tracking-wider border-b border-white/5 pb-3">Financial Sales Trend (Past 30 Days)</h3>
+                        <div className="mt-4">
+                          {renderSVGLineChart(summary.charts.sales, 'revenue', '#10b981', true)}
+                        </div>
+                      </div>
+
+                      <div className="glass-panel border border-white/10 rounded-2xl p-6 shadow-lg">
+                        <h3 className="text-sm font-bold text-dark-text uppercase tracking-wider border-b border-white/5 pb-3">User Signups Velocity (Past 30 Days)</h3>
+                        <div className="mt-4">
+                          {renderSVGLineChart(summary.charts.signups, 'count', '#ef4444', false)}
+                        </div>
+                      </div>
+
+                    </div>
+
+                  </div>
+                )}
+
+                {/* TAB: PLATFORM REVENUE */}
+                {activeTab === 'platform_revenue' && summary && (
+                  <div className="space-y-8">
                     {/* Platform Commission Summary */}
                     <div className="glass-panel border border-white/10 rounded-2xl p-6 shadow-lg bg-gradient-to-br from-slate-900 via-slate-900 to-red-950/15">
                       <div className="flex items-center space-x-2 border-b border-white/5 pb-4 mb-4">
@@ -659,26 +871,6 @@ const AdminDashboard = () => {
 
                       </div>
                     </div>
-
-                    {/* Chart Panels */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                      
-                      <div className="glass-panel border border-white/10 rounded-2xl p-6 shadow-lg">
-                        <h3 className="text-sm font-bold text-dark-text uppercase tracking-wider border-b border-white/5 pb-3">Financial Sales Trend (Past 30 Days)</h3>
-                        <div className="mt-4">
-                          {renderSVGLineChart(summary.charts.sales, 'revenue', '#10b981', true)}
-                        </div>
-                      </div>
-
-                      <div className="glass-panel border border-white/10 rounded-2xl p-6 shadow-lg">
-                        <h3 className="text-sm font-bold text-dark-text uppercase tracking-wider border-b border-white/5 pb-3">User Signups Velocity (Past 30 Days)</h3>
-                        <div className="mt-4">
-                          {renderSVGLineChart(summary.charts.signups, 'count', '#ef4444', false)}
-                        </div>
-                      </div>
-
-                    </div>
-
                   </div>
                 )}
 
@@ -1105,95 +1297,193 @@ const AdminDashboard = () => {
                   </div>
                 )}
 
-                {/* TAB: AUDIT LOGS */}
-                {activeTab === 'audit' && (
+                {/* TAB: ALL EVENTS */}
+                {activeTab === 'all_events' && (
                   <div className="glass-panel border border-white/10 rounded-2xl p-6 shadow-lg space-y-6">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/5 pb-4">
                       <div className="flex items-center space-x-2">
-                        <FileText className="w-4.5 h-4.5 text-red-400" />
-                        <h2 className="font-extrabold text-base text-dark-text uppercase tracking-wider">Security & Operation Audit Logs</h2>
+                        <Calendar className="w-5 h-5 text-red-400" />
+                        <h2 className="font-extrabold text-base text-dark-text uppercase tracking-wider">All Events</h2>
                       </div>
                       
-                      {/* Search and Filters */}
-                      <div className="flex flex-col sm:flex-row items-center gap-3">
-                        <div className="relative">
-                          <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-dark-muted">
-                            <Search className="w-4 h-4" />
-                          </span>
-                          <input
-                            type="text"
-                            value={auditSearch}
-                            onChange={(e) => setAuditSearch(e.target.value)}
-                            placeholder="Search logs..."
-                            className="glass-input pl-9 pr-4 py-2.5 rounded-xl text-xs w-48 placeholder-dark-muted text-white bg-dark-bg focus:outline-none"
-                          />
-                        </div>
-                        <select
-                          value={auditActionFilter}
-                          onChange={(e) => setAuditActionFilter(e.target.value)}
-                          className="glass-input px-3 py-2.5 rounded-xl text-xs text-dark-text bg-dark-bg focus:outline-none w-36"
-                        >
-                          <option value="">All Actions</option>
-                          <option value="USER_BLOCKED">User Blocked</option>
-                          <option value="USER_APPROVED">User Approved</option>
-                          <option value="EVENT_APPROVED">Event Approved</option>
-                          <option value="VENUE_APPROVED">Venue Approved</option>
-                          <option value="REFUND_ISSUED">Refund Issued</option>
-                          <option value="BROADCAST_SENT">Broadcast Alert</option>
-                        </select>
+                      {/* Search Bar */}
+                      <div className="relative max-w-md w-full md:w-80">
+                        <Search className="absolute left-3.5 top-3 w-4.5 h-4.5 text-dark-muted" />
+                        <input
+                          type="text"
+                          placeholder="Search events..."
+                          value={eventSearch}
+                          onChange={(e) => setEventSearch(e.target.value)}
+                          className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/5 focus:border-red-500/35 rounded-xl text-sm text-dark-text focus:outline-none transition-all placeholder:text-dark-muted font-semibold"
+                        />
                       </div>
                     </div>
 
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left text-xs border-collapse">
-                        <thead>
-                          <tr className="border-b border-white/5 text-dark-muted font-bold">
-                            <th className="pb-3">Timestamp</th>
-                            <th className="pb-3">Trigger User</th>
-                            <th className="pb-3">Security Action</th>
-                            <th className="pb-3">Target Resource</th>
-                            <th className="pb-3">Details</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {auditLogs.length === 0 ? (
-                            <tr>
-                              <td colSpan="5" className="text-center py-6 text-dark-muted">No security log entries found.</td>
-                            </tr>
-                          ) : (
-                            auditLogs.map(log => (
-                              <tr key={log.id} className="border-b border-white/5 hover:bg-white/[0.01]">
-                                <td className="py-3 font-mono text-[9px] text-dark-muted">
-                                  {new Date(log.timestamp).toLocaleString()}
-                                </td>
-                                <td className="py-3">
-                                  <p className="font-bold text-dark-text">{log.user_email}</p>
-                                  <p className="text-[9px] text-dark-muted font-mono">{log.ip_address || 'Internal'}</p>
-                                </td>
-                                <td className="py-3">
-                                  <span className={`px-2 py-0.5 rounded text-[8px] uppercase tracking-wider font-extrabold ${
-                                    log.action.includes('APPROVED') || log.action.includes('SUCCESS') ? 'bg-emerald-500/10 text-emerald-400' :
-                                    log.action.includes('BLOCKED') || log.action.includes('REJECTED') ? 'bg-red-500/10 text-red-400' :
-                                    'bg-blue-500/10 text-blue-400'
-                                  }`}>
-                                    {log.action.replace('_', ' ')}
-                                  </span>
-                                </td>
-                                <td className="py-3 text-dark-text">
-                                  <p className="font-bold">{log.resource}</p>
-                                  {log.resource_id && <p className="text-[9px] text-dark-muted font-mono">ID: {log.resource_id}</p>}
-                                </td>
-                                <td className="py-3 text-[10px] text-dark-muted">
-                                  <pre className="font-mono bg-black/20 p-2 rounded border border-white/[0.02] max-w-xs overflow-x-auto text-[9px]">
-                                    {JSON.stringify(log.details || {})}
-                                  </pre>
-                                </td>
+                    {allEvents.length === 0 ? (
+                      <p className="text-xs text-dark-muted py-4 text-center">No events found matching your search.</p>
+                    ) : (
+                      <>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left text-xs border-collapse">
+                            <thead>
+                              <tr className="border-b border-white/5 text-dark-muted font-bold">
+                                <th className="pb-3">Event Title</th>
+                                <th className="pb-3">Organizer</th>
+                                <th className="pb-3">Price</th>
+                                <th className="pb-3">Location</th>
+                                <th className="pb-3">Tickets Sold</th>
+                                <th className="pb-3">Status</th>
+                                <th className="pb-3 text-right">Actions</th>
                               </tr>
-                            ))
-                          )}
-                        </tbody>
-                      </table>
+                            </thead>
+                            <tbody>
+                              {paginatedEvents.map(event => (
+                                <tr key={event.id} className="border-b border-white/5 hover:bg-white/[0.01]">
+                                  <td className="py-3 font-bold text-dark-text">
+                                    <div className="flex items-center space-x-3">
+                                      <img
+                                        src={event.image || 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&w=80&q=80'}
+                                        alt={event.title}
+                                        className="w-10 h-10 object-cover rounded-lg border border-white/10 flex-shrink-0"
+                                        onError={(e) => {
+                                          e.target.src = 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&w=80&q=80';
+                                        }}
+                                      />
+                                      <span>{event.title}</span>
+                                    </div>
+                                  </td>
+                                  <td className="py-3 text-dark-muted">{event.organizer_details?.email || event.organizer}</td>
+                                  <td className="py-3 text-dark-text font-semibold">₹{event.price}</td>
+                                  <td className="py-3 text-dark-muted">{event.location}</td>
+                                  <td className="py-3 text-dark-muted">{event.tickets_sold} / {event.tickets_total}</td>
+                                  <td className="py-3">
+                                    {event.is_approved ? (
+                                      <span className="px-2 py-0.5 rounded text-[10px] uppercase font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Approved</span>
+                                    ) : (
+                                      <span className="px-2 py-0.5 rounded text-[10px] uppercase font-bold bg-yellow-500/10 text-yellow-400 border border-yellow-500/20">Pending</span>
+                                    )}
+                                  </td>
+                                  <td className="py-3 text-right space-x-2">
+                                    {!event.is_approved && (
+                                      <button
+                                        onClick={() => handleEventApproval(event.id, 'approve')}
+                                        disabled={actionLoading === `event-${event.id}`}
+                                        className="bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/25 text-emerald-400 px-2 py-1 rounded-lg font-bold text-[10px] disabled:opacity-40 transition-colors"
+                                      >
+                                        Approve
+                                      </button>
+                                    )}
+                                    <button
+                                      onClick={() => handleEventDelete(event.id)}
+                                      disabled={actionLoading === `delete-event-${event.id}`}
+                                      className="bg-red-500/15 hover:bg-red-500/25 border border-red-500/25 text-red-400 px-2 py-1 rounded-lg font-bold text-[10px] disabled:opacity-40 transition-colors"
+                                    >
+                                      Delete
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                        {renderPagination(eventsPage, totalEventPages, setEventsPage, allEvents.length)}
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {/* TAB: ALL VENUES */}
+                {activeTab === 'all_venues' && (
+                  <div className="glass-panel border border-white/10 rounded-2xl p-6 shadow-lg space-y-6">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/5 pb-4">
+                      <div className="flex items-center space-x-2">
+                        <Building className="w-5 h-5 text-red-400" />
+                        <h2 className="font-extrabold text-base text-dark-text uppercase tracking-wider">All Venues</h2>
+                      </div>
+                      
+                      {/* Search Bar */}
+                      <div className="relative max-w-md w-full md:w-80">
+                        <Search className="absolute left-3.5 top-3 w-4.5 h-4.5 text-dark-muted" />
+                        <input
+                          type="text"
+                          placeholder="Search venues..."
+                          value={venueSearch}
+                          onChange={(e) => setVenueSearch(e.target.value)}
+                          className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/5 focus:border-red-500/35 rounded-xl text-sm text-dark-text focus:outline-none transition-all placeholder:text-dark-muted font-semibold"
+                        />
+                      </div>
                     </div>
+
+                    {allVenues.length === 0 ? (
+                      <p className="text-xs text-dark-muted py-4 text-center">No venues found matching your search.</p>
+                    ) : (
+                      <>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left text-xs border-collapse">
+                            <thead>
+                              <tr className="border-b border-white/5 text-dark-muted font-bold">
+                                <th className="pb-3">Venue Name</th>
+                                <th className="pb-3">Owner</th>
+                                <th className="pb-3">Rent/Day</th>
+                                <th className="pb-3">Location</th>
+                                <th className="pb-3">Capacity</th>
+                                <th className="pb-3">Status</th>
+                                <th className="pb-3 text-right">Actions</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {paginatedVenues.map(venue => (
+                                <tr key={venue.id} className="border-b border-white/5 hover:bg-white/[0.01]">
+                                  <td className="py-3 font-bold text-dark-text">
+                                    <div className="flex items-center space-x-3">
+                                      <img
+                                        src={venue.image || 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&w=80&q=80'}
+                                        alt={venue.name}
+                                        className="w-10 h-10 object-cover rounded-lg border border-white/10 flex-shrink-0"
+                                        onError={(e) => {
+                                          e.target.src = 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&w=80&q=80';
+                                        }}
+                                      />
+                                      <span>{venue.name}</span>
+                                    </div>
+                                  </td>
+                                  <td className="py-3 text-dark-muted">{venue.owner_details?.email || venue.owner}</td>
+                                  <td className="py-3 text-dark-text font-semibold">₹{venue.price_per_day}</td>
+                                  <td className="py-3 text-dark-muted">{venue.location}</td>
+                                  <td className="py-3 text-dark-muted">{venue.capacity} guests</td>
+                                  <td className="py-3">
+                                    {venue.is_approved ? (
+                                      <span className="px-2 py-0.5 rounded text-[10px] uppercase font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Approved</span>
+                                    ) : (
+                                      <span className="px-2 py-0.5 rounded text-[10px] uppercase font-bold bg-yellow-500/10 text-yellow-400 border border-yellow-500/20">Pending</span>
+                                    )}
+                                  </td>
+                                  <td className="py-3 text-right space-x-2">
+                                    {!venue.is_approved && (
+                                      <button
+                                        onClick={() => handleVenueApproval(venue.id, 'approve')}
+                                        disabled={actionLoading === `venue-${venue.id}`}
+                                        className="bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/25 text-emerald-400 px-2 py-1 rounded-lg font-bold text-[10px] disabled:opacity-40 transition-colors"
+                                      >
+                                        Approve
+                                      </button>
+                                    )}
+                                    <button
+                                      onClick={() => handleVenueDelete(venue.id)}
+                                      disabled={actionLoading === `delete-venue-${venue.id}`}
+                                      className="bg-red-500/15 hover:bg-red-500/25 border border-red-500/25 text-red-400 px-2 py-1 rounded-lg font-bold text-[10px] disabled:opacity-40 transition-colors"
+                                    >
+                                      Delete
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                        {renderPagination(venuesPage, totalVenuePages, setVenuesPage, allVenues.length)}
+                      </>
+                    )}
                   </div>
                 )}
 

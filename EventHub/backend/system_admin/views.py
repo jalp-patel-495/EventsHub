@@ -37,8 +37,15 @@ class AdminSummaryView(views.APIView):
         total_organizers = User.objects.filter(role='organizer').count()
         total_owners = User.objects.filter(role='plot_owner').count()
         
+        # Venue bookings: status is approved
+        from venues.models import VenueBooking
+        completed_venue_bookings = VenueBooking.objects.filter(
+            status='approved'
+        )
+        completed_venues_revenue = completed_venue_bookings.aggregate(total=Sum('total_price'))['total'] or 0.0
+
         # Booking & Revenue Stats
-        total_bookings = Booking.objects.filter(status='confirmed').count()
+        total_bookings = Booking.objects.filter(status='confirmed').count() + completed_venue_bookings.count()
         
         # Event bookings: status is confirmed
         completed_event_bookings = Booking.objects.filter(
@@ -52,8 +59,8 @@ class AdminSummaryView(views.APIView):
         )
         refunded_events_revenue = refunded_event_bookings.aggregate(total=Sum('total_price'))['total'] or 0.0
         
-        # Total Event Revenue generated (retained portion for active + cancelled)
-        total_revenue = float(completed_events_revenue) + (float(refunded_events_revenue) * 0.5)
+        # Total Event Revenue generated (retained portion for active + cancelled) + Venue Revenue generated
+        total_revenue = float(completed_events_revenue) + (float(refunded_events_revenue) * 0.5) + float(completed_venues_revenue)
 
         # Detailed event ticket sales splits
         event_gross_sales = float(completed_events_revenue) + float(refunded_events_revenue)
@@ -69,13 +76,6 @@ class AdminSummaryView(views.APIView):
         # Commission calculations
         # Admin gets 20% on active bookings, 10% on refunded bookings
         admin_organizer_commission = (float(completed_events_revenue) * 0.20) + (float(refunded_events_revenue) * 0.10)
-
-        # Venue bookings: status is approved
-        from venues.models import VenueBooking
-        completed_venue_bookings = VenueBooking.objects.filter(
-            status='approved'
-        )
-        completed_venues_revenue = completed_venue_bookings.aggregate(total=Sum('total_price'))['total'] or 0.0
         admin_venue_commission = float(completed_venues_revenue) * 0.20
 
         admin_total_commission = admin_organizer_commission + admin_venue_commission
@@ -85,6 +85,10 @@ class AdminSummaryView(views.APIView):
         pending_owners = User.objects.filter(role='plot_owner', is_approved=False).count()
         pending_events = Event.objects.filter(is_approved=False).count()
         pending_venues = Venue.objects.filter(is_approved=False).count()
+        
+        # Total counts
+        total_events = Event.objects.count()
+        total_venues = Venue.objects.count()
         
         # Analytics - Signups in past 30 days (grouped by week/date, here we do a simple daily count)
         signups_past_30_days = []
@@ -109,6 +113,8 @@ class AdminSummaryView(views.APIView):
         sales_past_30_days.reverse()
 
         return Response({
+            "total_events": total_events,
+            "total_venues": total_venues,
             "users": {
                 "customers": total_customers,
                 "organizers": total_organizers,

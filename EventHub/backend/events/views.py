@@ -19,7 +19,7 @@ from events.live_events import get_live_weather, get_live_ahmedabad_events
 class CustomPagination(PageNumberPagination):
     page_size = 6
     page_size_query_param = 'page_size'
-    max_page_size = 50
+    max_page_size = 1000
 
 class CategoryListView(generics.ListAPIView):
     queryset = Category.objects.all()
