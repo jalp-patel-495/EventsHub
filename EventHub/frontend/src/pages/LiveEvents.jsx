@@ -4,7 +4,7 @@ import api from '../api/api';
 import { useAuth } from '../context/AuthContext';
 import BookingModal from '../components/BookingModal';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CloudSun, Navigation, Search, MapPin, Tag, RefreshCw, Calendar, Clock, Send, MessageSquare, User as UserIcon, Sparkles } from 'lucide-react';
+import { CloudSun, Navigation, Search, MapPin, Tag, RefreshCw, Calendar, Clock, Send, MessageSquare, User as UserIcon, Sparkles, ExternalLink } from 'lucide-react';
 
 const LiveEvents = () => {
   const { isAuthenticated, user } = useAuth();
@@ -154,8 +154,8 @@ const LiveEvents = () => {
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
         <div>
-          <h1 className="text-3xl font-extrabold text-dark-text tracking-tight">Ahmedabad Live Events</h1>
-
+          <h1 className="text-3xl font-extrabold text-dark-text tracking-tight">Live Events Feed</h1>
+          <p className="text-dark-muted text-sm mt-1">Real-time events powered by <span className="text-emerald-400 font-semibold">Google Events</span> via SerpAPI</p>
         </div>
         <div className="flex items-center space-x-3">
           <button
@@ -232,7 +232,7 @@ const LiveEvents = () => {
           {loading ? (
             <div className="text-center py-20 bg-white/[0.01] border border-white/5 rounded-2xl">
               <RefreshCw className="w-10 h-10 text-brand-primary animate-spin mx-auto mb-4" />
-              <p className="text-dark-muted text-sm">Fetching live feeds from Ticketmaster & local coordinators...</p>
+              <p className="text-dark-muted text-sm">Fetching live feeds from <span className="text-emerald-400 font-semibold">Google Events</span> real-time API...</p>
             </div>
           ) : filteredEvents.length === 0 ? (
             <div className="glass-panel text-center py-20 rounded-2xl">
@@ -263,8 +263,14 @@ const LiveEvents = () => {
                       </div>
                     )}
                     {/* Source Badge */}
-                    <span className="absolute top-4 left-4 bg-black/60 backdrop-blur-md text-[9px] text-emerald-400 font-bold px-2.5 py-1 rounded-full uppercase tracking-wider border border-white/10">
-                      {event.source}
+                    <span className={`absolute top-4 left-4 backdrop-blur-md text-[9px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider border ${
+                      event.source === 'OpenWebNinja'
+                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                        : event.source === 'Ticketmaster'
+                        ? 'bg-blue-500/20 text-blue-300 border-blue-500/30'
+                        : 'bg-black/60 text-emerald-400 border-white/10'
+                    }`}>
+                      🔴 LIVE · {event.source}
                     </span>
                     {/* Price tag */}
                     <span className="absolute bottom-4 right-4 bg-brand-primary text-white text-xs font-extrabold px-3 py-1.5 rounded-lg shadow-lg">
@@ -280,6 +286,20 @@ const LiveEvents = () => {
                     <p className="text-xs text-dark-muted mt-2 line-clamp-3 leading-relaxed">
                       {event.description}
                     </p>
+
+                    {/* Venue Info */}
+                    {(event.venue_name || event.venue_rating) && (
+                      <div className="flex items-center space-x-2 mt-2 text-xs text-dark-muted">
+                        <MapPin className="w-3.5 h-3.5 text-brand-primary flex-shrink-0" />
+                        <span className="font-semibold text-dark-text">{event.venue_name}</span>
+                        {event.venue_rating && (
+                          <span className="flex items-center space-x-1 text-amber-400 font-bold">
+                            <span>★</span>
+                            <span>{event.venue_rating}</span>
+                          </span>
+                        )}
+                      </div>
+                    )}
 
                     {/* Timing info */}
                     <div className="space-y-2 mt-4 text-xs text-dark-muted border-t border-white/5 pt-4">
@@ -298,7 +318,7 @@ const LiveEvents = () => {
                     </div>
 
                     {/* Navigation actions */}
-                    <div className="mt-5 pt-3 border-t border-white/5 flex items-center justify-between">
+                    <div className="mt-5 pt-3 border-t border-white/5 flex items-center justify-between gap-2">
                       <a
                         href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location)}`}
                         target="_blank"
@@ -306,14 +326,27 @@ const LiveEvents = () => {
                         className="flex items-center space-x-1.5 text-xs text-brand-primary hover:text-emerald-400 font-bold transition-colors"
                       >
                         <Navigation className="w-4 h-4" />
-                        <span>View Directions</span>
+                        <span>Directions</span>
                       </a>
-                      <button
-                        onClick={() => handleBuyTickets(event)}
-                        className="bg-brand-primary hover:bg-emerald-600 text-white text-[10px] font-extrabold px-3 py-1.5 rounded-lg shadow-sm transition-all transform hover:-translate-y-0.5"
-                      >
-                        {event.price === 0 ? 'Get Free Ticket' : `Buy Tickets`}
-                      </button>
+                      <div className="flex items-center gap-2">
+                        {event.url && (
+                          <a
+                            href={event.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="flex items-center space-x-1 text-[10px] font-bold text-blue-400 hover:text-blue-300 border border-blue-500/20 hover:border-blue-500/40 px-2.5 py-1.5 rounded-lg transition-all"
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                            <span>View</span>
+                          </a>
+                        )}
+                        <button
+                          onClick={() => handleBuyTickets(event)}
+                          className="bg-brand-primary hover:bg-emerald-600 text-white text-[10px] font-extrabold px-3 py-1.5 rounded-lg shadow-sm transition-all transform hover:-translate-y-0.5"
+                        >
+                          {event.price === 0 ? 'Get Free Ticket' : `Buy Tickets`}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </motion.div>
