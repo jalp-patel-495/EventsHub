@@ -70,6 +70,7 @@ class VenueBooking(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     payment_status = models.CharField(max_length=20, default='pending')  # pending, paid, failed, refunded
     payment_id = models.CharField(max_length=100, blank=True, null=True)
+    cancel_requested = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     # ── Sub-facilities chosen by Booker ──

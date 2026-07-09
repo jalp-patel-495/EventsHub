@@ -99,7 +99,7 @@ class VenueBookingSerializer(serializers.ModelSerializer):
         fields = (
             'id', 'venue', 'venue_details', 'organizer', 'organizer_details',
             'start_date', 'end_date', 'total_price', 'status', 'payment_status',
-            'payment_id', 'created_at',
+            'payment_id', 'cancel_requested', 'created_at',
             'use_catering', 'catering_plates', 'use_dj', 'use_decor',
             'catering_cuisine', 'catering_description', 'dj_package', 'dj_equipment', 'decor_theme'
         )

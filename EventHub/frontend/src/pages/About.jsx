@@ -25,20 +25,20 @@ const About = () => {
       id: 'customers',
       label: 'For Customers',
       icon: Ticket,
-      gradient: 'from-emerald-400 to-teal-500',
+      gradient: 'from-blue-500 to-blue-600',
       tagline: 'Discover & Experience Seamless Bookings',
       features: [
         {
           title: 'Curated Local Events',
           description: 'Explore handpicked concerts, traditional garba nights, stand-up comedy, art exhibitions, and food festivals around Ahmedabad.',
           icon: Compass,
-          color: 'text-emerald-400'
+          color: 'text-blue-400'
         },
         {
           title: 'Instant Booking & QR Passes',
           description: 'Secure your seats in seconds. Receive a secure, encrypted QR code pass that can be scanned seamlessly at the venue gate.',
           icon: QrCode,
-          color: 'text-teal-400'
+          color: 'text-blue-400'
         },
         {
           title: 'Secure Payments via Razorpay',
@@ -83,7 +83,7 @@ const About = () => {
           title: 'Direct Client Relations',
           description: 'Enjoy seamless messaging and direct announcement boards to keep your ticketholders engaged.',
           icon: Users,
-          color: 'text-pink-400'
+          color: 'text-blue-400'
         }
       ]
     },
@@ -91,7 +91,7 @@ const About = () => {
       id: 'owners',
       label: 'For Venue Owners',
       icon: Building2,
-      gradient: 'from-purple-400 to-pink-500',
+      gradient: 'from-indigo-500 to-blue-600',
       tagline: 'Maximize Revenue from Plots & Lawns',
       features: [
         {
@@ -104,19 +104,19 @@ const About = () => {
           title: 'Smart Availability Calendars',
           description: 'Lock slots, adjust off-season prices, and list slots available for hire so organizers can query directly.',
           icon: CalendarRange,
-          color: 'text-pink-400'
+          color: 'text-blue-400'
         },
         {
           title: 'Secure Contracting & Billing',
           description: 'Process security deposits, lease agreements, and rentals directly with transparent payout dashboards.',
           icon: ShieldCheck,
-          color: 'text-rose-400'
+          color: 'text-blue-400'
         },
         {
           title: 'Increased Ahmedabad Footprint',
           description: 'Tap directly into Ahmedabad\'s premier organizer network. Rent your property for festivals, weddings, or corporate events.',
           icon: MapPin,
-          color: 'text-red-400'
+          color: 'text-blue-400'
         }
       ]
     }
