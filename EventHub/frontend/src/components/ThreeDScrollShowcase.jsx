@@ -81,7 +81,7 @@ const ThreeDScrollShowcase = () => {
       ctx.fillRect(0, 0, 512, 300);
 
       // Border glow outline
-      const themeColor = '#F84464'; // EventHub pink
+      const themeColor = '#3B82F6'; // EventHub pink
       ctx.strokeStyle = themeColor;
       ctx.lineWidth = 6;
       ctx.strokeRect(10, 10, 492, 280);
@@ -144,7 +144,7 @@ const ThreeDScrollShowcase = () => {
         }
       }
 
-      ctx.fillStyle = currentThemeLight ? '#F84464' : '#FF4B72';
+      ctx.fillStyle = currentThemeLight ? '#3B82F6' : '#60A5FA';
       ctx.font = 'bold 13px "Outfit", sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText('VIP PASS', 75, 185);
@@ -158,7 +158,7 @@ const ThreeDScrollShowcase = () => {
       ctx.fillStyle = currentThemeLight ? '#111827' : '#FFFFFF';
       ctx.font = '800 24px "Outfit", sans-serif';
       ctx.fillText('AHMEDABAD', 175, 75);
-      ctx.fillStyle = '#F84464';
+      ctx.fillStyle = '#3B82F6';
       ctx.fillText('EVENT HUB', 175, 105);
 
       ctx.fillStyle = currentThemeLight ? '#4B5563' : '#9CA3AF';

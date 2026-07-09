@@ -79,7 +79,7 @@ const ThreeDTicket = ({ variant = 'vip' }) => {
       ctx.fillRect(0, 0, 512, 300);
 
       // Border glow outline based on variant
-      let themeColor = '#F84464'; // Default 'vip' pink
+      let themeColor = '#3B82F6'; // Default 'vip' pink
       if (variant === 'access') themeColor = '#3B82F6';
       else if (variant === 'creator') themeColor = '#F59E0B';
       else if (variant === 'secure') themeColor = '#10B981';
@@ -258,7 +258,7 @@ const ThreeDTicket = ({ variant = 'vip' }) => {
         ctx.beginPath();
         ctx.roundRect(qrX - 6, qrY - 6, qrSize + 12, qrSize + 12, 10);
         ctx.fill();
-        ctx.strokeStyle = '#F84464';
+        ctx.strokeStyle = '#3B82F6';
         ctx.lineWidth = 2;
         ctx.stroke();
 
@@ -289,7 +289,7 @@ const ThreeDTicket = ({ variant = 'vip' }) => {
           }
         }
 
-        ctx.fillStyle = isLight ? '#F84464' : '#FF4B72';
+        ctx.fillStyle = isLight ? '#3B82F6' : '#60A5FA';
         ctx.font = 'bold 14px "Outfit", sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText('VIP PASS', 75, 185);
@@ -369,7 +369,7 @@ const ThreeDTicket = ({ variant = 'vip' }) => {
         ctx.fillStyle = isLight ? '#111827' : '#FFFFFF';
         ctx.font = '800 24px "Outfit", sans-serif';
         ctx.fillText('AHMEDABAD', 175, 75);
-        ctx.fillStyle = '#F84464';
+        ctx.fillStyle = '#3B82F6';
         ctx.fillText('EVENT HUB', 175, 105);
 
         ctx.fillStyle = isLight ? '#4B5563' : '#9CA3AF';

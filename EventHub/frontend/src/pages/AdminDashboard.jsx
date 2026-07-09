@@ -642,7 +642,7 @@ const AdminDashboard = () => {
                   <div className="space-y-8">
                     
                     {/* Stat boxes */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
                       
                       <div className="glass-panel border border-white/10 rounded-2xl p-5 shadow-lg">
                         <div className="flex items-center justify-between">
@@ -692,6 +692,17 @@ const AdminDashboard = () => {
 
                       <div className="glass-panel border border-white/10 rounded-2xl p-5 shadow-lg">
                         <div className="flex items-center justify-between">
+                          <p className="text-xs text-dark-muted font-bold uppercase tracking-wider">Total Venues Booked</p>
+                          <div className="w-9 h-9 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center border border-blue-500/20">
+                            <Building className="w-4.5 h-4.5" />
+                          </div>
+                        </div>
+                        <h2 className="text-2xl font-extrabold text-white mt-3">{summary.finance.venue_bookings_count || 0}</h2>
+                        <p className="text-[10px] text-dark-muted font-semibold mt-1">Approved venue hire slots</p>
+                      </div>
+
+                      <div className="glass-panel border border-white/10 rounded-2xl p-5 shadow-lg">
+                        <div className="flex items-center justify-between">
                           <p className="text-xs text-dark-muted font-bold uppercase tracking-wider">Registered Accounts</p>
                           <div className="w-9 h-9 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center border border-purple-500/20">
                             <Users className="w-4.5 h-4.5" />
@@ -726,14 +737,14 @@ const AdminDashboard = () => {
                       <div className="glass-panel border border-white/10 rounded-2xl p-6 shadow-lg">
                         <h3 className="text-sm font-bold text-dark-text uppercase tracking-wider border-b border-white/5 pb-3">Financial Sales Trend (Past 30 Days)</h3>
                         <div className="mt-4">
-                          {renderSVGLineChart(summary.charts.sales, 'revenue', '#10b981', true)}
+                          {renderSVGLineChart(summary.charts.sales, 'revenue', '#3B82F6', true)}
                         </div>
                       </div>
 
                       <div className="glass-panel border border-white/10 rounded-2xl p-6 shadow-lg">
                         <h3 className="text-sm font-bold text-dark-text uppercase tracking-wider border-b border-white/5 pb-3">User Signups Velocity (Past 30 Days)</h3>
                         <div className="mt-4">
-                          {renderSVGLineChart(summary.charts.signups, 'count', '#ef4444', false)}
+                          {renderSVGLineChart(summary.charts.signups, 'count', '#3B82F6', false)}
                         </div>
                       </div>
 
@@ -746,9 +757,9 @@ const AdminDashboard = () => {
                 {activeTab === 'platform_revenue' && summary && (
                   <div className="space-y-8">
                     {/* Platform Commission Summary */}
-                    <div className="glass-panel border border-white/10 rounded-2xl p-6 shadow-lg bg-gradient-to-br from-slate-900 via-slate-900 to-red-950/15">
+                    <div className="glass-panel border border-white/10 rounded-2xl p-6 shadow-lg bg-gradient-to-br from-slate-900 via-slate-900 to-blue-950/15">
                       <div className="flex items-center space-x-2 border-b border-white/5 pb-4 mb-4">
-                        <IndianRupee className="w-5 h-5 text-[#F84464]" />
+                        <IndianRupee className="w-5 h-5 text-[#3B82F6]" />
                         <h2 className="font-extrabold text-base text-dark-text uppercase tracking-wider">
                           Platform Revenue & Commission (20% Cut)
                         </h2>
@@ -1226,13 +1237,17 @@ const AdminDashboard = () => {
                                 </td>
                                 <td className="py-4 text-right">
                                   {booking.payment_status === 'paid' ? (
-                                    <button
-                                      onClick={() => setRefundModal({ show: true, booking })}
-                                      disabled={actionLoading === `refund-${booking.id}`}
-                                      className="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/15 px-2.5 py-1.5 rounded-lg font-bold text-[9px] disabled:opacity-40 transition-colors"
-                                    >
-                                      {actionLoading === `refund-${booking.id}` ? 'Processing...' : 'Refund Order'}
-                                    </button>
+                                    booking.event_details ? (
+                                      <span className="text-[10px] text-dark-muted font-semibold">Handled by Organizer</span>
+                                    ) : (
+                                      <button
+                                        onClick={() => setRefundModal({ show: true, booking })}
+                                        disabled={actionLoading === `refund-${booking.id}`}
+                                        className="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/15 px-2.5 py-1.5 rounded-lg font-bold text-[9px] disabled:opacity-40 transition-colors"
+                                      >
+                                        {actionLoading === `refund-${booking.id}` ? 'Processing...' : 'Refund Order'}
+                                      </button>
+                                    )
                                   ) : (
                                     <span className="text-[10px] text-dark-muted font-semibold">Processed</span>
                                   )}
@@ -1707,7 +1722,8 @@ const AdminDashboard = () => {
                   <p><strong className="text-white">Event:</strong> {refundModal.booking.event_details?.title}</p>
                   <p><strong className="text-white">Customer:</strong> {refundModal.booking.user_details?.email}</p>
                   <p><strong className="text-white">Tickets Count:</strong> {refundModal.booking.tickets_count}</p>
-                  <p><strong className="text-white">Refund Amount:</strong> <span className="text-emerald-400 font-extrabold">₹{refundModal.booking.total_price}</span></p>
+                  <p><strong className="text-white">Original Payment:</strong> <span className="text-dark-text font-bold">₹{parseFloat(refundModal.booking.total_price).toFixed(2)}</span></p>
+                  <p><strong className="text-white">Refund Amount (50% Policy):</strong> <span className="text-emerald-400 font-extrabold">₹{(parseFloat(refundModal.booking.total_price) * 0.5).toFixed(2)}</span></p>
                   {refundModal.booking.razorpay_payment_id ? (
                     <p><strong className="text-white">Payment Ref:</strong> {refundModal.booking.razorpay_payment_id}</p>
                   ) : (

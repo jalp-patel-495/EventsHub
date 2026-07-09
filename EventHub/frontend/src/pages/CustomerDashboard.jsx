@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import api from '../api/api';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, Heart, Bell, Trash2, ShieldAlert, CheckCircle, Ticket, XCircle, Download, Sparkles, MapPin, Building, Star, X } from 'lucide-react';
+import { Calendar, Heart, Bell, Trash2, ShieldAlert, CheckCircle, Ticket, XCircle, Download, Sparkles, MapPin, Building, Star, X, Coins } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -10,11 +10,12 @@ import VenuePaymentModal from '../components/VenuePaymentModal';
 
 const CustomerDashboard = () => {
   const { user } = useAuth();
+  const location = useLocation();
   const [bookings, setBookings] = useState([]);
   const [wishlist, setWishlist] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('bookings'); // bookings, wishlist, notifications
+  const [activeTab, setActiveTab] = useState('dashboard'); // dashboard, bookings, wishlist, notifications
   const [message, setMessage] = useState('');
   const [recommendations, setRecommendations] = useState(null);
   const [loadingRecommendations, setLoadingRecommendations] = useState(false);
@@ -78,6 +79,8 @@ const CustomerDashboard = () => {
   // Ticket Cancellation States
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [selectedCancelBooking, setSelectedCancelBooking] = useState(null);
+  const [cancelType, setCancelType] = useState('event'); // 'event' or 'venue'
+  const [successPopupMessage, setSuccessPopupMessage] = useState('');
   const [ticketsToCancel, setTicketsToCancel] = useState(1);
   const [cancelStep, setCancelStep] = useState('confirm'); // 'confirm' or 'card'
   const [cardNumber, setCardNumber] = useState('');
@@ -112,6 +115,14 @@ const CustomerDashboard = () => {
     } finally {
       setLoadingRecommendations(false);
     }
+  };
+
+  const handleCancelVenueBooking = (booking) => {
+    setSelectedCancelBooking(booking);
+    setCancelType('venue');
+    setCancelModalOpen(true);
+    setCancelStep('confirm');
+    setTicketsToCancel(1);
   };
 
   useEffect(() => {
@@ -199,6 +210,16 @@ const CustomerDashboard = () => {
     fetchDashboardData();
   }, []);
 
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tabParam = params.get('tab');
+    if (tabParam && ['dashboard', 'bookings', 'wishlist', 'notifications', 'venues', 'recommendations'].includes(tabParam)) {
+      setActiveTab(tabParam);
+    } else if (!tabParam) {
+      setActiveTab('dashboard');
+    }
+  }, [location.search]);
+
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
@@ -245,30 +266,45 @@ const CustomerDashboard = () => {
         alert("Card number must be 16 digits.");
         return;
       }
-      if (cvv.length < 3 || cvv.length > 4) {
-        alert("CVV must be 3 or 4 digits.");
+      if (cvv.length !== 3) {
+        alert("CVV must be 3 digits.");
         return;
       }
     }
 
     setBookingActionLoading(true);
     try {
-      await api.post(`events/bookings/${selectedCancelBooking.id}/cancel/`, {
-        cancel_count: ticketsToCancel,
-        card_number: cardNumber,
-        cardholder_name: cardholderName,
-        expiry_date: expiryDate,
-        cvv: cvv
-      });
-      
-      const pricePerTicket = parseFloat(selectedCancelBooking.total_price) / selectedCancelBooking.tickets_count;
-      const cancelledAmount = pricePerTicket * ticketsToCancel;
-      const refundAmt = cancelledAmount * 0.5;
-      
-      if (selectedCancelBooking.payment_status === 'paid') {
-        alert(`your amount will be refund in provided card detais in 5-7 details`);
+      if (cancelType === 'venue') {
+        await api.post(`venues/bookings/${selectedCancelBooking.id}/cancel/`, {
+          card_number: cardNumber,
+          cardholder_name: cardholderName,
+          expiry_date: expiryDate,
+          cvv: cvv
+        });
+        
+        if (selectedCancelBooking.payment_status === 'paid') {
+          setSuccessPopupMessage("your amount will be refund in provided card detais in 5-7 details");
+        } else {
+          setSuccessPopupMessage("Cancellation request sent successfully.");
+        }
       } else {
-        alert(`Successfully cancelled ${ticketsToCancel} ticket(s).`);
+        await api.post(`events/bookings/${selectedCancelBooking.id}/cancel/`, {
+          cancel_count: ticketsToCancel,
+          card_number: cardNumber,
+          cardholder_name: cardholderName,
+          expiry_date: expiryDate,
+          cvv: cvv
+        });
+        
+        const pricePerTicket = parseFloat(selectedCancelBooking.total_price) / selectedCancelBooking.tickets_count;
+        const cancelledAmount = pricePerTicket * ticketsToCancel;
+        const refundAmt = cancelledAmount * 0.5;
+        
+        if (selectedCancelBooking.payment_status === 'paid') {
+          setSuccessPopupMessage("your amount will be refund in provided card detais in 5-7 details");
+        } else {
+          setSuccessPopupMessage(`Successfully cancelled ${ticketsToCancel} ticket(s).`);
+        }
       }
       
       setCancelModalOpen(false);
@@ -331,6 +367,8 @@ const CustomerDashboard = () => {
   };
 
   const unreadNotificationsCount = notifications.filter(n => !n.is_read).length;
+  const totalRefundedAmount = bookings.filter(b => b.status === 'refunded').reduce((sum, b) => sum + (parseFloat(b.total_price) * 0.5), 0);
+  const totalVenuesBooked = venueBookings.filter(vb => vb.status === 'approved').length;
 
   if (loading) {
     return (
@@ -345,11 +383,73 @@ const CustomerDashboard = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-      {/* Dashboard Welcome */}
-      <div className="mb-10">
-        <h1 className="text-3xl font-black tracking-tight text-dark-text">Attendee Dashboard</h1>
-        <p className="text-dark-muted mt-1">Manage your event registrations, wishlists, and notifications</p>
-      </div>
+      {(activeTab === 'dashboard' || activeTab === 'recommendations') && (
+        <>
+          {/* Dashboard Welcome */}
+          <div className="mb-10">
+            <h1 className="text-3xl font-black tracking-tight text-dark-text">Attendee Dashboard</h1>
+            <p className="text-dark-muted mt-1">Manage your event registrations, wishlists, and notifications</p>
+          </div>
+
+          {/* Grid Stats */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-10">
+            {/* Bookings Stat */}
+            <div className="glass-panel rounded-2xl p-6 flex items-center space-x-4">
+              <div className="p-3 bg-blue-500/15 text-blue-400 rounded-xl">
+                <Ticket className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-dark-muted uppercase tracking-wider">Tickets Booked</p>
+                <h3 className="text-2xl font-bold mt-1">{bookings.filter(b => b.status === 'confirmed').length}</h3>
+              </div>
+            </div>
+
+            {/* Venues Booked Stat */}
+            <div className="glass-panel rounded-2xl p-6 flex items-center space-x-4">
+              <div className="p-3 bg-teal-500/15 text-teal-400 rounded-xl">
+                <Building className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-dark-muted uppercase tracking-wider">Venues Booked</p>
+                <h3 className="text-2xl font-bold mt-1">{totalVenuesBooked}</h3>
+              </div>
+            </div>
+
+            {/* Refunds Approved Stat */}
+            <div className="glass-panel rounded-2xl p-6 flex items-center space-x-4">
+              <div className="p-3 bg-emerald-500/15 text-emerald-400 rounded-xl">
+                <Coins className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-dark-muted uppercase tracking-wider">Refunds Approved</p>
+                <h3 className="text-xl font-bold mt-1">₹{totalRefundedAmount.toFixed(2)}</h3>
+              </div>
+            </div>
+
+            {/* Wishlist Stat */}
+            <div className="glass-panel rounded-2xl p-6 flex items-center space-x-4">
+              <div className="p-3 bg-rose-500/15 text-rose-400 rounded-xl">
+                <Heart className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-dark-muted uppercase tracking-wider">Wishlisted Events</p>
+                <h3 className="text-2xl font-bold mt-1">{wishlist.length}</h3>
+              </div>
+            </div>
+
+            {/* Notifications Stat */}
+            <div className="glass-panel rounded-2xl p-6 flex items-center space-x-4">
+              <div className="p-3 bg-amber-500/15 text-amber-400 rounded-xl">
+                <Bell className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-dark-muted uppercase tracking-wider">Unread Alerts</p>
+                <h3 className="text-2xl font-bold mt-1">{unreadNotificationsCount}</h3>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
 
       {message && (
         <motion.div
@@ -362,70 +462,80 @@ const CustomerDashboard = () => {
         </motion.div>
       )}
 
-      {/* Grid Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-        {/* Bookings Stat */}
-        <div className="glass-panel rounded-2xl p-6 flex items-center space-x-4">
-          <div className="p-3 bg-blue-500/15 text-blue-400 rounded-xl">
-            <Ticket className="w-6 h-6" />
-          </div>
-          <div>
-            <p className="text-xs font-semibold text-dark-muted uppercase tracking-wider">Tickets Booked</p>
-            <h3 className="text-2xl font-bold mt-1">{bookings.filter(b => b.status === 'confirmed').length}</h3>
-          </div>
+      {/* Tab Selectors - Only show when on Dashboard/Overview or recommendations tab */}
+      {(activeTab === 'dashboard' || activeTab === 'recommendations') && (
+        <div className="flex border-b border-white/5 space-x-6 mb-8 overflow-x-auto scrollbar-none whitespace-nowrap pb-1">
+          {['dashboard', 'recommendations'].map((tab) => {
+            return (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`pb-4 text-sm font-semibold capitalize relative transition-colors ${
+                  activeTab === tab ? 'text-brand-primary' : 'text-dark-muted hover:text-dark-text'
+                }`}
+              >
+                <span>{tab === 'recommendations' ? 'AI Suggestions' : 'Overview'}</span>
+                {activeTab === tab && (
+                  <motion.div
+                    layoutId="activeTabUnderline"
+                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-primary"
+                  />
+                )}
+              </button>
+            );
+          })}
         </div>
-
-        {/* Wishlist Stat */}
-        <div className="glass-panel rounded-2xl p-6 flex items-center space-x-4">
-          <div className="p-3 bg-rose-500/15 text-rose-400 rounded-xl">
-            <Heart className="w-6 h-6" />
-          </div>
-          <div>
-            <p className="text-xs font-semibold text-dark-muted uppercase tracking-wider">Wishlisted Events</p>
-            <h3 className="text-2xl font-bold mt-1">{wishlist.length}</h3>
-          </div>
-        </div>
-
-        {/* Notifications Stat */}
-        <div className="glass-panel rounded-2xl p-6 flex items-center space-x-4">
-          <div className="p-3 bg-emerald-500/15 text-emerald-400 rounded-xl">
-            <Bell className="w-6 h-6" />
-          </div>
-          <div>
-            <p className="text-xs font-semibold text-dark-muted uppercase tracking-wider">Unread Alerts</p>
-            <h3 className="text-2xl font-bold mt-1">{unreadNotificationsCount}</h3>
-          </div>
-        </div>
-      </div>
-
-      {/* Tab Selectors */}
-      <div className="flex border-b border-white/5 space-x-6 mb-8 overflow-x-auto scrollbar-none whitespace-nowrap pb-1">
-        {['bookings', 'venues', 'wishlist', 'notifications', 'recommendations'].map((tab) => {
-          const count = tab === 'bookings' ? bookings.length : tab === 'wishlist' ? wishlist.length : tab === 'notifications' ? unreadNotificationsCount : tab === 'venues' ? venueBookings.length : 'AI';
-          return (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`pb-4 text-sm font-semibold capitalize relative transition-colors ${
-                activeTab === tab ? 'text-brand-primary' : 'text-dark-muted hover:text-dark-text'
-              }`}
-            >
-              <span>{tab === 'recommendations' ? 'AI Suggestions' : tab === 'venues' ? 'Venue Rentals' : tab}</span>
-              <span className="ml-1.5 px-2 py-0.5 text-xs bg-white/5 text-dark-text rounded-full font-medium">{count}</span>
-              {activeTab === tab && (
-                <motion.div
-                  layoutId="activeTabUnderline"
-                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-primary"
-                />
-              )}
-            </button>
-          );
-        })}
-      </div>
+      )}
 
       {/* Tabs Content */}
       <div>
         <AnimatePresence mode="wait">
+          {activeTab === 'dashboard' && (
+            <motion.div
+              key="dashboard"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 15 }}
+              className="grid grid-cols-1 lg:grid-cols-2 gap-8"
+            >
+              {/* Welcome Banner */}
+              <div className="glass-panel rounded-2xl p-8 flex flex-col justify-between space-y-6">
+                <div>
+                  <h3 className="text-xl font-bold text-dark-text">Welcome back, {user?.first_name || 'Attendee'}! 👋</h3>
+                  <p className="text-sm text-dark-muted mt-2 leading-relaxed">
+                    Manage your event registrations, explore curated local recommendations, check your wishlist, and track your rentals directly from your personal portal.
+                  </p>
+                </div>
+                <div className="flex gap-4">
+                  <Link to="/explore" className="bg-brand-primary text-white text-xs font-semibold px-4 py-2.5 rounded-xl hover:bg-blue-600 transition-all">
+                    Explore New Events
+                  </Link>
+                </div>
+              </div>
+              
+              {/* Quick Stats Summary / Info */}
+              <div className="glass-panel rounded-2xl p-8 flex flex-col space-y-6 justify-between">
+                <div>
+                  <h3 className="text-xl font-bold text-dark-text font-sans">Quick Summary</h3>
+                  <div className="mt-4 space-y-3">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-dark-muted">Total Tickets Booked:</span>
+                      <span className="font-semibold text-dark-text">{bookings.filter(b => b.status === 'confirmed').length}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-dark-muted">Items in Wishlist:</span>
+                      <span className="font-semibold text-dark-text">{wishlist.length}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-dark-muted">Active Venue Bookings:</span>
+                      <span className="font-semibold text-dark-text">{venueBookings.length}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
           {activeTab === 'bookings' && (
             <motion.div
               key="bookings"
@@ -480,20 +590,28 @@ const CustomerDashboard = () => {
                           <p className="font-bold text-brand-primary mt-0.5">₹{booking.total_price}</p>
                         )}
                       </div>
-                      {booking.payment_status === 'refunded' && (
+                      {booking.payment_status === 'refunded' ? (
                         <div>
                           <span className="text-xs font-semibold text-dark-muted uppercase">Refunded</span>
                           <p className="font-bold text-emerald-400 mt-0.5">₹{(parseFloat(booking.total_price) * 0.5).toFixed(2)}</p>
                         </div>
-                      )}
+                      ) : booking.refund_requested ? (
+                        <div>
+                          <span className="text-xs font-semibold text-dark-muted uppercase">Refund Pending</span>
+                          <p className="font-bold text-yellow-400 mt-0.5 font-sans">₹{(parseFloat(booking.total_price) * 0.5).toFixed(2)}</p>
+                        </div>
+                      ) : null}
                       <div>
                         <span className="text-xs font-semibold text-dark-muted uppercase">Status</span>
                         <span className={`block text-xs font-bold px-2 py-0.5 rounded mt-0.5 uppercase ${
                           booking.payment_status === 'refunded' ? 'bg-red-500/10 text-red-400' :
+                          booking.refund_requested ? 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/10' :
                           booking.status === 'confirmed' ? 'bg-emerald-500/10 text-emerald-400' : 
                           'bg-red-500/10 text-red-400'
                         }`}>
-                          {booking.payment_status === 'refunded' ? 'Refunded' : booking.status}
+                          {booking.payment_status === 'refunded' ? 'Refunded' :
+                           booking.refund_requested ? 'Refund Pending' :
+                           booking.status}
                         </span>
                       </div>
                       {booking.status === 'confirmed' && (
@@ -746,11 +864,11 @@ const CustomerDashboard = () => {
                               <p className="text-[10px] text-dark-muted mt-1">{vb.start_date} to {vb.end_date}</p>
                             </div>
                             <span className={`px-2 py-0.5 rounded text-[9px] uppercase font-extrabold ${
-                              vb.status === 'approved' ? 'bg-emerald-500/10 text-emerald-400' :
+                              vb.status === 'approved' ? (vb.cancel_requested ? 'bg-yellow-500/10 text-yellow-400' : 'bg-emerald-500/10 text-emerald-400') :
                               vb.status === 'pending' ? 'bg-yellow-500/10 text-yellow-400' :
                               'bg-red-500/10 text-red-400'
                             }`}>
-                              {vb.status}
+                              {vb.cancel_requested && vb.status === 'approved' ? 'Cancel Requested' : vb.status}
                             </span>
                           </div>
 
@@ -780,29 +898,40 @@ const CustomerDashboard = () => {
                             <span className="font-black text-dark-text font-mono">₹{parseFloat(vb.total_price).toLocaleString('en-IN')}</span>
                           </div>
 
-                          {vb.status === 'approved' && (
-                            <div className="flex gap-2 w-full">
-                              <a
-                                href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(vb.venue_details?.location || vb.venue_details?.name)}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex-1 flex items-center justify-center space-x-1.5 bg-white/5 hover:bg-white/10 text-brand-primary hover:text-white py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all border border-white/5"
-                              >
-                                <MapPin className="w-3.5 h-3.5" />
-                                <span>Get Directions</span>
-                              </a>
-                              <button
-                                onClick={() => handleOpenReviewModal('venue', vb.venue_details)}
-                                className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all border flex items-center justify-center gap-1 ${
-                                  vb.venue_details?.reviews?.some(r => r.user === user?.id)
-                                    ? 'bg-white/5 text-dark-muted border-white/5 cursor-not-allowed'
-                                    : 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border-amber-500/20'
-                                }`}
-                                disabled={vb.venue_details?.reviews?.some(r => r.user === user?.id)}
-                              >
-                                <Star className={`w-3.5 h-3.5 ${vb.venue_details?.reviews?.some(r => r.user === user?.id) ? '' : 'fill-amber-400'}`} />
-                                <span>{vb.venue_details?.reviews?.some(r => r.user === user?.id) ? 'Rated' : 'Rate'}</span>
-                              </button>
+                           {vb.status === 'approved' && (
+                            <div className="flex flex-col gap-2 w-full">
+                              <div className="flex gap-2 w-full">
+                                <a
+                                  href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(vb.venue_details?.location || vb.venue_details?.name)}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex-1 flex items-center justify-center space-x-1.5 bg-white/5 hover:bg-white/10 text-brand-primary hover:text-white py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all border border-white/5"
+                                >
+                                  <MapPin className="w-3.5 h-3.5" />
+                                  <span>Get Directions</span>
+                                </a>
+                                <button
+                                  onClick={() => handleOpenReviewModal('venue', vb.venue_details)}
+                                  className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all border flex items-center justify-center gap-1 ${
+                                    vb.venue_details?.reviews?.some(r => r.user === user?.id)
+                                      ? 'bg-white/5 text-dark-muted border-white/5 cursor-not-allowed'
+                                      : 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border-amber-500/20'
+                                  }`}
+                                  disabled={vb.venue_details?.reviews?.some(r => r.user === user?.id)}
+                                >
+                                  <Star className={`w-3.5 h-3.5 ${vb.venue_details?.reviews?.some(r => r.user === user?.id) ? '' : 'fill-amber-400'}`} />
+                                  <span>{vb.venue_details?.reviews?.some(r => r.user === user?.id) ? 'Rated' : 'Rate'}</span>
+                                </button>
+                              </div>
+                              {!vb.cancel_requested && (
+                                <button
+                                  onClick={() => handleCancelVenueBooking(vb)}
+                                  className="w-full flex items-center justify-center space-x-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all border border-red-500/10"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                  <span>Cancel Rental</span>
+                                </button>
+                              )}
                             </div>
                           )}
                         </div>
@@ -1039,7 +1168,9 @@ const CustomerDashboard = () => {
               className="glass-panel w-full max-w-md rounded-2xl p-6 shadow-2xl relative border border-white/10 space-y-6 text-left my-8"
             >
               <div className="flex justify-between items-center border-b border-white/5 pb-3">
-                <h3 className="text-base font-bold text-dark-text uppercase tracking-wider">Cancel Tickets</h3>
+                <h3 className="text-base font-bold text-dark-text uppercase tracking-wider">
+                  {cancelType === 'venue' ? 'Cancel Rental' : 'Cancel Tickets'}
+                </h3>
                 <button
                   onClick={() => {
                     setCancelModalOpen(false);
@@ -1059,18 +1190,41 @@ const CustomerDashboard = () => {
               {cancelStep === 'confirm' ? (
                 <>
                   <div className="space-y-3">
-                    <div className="bg-white/5 border border-white/5 p-4 rounded-xl">
-                      <h4 className="font-bold text-sm text-dark-text">{selectedCancelBooking.event_details.title}</h4>
-                      <p className="text-[10px] text-dark-muted mt-1">Booked: {selectedCancelBooking.tickets_count} ticket(s) ({selectedCancelBooking.ticket_category})</p>
-                      <p className="text-xs font-semibold text-brand-primary mt-2">Paid amount: ₹{selectedCancelBooking.total_price}</p>
-                    </div>
-                    
-                    <div className="bg-amber-500/10 border border-amber-500/20 text-amber-400 p-3 rounded-xl text-[10px] leading-relaxed">
-                      <strong>Refund Policy:</strong> Cancellation requests receive a <strong>50% refund</strong> of the cancelled tickets' value. The remaining 50% is non-refundable.
-                    </div>
+                    {cancelType === 'venue' ? (
+                      <>
+                        <div className="bg-white/5 border border-white/5 p-4 rounded-xl">
+                          <h4 className="font-bold text-sm text-dark-text">{selectedCancelBooking.venue_details?.name}</h4>
+                          <p className="text-[10px] text-dark-muted mt-1">Rental Ground: {selectedCancelBooking.venue_details?.location}</p>
+                          <p className="text-[10px] text-dark-muted mt-0.5">Dates: {selectedCancelBooking.start_date} to {selectedCancelBooking.end_date}</p>
+                          <p className="text-xs font-semibold text-brand-primary mt-2">Paid amount: ₹{parseFloat(selectedCancelBooking.total_price).toLocaleString('en-IN')}</p>
+                        </div>
+                        
+                        <div className="bg-amber-500/10 border border-amber-500/20 text-amber-400 p-3 rounded-xl text-[10px] leading-relaxed">
+                          <strong>Refund Policy:</strong> Cancellation requests receive a <strong>90% refund</strong> of the booking's value upon owner approval. The remaining 10% is non-refundable.
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="bg-white/5 border border-white/5 p-4 rounded-xl">
+                          <h4 className="font-bold text-sm text-dark-text">{selectedCancelBooking.event_details?.title}</h4>
+                          <p className="text-[10px] text-dark-muted mt-1">Booked: {selectedCancelBooking.tickets_count} ticket(s) ({selectedCancelBooking.ticket_category})</p>
+                          <p className="text-xs font-semibold text-brand-primary mt-2">Paid amount: ₹{selectedCancelBooking.total_price}</p>
+                        </div>
+                        
+                        <div className="bg-amber-500/10 border border-amber-500/20 text-amber-400 p-3 rounded-xl text-[10px] leading-relaxed">
+                          <strong>Refund Policy:</strong> Cancellation requests receive a <strong>50% refund</strong> of the cancelled tickets' value. The remaining 50% is non-refundable.
+                        </div>
+                      </>
+                    )}
                   </div>
 
-                  {selectedCancelBooking.tickets_count > 1 ? (
+                  {cancelType === 'venue' ? (
+                    <div className="space-y-4">
+                      <p className="text-xs text-dark-muted leading-relaxed">
+                        Cancelling will request a refund of 90% (₹{(parseFloat(selectedCancelBooking.total_price) * 0.9).toFixed(2)}), subject to plot owner approval.
+                      </p>
+                    </div>
+                  ) : selectedCancelBooking.tickets_count > 1 ? (
                     <div className="space-y-4">
                       <div>
                         <label className="block text-xs font-semibold text-dark-muted uppercase tracking-wider mb-2">Number of Tickets to Cancel</label>
@@ -1140,11 +1294,19 @@ const CustomerDashboard = () => {
                 </>
               ) : (
                 <div className="space-y-4">
-                  <div className="bg-blue-500/10 border border-blue-500/20 text-blue-400 p-3 rounded-xl text-[10px] leading-relaxed">
-                    <strong>Refund Account:</strong> Please enter your card details below. A 50% refund of ₹{(
-                      (parseFloat(selectedCancelBooking.total_price) / selectedCancelBooking.tickets_count) * ticketsToCancel * 0.5
-                    ).toFixed(2)} will be credited to this card within 5-7 days.
-                  </div>
+                  {cancelType === 'venue' ? (
+                    <div className="bg-blue-500/10 border border-blue-500/20 text-blue-400 p-3 rounded-xl text-[10px] leading-relaxed">
+                      <strong>Refund Account:</strong> Please enter your card details below. A 90% refund of ₹{(
+                        parseFloat(selectedCancelBooking.total_price) * 0.9
+                      ).toFixed(2)} will be credited to this card within 5-7 days after owner approval.
+                    </div>
+                  ) : (
+                    <div className="bg-blue-500/10 border border-blue-500/20 text-blue-400 p-3 rounded-xl text-[10px] leading-relaxed">
+                      <strong>Refund Account:</strong> Please enter your card details below. A 50% refund of ₹{(
+                        (parseFloat(selectedCancelBooking.total_price) / selectedCancelBooking.tickets_count) * ticketsToCancel * 0.5
+                      ).toFixed(2)} will be credited to this card within 5-7 days.
+                    </div>
+                  )}
 
                   <div className="space-y-3">
                     <div>
@@ -1196,7 +1358,7 @@ const CustomerDashboard = () => {
                           type="password"
                           value={cvv}
                           onChange={(e) => {
-                            const val = e.target.value.replace(/\D/g, '').slice(0, 4);
+                            const val = e.target.value.replace(/\D/g, '').slice(0, 3);
                             setCvv(val);
                           }}
                           placeholder="123"
@@ -1315,6 +1477,38 @@ const CustomerDashboard = () => {
                   </button>
                 </div>
               </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Success Message Popup */}
+      <AnimatePresence>
+        {successPopupMessage && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[999] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="glass-panel w-full max-w-sm rounded-2xl p-6 shadow-2xl relative border border-white/10 text-center space-y-5 bg-dark-bg/95"
+            >
+              <div className="flex flex-col items-center space-y-3">
+                <div className="w-12 h-12 bg-emerald-500/10 text-emerald-400 rounded-full flex items-center justify-center border border-emerald-500/20">
+                  <CheckCircle className="w-6 h-6" />
+                </div>
+                <h3 className="text-base font-bold text-dark-text uppercase tracking-wider">Request Processed</h3>
+                <p className="text-xs text-dark-muted leading-relaxed px-2">
+                  {successPopupMessage}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setSuccessPopupMessage('')}
+                className="w-full bg-brand-primary hover:bg-[#0ea5e9] text-white py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-md"
+              >
+                OK
+              </button>
             </motion.div>
           </div>
         )}

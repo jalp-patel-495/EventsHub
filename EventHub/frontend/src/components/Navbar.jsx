@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Menu, X, LogOut, User as UserIcon, Calendar, Building, ShieldAlert, ChevronDown, Bell, Check, CheckCheck, Sun, Moon, QrCode, LayoutDashboard, Mail } from 'lucide-react';
+import { Menu, X, LogOut, User as UserIcon, Calendar, Building, ShieldAlert, ChevronDown, Bell, Check, CheckCheck, Sun, Moon, QrCode, LayoutDashboard, Mail, Heart, Compass, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../api/api';
 
@@ -10,6 +10,19 @@ const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [toast, setToast] = useState({ show: false, title: '', message: '' });
@@ -131,11 +144,11 @@ const Navbar = () => {
         ]
       : user?.role === 'organizer'
         ? [
-            { name: 'My Listings', path: '/organizer/events' },
+            { name: 'Dashboard', path: '/organizer/events' },
             { name: 'Ticket Sales', path: '/organizer/sales' },
             { name: 'Venue Rentals', path: '/organizer/rentals' },
             { name: 'Customer Reviews', path: '/organizer/reviews' },
-            { name: 'Revenue Analytics', path: '/organizer/analytics' },
+            { name: 'Revenue', path: '/organizer/analytics' },
             { name: 'Ticket Scanner', path: '/organizer/scanner' },
           ]
         : user?.role === 'admin'
@@ -146,10 +159,7 @@ const Navbar = () => {
               { name: 'All Events', path: '/admin/events' },
               { name: 'All Venues', path: '/admin/venues' },
             ]
-          : [
-              { name: 'Explore', path: '/explore' },
-              { name: 'Live Feed', path: '/live-feed' },
-            ]
+          : []
     : [
         { name: 'Home', path: '/' },
         { name: 'Explore', path: '/explore' },
@@ -169,7 +179,12 @@ const Navbar = () => {
         return [];
       default: // customer
         return [
-          { name: 'My Bookings', path: '/bookings', icon: <Calendar className="w-4 h-4" /> },
+          { name: 'Dashboard', path: '/bookings', icon: <LayoutDashboard className="w-4 h-4" /> },
+          { name: 'Explore', path: '/explore', icon: <Compass className="w-4 h-4" /> },
+          { name: 'Live Feed', path: '/live-feed', icon: <Zap className="w-4 h-4" /> },
+          { name: 'Venue Rentals', path: '/bookings?tab=venues', icon: <Building className="w-4 h-4" /> },
+          { name: 'My Bookings', path: '/bookings?tab=bookings', icon: <Calendar className="w-4 h-4" /> },
+          { name: 'Wishlist', path: '/bookings?tab=wishlist', icon: <Heart className="w-4 h-4" /> },
         ];
     }
   };
@@ -179,7 +194,10 @@ const Navbar = () => {
     if (path === '/admin/overview' && (location.pathname === '/admin/overview' || location.pathname === '/admin-dashboard')) {
       return true;
     }
-    return location.pathname === path;
+    if (path.includes('?')) {
+      return (location.pathname + location.search) === path;
+    }
+    return location.pathname === path && !location.search;
   };
 
   return (
@@ -347,7 +365,7 @@ const Navbar = () => {
                   </div>
 
                   {/* Profile Dropdown */}
-                  <div className="relative">
+                  <div className="relative" ref={dropdownRef}>
                     <button
                       onClick={() => {
                         setDropdownOpen(!dropdownOpen);
@@ -374,7 +392,6 @@ const Navbar = () => {
                     <AnimatePresence>
                       {dropdownOpen && (
                         <>
-                          <div className="fixed inset-0 z-10" onClick={() => setDropdownOpen(false)}></div>
                           <motion.div
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -391,7 +408,7 @@ const Navbar = () => {
                             </div>
                             <Link
                               to={user?.role === 'admin' ? '/admin-dashboard' : user?.role === 'organizer' ? '/organizer/events' : user?.role === 'plot_owner' ? '/venues/manage' : '/bookings'}
-                              className="flex items-center space-x-2 px-4 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-900 transition-colors"
+                              className="flex items-center space-x-2 px-4 py-2 text-sm text-slate-300 hover:text-white hover:bg-blue-600 transition-colors"
                               onClick={() => setDropdownOpen(false)}
                             >
                               <LayoutDashboard className="w-4 h-4 text-brand-primary" />
@@ -399,7 +416,7 @@ const Navbar = () => {
                             </Link>
                             <Link
                               to="/profile"
-                              className="flex items-center space-x-2 px-4 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-900 transition-colors"
+                              className="flex items-center space-x-2 px-4 py-2 text-sm text-slate-300 hover:text-white hover:bg-blue-600 transition-colors"
                               onClick={() => setDropdownOpen(false)}
                             >
                               <UserIcon className="w-4 h-4 text-brand-primary" />
@@ -407,7 +424,7 @@ const Navbar = () => {
                             </Link>
                             <Link
                               to="/contact"
-                              className="flex items-center space-x-2 px-4 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-900 transition-colors"
+                              className="flex items-center space-x-2 px-4 py-2 text-sm text-slate-300 hover:text-white hover:bg-blue-600 transition-colors"
                               onClick={() => setDropdownOpen(false)}
                             >
                               <Mail className="w-4 h-4 text-brand-primary" />

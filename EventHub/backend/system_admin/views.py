@@ -44,6 +44,12 @@ class AdminSummaryView(views.APIView):
         )
         completed_venues_revenue = completed_venue_bookings.aggregate(total=Sum('total_price'))['total'] or 0.0
 
+        # Refunded/Cancelled venue bookings: status is cancelled
+        refunded_venue_bookings = VenueBooking.objects.filter(
+            status='cancelled'
+        )
+        refunded_venues_revenue = refunded_venue_bookings.aggregate(total=Sum('total_price'))['total'] or 0.0
+
         # Booking & Revenue Stats
         total_bookings = Booking.objects.filter(status='confirmed').count() + completed_venue_bookings.count()
         
@@ -59,8 +65,8 @@ class AdminSummaryView(views.APIView):
         )
         refunded_events_revenue = refunded_event_bookings.aggregate(total=Sum('total_price'))['total'] or 0.0
         
-        # Total Event Revenue generated (retained portion for active + cancelled) + Venue Revenue generated
-        total_revenue = float(completed_events_revenue) + (float(refunded_events_revenue) * 0.5) + float(completed_venues_revenue)
+        # Total Event Revenue generated (retained portion for active + cancelled) + Venue Revenue generated (active + 10% retained cancelled)
+        total_revenue = float(completed_events_revenue) + (float(refunded_events_revenue) * 0.5) + float(completed_venues_revenue) + (float(refunded_venues_revenue) * 0.10)
 
         # Detailed event ticket sales splits
         event_gross_sales = float(completed_events_revenue) + float(refunded_events_revenue)
@@ -76,7 +82,8 @@ class AdminSummaryView(views.APIView):
         # Commission calculations
         # Admin gets 20% on active bookings, 10% on refunded bookings
         admin_organizer_commission = (float(completed_events_revenue) * 0.20) + (float(refunded_events_revenue) * 0.10)
-        admin_venue_commission = float(completed_venues_revenue) * 0.20
+        # Admin gets 20% on active venue bookings, 5% on cancelled venue bookings
+        admin_venue_commission = (float(completed_venues_revenue) * 0.20) + (float(refunded_venues_revenue) * 0.05)
 
         admin_total_commission = admin_organizer_commission + admin_venue_commission
 
@@ -128,6 +135,7 @@ class AdminSummaryView(views.APIView):
                 "admin_venue_commission": admin_venue_commission,
                 "completed_events_revenue": float(completed_events_revenue),
                 "completed_venues_revenue": float(completed_venues_revenue),
+                "venue_bookings_count": completed_venue_bookings.count(),
                 
                 # New detailed stats
                 "event_gross_sales": event_gross_sales,
@@ -420,16 +428,17 @@ class IssueBookingRefundView(views.APIView):
             except Exception as e:
                 return Response({"error": f"Razorpay refund failed: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+        # Deduct sold count from event if not already cancelled
+        if booking.status != 'cancelled':
+            event = booking.event
+            event.tickets_sold = max(0, event.tickets_sold - booking.tickets_count)
+            event.save()
+
         # Process local DB changes
         booking.payment_status = 'refunded'
         booking.status = 'cancelled'
         booking.refund_requested = False
         booking.save()
-
-        # Deduct sold count from event
-        event = booking.event
-        event.tickets_sold = max(0, event.tickets_sold - booking.tickets_count)
-        event.save()
         
         # Log Audit
         log_audit(

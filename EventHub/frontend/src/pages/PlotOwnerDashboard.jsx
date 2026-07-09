@@ -543,10 +543,11 @@ const PlotOwnerDashboard = () => {
 
   const grossRentalIncome = approvedBookings.reduce((sum, b) => sum + parseFloat(b.total_price), 0);
   const plotOwnerNet = approvedBookings.reduce((sum, b) => sum + parseFloat(b.total_price) * 0.8, 0) +
-                       cancelledBookings.reduce((sum, b) => sum + parseFloat(b.total_price) * 0.1, 0);
-  const adminVenueCut = approvedBookings.reduce((sum, b) => sum + parseFloat(b.total_price) * 0.2, 0);
+                       cancelledBookings.reduce((sum, b) => sum + parseFloat(b.total_price) * 0.05, 0);
+  const adminVenueCut = approvedBookings.reduce((sum, b) => sum + parseFloat(b.total_price) * 0.2, 0) +
+                        cancelledBookings.reduce((sum, b) => sum + parseFloat(b.total_price) * 0.05, 0);
   const totalRefundedToOrg = cancelledBookings.reduce((sum, b) => sum + parseFloat(b.total_price) * 0.9, 0);
-  const cancellationRetainedProfit = cancelledBookings.reduce((sum, b) => sum + parseFloat(b.total_price) * 0.1, 0);
+  const cancellationRetainedProfit = cancelledBookings.reduce((sum, b) => sum + parseFloat(b.total_price) * 0.05, 0);
 
   const allReviews = venues.reduce((arr, v) => {
     if (v.reviews && Array.isArray(v.reviews)) {
@@ -825,20 +826,27 @@ const PlotOwnerDashboard = () => {
                               <div className="text-xs space-y-0.5">
                                 <span className="text-dark-muted block line-through">₹{booking.total_price}</span>
                                 <span className="text-blue-400 block font-normal">Refunded: ₹{(parseFloat(booking.total_price) * 0.9).toFixed(2)}</span>
-                                <span className="text-emerald-400 block">Profit (10%): ₹{(parseFloat(booking.total_price) * 0.1).toFixed(2)}</span>
+                                <span className="text-emerald-400 block">Owner Profit (5%): ₹{(parseFloat(booking.total_price) * 0.05).toFixed(2)}</span>
+                                <span className="text-blue-400 block font-normal">Admin Commission (5%): ₹{(parseFloat(booking.total_price) * 0.05).toFixed(2)}</span>
                               </div>
                             ) : (
                               <span className="text-brand-primary">₹{booking.total_price}</span>
                             )}
                           </td>
                           <td className="px-4 py-4">
-                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${
-                              booking.status === 'approved' ? 'bg-emerald-500/10 text-emerald-400' :
-                              booking.status === 'cancelled' ? 'bg-red-500/10 text-red-400' :
-                              booking.status === 'rejected' ? 'bg-red-500/10 text-red-400' : 'bg-amber-500/10 text-amber-400'
-                            }`}>
-                              {booking.status}
-                            </span>
+                            {booking.cancel_requested && booking.status === 'approved' ? (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-yellow-500/10 text-yellow-400">
+                                Cancel Requested
+                              </span>
+                            ) : (
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${
+                                booking.status === 'approved' ? 'bg-emerald-500/10 text-emerald-400' :
+                                booking.status === 'cancelled' ? 'bg-red-500/10 text-red-400' :
+                                booking.status === 'rejected' ? 'bg-red-500/10 text-red-400' : 'bg-amber-500/10 text-amber-400'
+                              }`}>
+                                {booking.status}
+                              </span>
+                            )}
                           </td>
                           <td className="px-4 py-4 text-right">
                             {booking.status === 'pending' && (
@@ -856,6 +864,18 @@ const PlotOwnerDashboard = () => {
                                   title="Reject"
                                 >
                                   <XCircle className="w-4 h-4" />
+                                </button>
+                              </div>
+                            )}
+                            {booking.cancel_requested && booking.status === 'approved' && (
+                              <div className="flex justify-end space-x-2">
+                                <button
+                                  onClick={() => handleBookingAction(booking.id, 'approve_cancel')}
+                                  className="px-2.5 py-1 bg-red-500/10 text-red-400 hover:bg-red-500/20 rounded-lg transition-all flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider border border-red-500/10"
+                                  title="Approve Cancellation Request"
+                                >
+                                  <CheckCircle className="w-3.5 h-3.5" />
+                                  <span>Approve Cancel</span>
                                 </button>
                               </div>
                             )}

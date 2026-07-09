@@ -106,7 +106,7 @@ const AIChatbotWidget = () => {
         onClick={() => setIsOpen(!isOpen)}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        className="w-14 h-14 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 rounded-full flex items-center justify-center text-white shadow-xl shadow-emerald-950/30 transition-all border border-emerald-400/20"
+        className="w-14 h-14 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-full flex items-center justify-center text-white shadow-xl shadow-blue-950/30 transition-all border border-blue-400/20"
       >
         <AnimatePresence mode="wait">
           {isOpen ? (
@@ -132,16 +132,16 @@ const AIChatbotWidget = () => {
             className="absolute bottom-20 right-0 w-[420px] max-w-[calc(100vw-2rem)] h-[580px] bg-dark-card border border-white/10 rounded-2xl shadow-2xl flex flex-col overflow-hidden backdrop-blur-xl"
           >
             {/* Header */}
-            <div className="bg-gradient-to-r from-emerald-500 to-teal-600 p-4 text-white flex items-center justify-between shadow-lg">
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-4 text-white flex items-center justify-between shadow-lg">
               <div className="flex items-center space-x-3">
                 <div className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center">
-                  <Sparkles className="w-5 h-5 text-emerald-300 animate-pulse" />
+                  <Sparkles className="w-5 h-5 text-blue-300 animate-pulse" />
                 </div>
                 <div>
                   <h3 className="font-bold text-sm tracking-wide">Event Hub AI Assistant</h3>
                   <div className="flex items-center space-x-1.5 mt-0.5">
-                    <span className="w-1.5 h-1.5 bg-emerald-300 rounded-full animate-ping"></span>
-                    <span className="text-[10px] text-emerald-100 font-semibold tracking-wider uppercase">AI Live Active</span>
+                    <span className="w-1.5 h-1.5 bg-blue-300 rounded-full animate-ping"></span>
+                    <span className="text-[10px] text-blue-100 font-semibold tracking-wider uppercase">AI Live Active</span>
                   </div>
                 </div>
               </div>
@@ -199,7 +199,7 @@ const AIChatbotWidget = () => {
                     <button
                       key={idx}
                       onClick={() => handleSendMessage(action.query)}
-                      className="flex items-center space-x-2 text-left bg-white/5 hover:bg-white/10 text-xs text-dark-muted hover:text-dark-text px-3 py-2 rounded-xl border border-white/5 hover:border-emerald-500/20 transition-all"
+                      className="flex items-center space-x-2 text-left bg-white/5 hover:bg-white/10 text-xs text-dark-muted hover:text-dark-text px-3 py-2 rounded-xl border border-white/5 hover:border-blue-500/20 transition-all"
                     >
                       {action.icon}
                       <span className="truncate">{action.label}</span>
@@ -211,7 +211,7 @@ const AIChatbotWidget = () => {
 
             {/* Input Footer */}
             <div className="p-4 border-t border-white/5 bg-dark-bg/60 backdrop-blur-md">
-              <div className="flex items-center space-x-2 relative bg-white/5 border border-white/10 rounded-xl px-3 py-1 focus-within:border-emerald-500/40 transition-all">
+              <div className="flex items-center space-x-2 relative bg-white/5 border border-white/10 rounded-xl px-3 py-1 focus-within:border-blue-500/40 transition-all">
                 <input
                   type="text"
                   value={inputText}
@@ -223,7 +223,7 @@ const AIChatbotWidget = () => {
                 <button
                   onClick={() => handleSendMessage()}
                   disabled={!inputText.trim() || isTyping}
-                  className="bg-brand-primary hover:bg-emerald-600 disabled:opacity-30 text-white w-8 h-8 rounded-lg flex items-center justify-center transition-all shadow-md"
+                  className="bg-brand-primary hover:bg-blue-600 disabled:opacity-30 text-white w-8 h-8 rounded-lg flex items-center justify-center transition-all shadow-md"
                 >
                   <Send className="w-4 h-4" />
                 </button>

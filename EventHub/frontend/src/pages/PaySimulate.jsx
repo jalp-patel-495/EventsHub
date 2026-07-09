@@ -57,8 +57,8 @@ const PaySimulate = () => {
       >
         {/* Header */}
         <div className="flex items-center justify-center space-x-2 border-b border-white/5 pb-4 w-full">
-          <span className="text-[#F84464] font-black text-lg tracking-tight">Event</span>
-          <span className="bg-[#F84464] text-white text-[10px] font-black px-1.5 py-0.5 rounded uppercase tracking-tight">Hub</span>
+          <span className="text-[#3B82F6] font-black text-lg tracking-tight">Event</span>
+          <span className="bg-[#3B82F6] text-white text-[10px] font-black px-1.5 py-0.5 rounded uppercase tracking-tight">Hub</span>
           <span className="text-[9px] text-gray-400 font-bold ml-2 border-l border-white/10 pl-2 uppercase tracking-widest">Mobile Pay Gate</span>
         </div>
 
@@ -128,9 +128,9 @@ const PaySimulate = () => {
             </div>
 
             {/* Visual Mobile Ticket */}
-            <div className="w-full rounded-xl overflow-hidden border border-[#F84464]/20 shadow-xl bg-[#0f172a] text-left">
+            <div className="w-full rounded-xl overflow-hidden border border-[#3B82F6]/20 shadow-xl bg-[#0f172a] text-left">
               {/* Ticket Top */}
-              <div className="bg-[#F84464] px-4 py-3 text-white flex justify-between items-center">
+              <div className="bg-[#3B82F6] px-4 py-3 text-white flex justify-between items-center">
                 <div>
                   <span className="text-[8px] font-extrabold bg-white/20 px-1.5 py-0.5 rounded uppercase tracking-wider">E-Ticket Summary</span>
                   <h4 className="text-sm font-black mt-1 leading-tight">{label}</h4>
@@ -170,7 +170,7 @@ const PaySimulate = () => {
             <div className="flex flex-col gap-2 pt-2">
               <a
                 href="/bookings"
-                className="w-full bg-[#F84464] hover:bg-[#df3250] text-white py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all text-center"
+                className="w-full bg-[#3B82F6] hover:bg-[#1D4ED8] text-white py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all text-center"
               >
                 Go to My Bookings
               </a>
