@@ -405,7 +405,7 @@ const Register = () => {
               </button>
             </form>
           ) : (
-            <form onSubmit={handleVerifyOtp} className="space-y-6">
+            <form onSubmit={handleVerifyAndRegister} className="space-y-6">
               <div className="text-center">
                 <p className="text-xs text-dark-muted mb-4">
                   We have sent a verification code to <strong className="text-dark-text">{email}</strong>.
