@@ -39,7 +39,7 @@ const CustomerDashboard = () => {
   const handleReviewSubmit = async (e) => {
     e.preventDefault();
     if (!rating || rating < 1 || rating > 5) {
-      alert("Please select a rating between 1 and 5.");
+      setErrorPopupMessage("Please select a rating between 1 and 5.");
       return;
     }
     setSubmittingReview(true);
@@ -57,7 +57,7 @@ const CustomerDashboard = () => {
         fetchVenuesData();
       }
     } catch (err) {
-      alert(err.response?.data?.error || "Failed to submit review. You can only rate booked and approved items once.");
+      setErrorPopupMessage(err.response?.data?.error || "Failed to submit review. You can only rate booked and approved items once.");
     } finally {
       setSubmittingReview(false);
     }
@@ -87,6 +87,7 @@ const CustomerDashboard = () => {
   const [cardholderName, setCardholderName] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
   const [cvv, setCvv] = useState('');
+  const [errorPopupMessage, setErrorPopupMessage] = useState('');
 
   const fetchVenuesData = async () => {
     setLoadingVenues(true);
@@ -245,7 +246,7 @@ const CustomerDashboard = () => {
       setMessage("Booking cancelled successfully.");
       fetchDashboardData();
     } catch (err) {
-      alert(err.response?.data?.error || "Failed to cancel booking.");
+      setErrorPopupMessage(err.response?.data?.error || "Failed to cancel booking.");
     }
   };
 
@@ -259,39 +260,39 @@ const CustomerDashboard = () => {
 
     if (selectedCancelBooking.payment_status === 'paid' && cancelStep === 'card') {
       if (!cardNumber || !cardholderName || !expiryDate || !cvv) {
-        alert("Please fill in all card details.");
+        setErrorPopupMessage("Please fill in all card details.");
         return;
       }
       if (cardholderName.trim().length < 3) {
-        alert("Cardholder Name must be at least 3 characters.");
+        setErrorPopupMessage("Cardholder Name must be at least 3 characters.");
         return;
       }
       if (!/^[a-zA-Z\s]+$/.test(cardholderName.trim())) {
-        alert("Cardholder name must contain only letters and spaces.");
+        setErrorPopupMessage("Cardholder name must contain only letters and spaces.");
         return;
       }
       const cleanedCardNumber = cardNumber.replace(/\s/g, '');
       if (cleanedCardNumber.length !== 16) {
-        alert("Card number must be exactly 16 digits.");
+        setErrorPopupMessage("Card number must be exactly 16 digits.");
         return;
       }
       if (!/^\d{2}\/\d{2}$/.test(expiryDate)) {
-        alert("Expiry Date must be in MM/YY format.");
+        setErrorPopupMessage("Expiry Date must be in MM/YY format.");
         return;
       }
       const [expMonth, expYear] = expiryDate.split('/').map(Number);
       if (expMonth < 1 || expMonth > 12) {
-        alert("Expiry Month must be between 01 and 12.");
+        setErrorPopupMessage("Expiry Month must be between 01 and 12.");
         return;
       }
       const currentYear = Number(new Date().getFullYear().toString().slice(-2));
       const currentMonth = new Date().getMonth() + 1; // 1-12
       if (expYear < currentYear || (expYear === currentYear && expMonth < currentMonth)) {
-        alert("Expiry Date cannot be in the past.");
+        setErrorPopupMessage("Expiry Date cannot be in the past.");
         return;
       }
       if (cvv.length !== 3) {
-        alert("CVV must be exactly 3 digits.");
+        setErrorPopupMessage("CVV must be exactly 3 digits.");
         return;
       }
     }
@@ -340,7 +341,7 @@ const CustomerDashboard = () => {
       setCvv('');
       fetchDashboardData();
     } catch (err) {
-      alert(err.response?.data?.error || "Failed to process cancellation.");
+      setErrorPopupMessage(err.response?.data?.error || "Failed to process cancellation.");
     } finally {
       setBookingActionLoading(false);
     }
@@ -1534,6 +1535,38 @@ const CustomerDashboard = () => {
                 type="button"
                 onClick={() => setSuccessPopupMessage('')}
                 className="w-full bg-brand-primary hover:bg-[#0ea5e9] text-white py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-md"
+              >
+                OK
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Error Message Popup */}
+      <AnimatePresence>
+        {errorPopupMessage && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[999] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="glass-panel w-full max-w-sm rounded-2xl p-6 shadow-2xl relative border border-white/10 text-center space-y-5 bg-dark-bg/95"
+            >
+              <div className="flex flex-col items-center space-y-3">
+                <div className="w-12 h-12 bg-red-500/10 text-red-400 rounded-full flex items-center justify-center border border-red-500/20">
+                  <XCircle className="w-6 h-6" />
+                </div>
+                <h3 className="text-base font-bold text-dark-text uppercase tracking-wider">Validation Error</h3>
+                <p className="text-xs text-dark-muted leading-relaxed px-2">
+                  {errorPopupMessage}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setErrorPopupMessage('')}
+                className="w-full bg-red-500 hover:bg-red-600 text-white py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-md"
               >
                 OK
               </button>
