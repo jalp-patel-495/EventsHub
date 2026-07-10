@@ -39,7 +39,7 @@ const CustomerDashboard = () => {
   const handleReviewSubmit = async (e) => {
     e.preventDefault();
     if (!rating || rating < 1 || rating > 5) {
-      alert("Please select a rating between 1 and 5.");
+      setErrorPopupMessage("Please select a rating between 1 and 5.");
       return;
     }
     setSubmittingReview(true);
@@ -57,7 +57,7 @@ const CustomerDashboard = () => {
         fetchVenuesData();
       }
     } catch (err) {
-      alert(err.response?.data?.error || "Failed to submit review. You can only rate booked and approved items once.");
+      setErrorPopupMessage(err.response?.data?.error || "Failed to submit review. You can only rate booked and approved items once.");
     } finally {
       setSubmittingReview(false);
     }
@@ -87,6 +87,7 @@ const CustomerDashboard = () => {
   const [cardholderName, setCardholderName] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
   const [cvv, setCvv] = useState('');
+  const [errorPopupMessage, setErrorPopupMessage] = useState('');
 
   const fetchVenuesData = async () => {
     setLoadingVenues(true);
@@ -159,7 +160,7 @@ const CustomerDashboard = () => {
         <p style="margin: 5px 0; font-size: 12px; color: #9CA3AF;"><strong>Attendee:</strong> ${booking.user_details.first_name} ${booking.user_details.last_name}</p>
         <p style="margin: 5px 0; font-size: 12px; color: #9CA3AF;"><strong>Email:</strong> ${booking.user_details.email}</p>
         <p style="margin: 5px 0; font-size: 12px; color: #9CA3AF;"><strong>Quantity:</strong> ${booking.tickets_count} Ticket(s) (${booking.ticket_category} Pass)</p>
-        <p style="margin: 5px 0; font-size: 12px; color: #9CA3AF;"><strong>Amount Paid:</strong> ₹${booking.total_price}</p>
+        <p style="margin: 5px 0; font-size: 12px; color: #9CA3AF;"><strong>Amount Paid:</strong> ₹${(parseFloat(booking.total_price) + (parseFloat(booking.event_details?.price) > 0 ? booking.tickets_count * 15 : 0)).toFixed(2)}</p>
       </div>
       <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; margin-top: 10px;">
         <div id="ticket-qr-container" style="background: white; padding: 10px; border-radius: 12px; margin-bottom: 10px; display: inline-block;"></div>
@@ -220,6 +221,19 @@ const CustomerDashboard = () => {
     }
   }, [location.search]);
 
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const bookVenueId = params.get('book');
+    if (bookVenueId && venues.length > 0) {
+      const venueToBook = venues.find(v => String(v.id) === String(bookVenueId));
+      if (venueToBook) {
+        setRentModal({ show: true, venue: venueToBook });
+        // Clear parameters to avoid reopening on reload
+        window.history.replaceState({}, document.title, '/bookings?tab=venues');
+      }
+    }
+  }, [location.search, venues]);
+
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
@@ -245,7 +259,7 @@ const CustomerDashboard = () => {
       setMessage("Booking cancelled successfully.");
       fetchDashboardData();
     } catch (err) {
-      alert(err.response?.data?.error || "Failed to cancel booking.");
+      setErrorPopupMessage(err.response?.data?.error || "Failed to cancel booking.");
     }
   };
 
@@ -259,15 +273,39 @@ const CustomerDashboard = () => {
 
     if (selectedCancelBooking.payment_status === 'paid' && cancelStep === 'card') {
       if (!cardNumber || !cardholderName || !expiryDate || !cvv) {
-        alert("Please fill in all card details.");
+        setErrorPopupMessage("Please fill in all card details.");
         return;
       }
-      if (cardNumber.replace(/\s/g, '').length !== 16) {
-        alert("Card number must be 16 digits.");
+      if (cardholderName.trim().length < 3) {
+        setErrorPopupMessage("Cardholder Name must be at least 3 characters.");
+        return;
+      }
+      if (!/^[a-zA-Z\s]+$/.test(cardholderName.trim())) {
+        setErrorPopupMessage("Cardholder name must contain only letters and spaces.");
+        return;
+      }
+      const cleanedCardNumber = cardNumber.replace(/\s/g, '');
+      if (cleanedCardNumber.length !== 16) {
+        setErrorPopupMessage("Card number must be exactly 16 digits.");
+        return;
+      }
+      if (!/^\d{2}\/\d{2}$/.test(expiryDate)) {
+        setErrorPopupMessage("Expiry Date must be in MM/YY format.");
+        return;
+      }
+      const [expMonth, expYear] = expiryDate.split('/').map(Number);
+      if (expMonth < 1 || expMonth > 12) {
+        setErrorPopupMessage("Expiry Month must be between 01 and 12.");
+        return;
+      }
+      const currentYear = Number(new Date().getFullYear().toString().slice(-2));
+      const currentMonth = new Date().getMonth() + 1; // 1-12
+      if (expYear < currentYear || (expYear === currentYear && expMonth < currentMonth)) {
+        setErrorPopupMessage("Expiry Date cannot be in the past.");
         return;
       }
       if (cvv.length !== 3) {
-        alert("CVV must be 3 digits.");
+        setErrorPopupMessage("CVV must be exactly 3 digits.");
         return;
       }
     }
@@ -316,7 +354,7 @@ const CustomerDashboard = () => {
       setCvv('');
       fetchDashboardData();
     } catch (err) {
-      alert(err.response?.data?.error || "Failed to process cancellation.");
+      setErrorPopupMessage(err.response?.data?.error || "Failed to process cancellation.");
     } finally {
       setBookingActionLoading(false);
     }
@@ -367,7 +405,9 @@ const CustomerDashboard = () => {
   };
 
   const unreadNotificationsCount = notifications.filter(n => !n.is_read).length;
-  const totalRefundedAmount = bookings.filter(b => b.status === 'refunded').reduce((sum, b) => sum + (parseFloat(b.total_price) * 0.5), 0);
+  const ticketRefunds = bookings.filter(b => b.payment_status === 'refunded').reduce((sum, b) => sum + (parseFloat(b.total_price) * 0.5), 0);
+  const venueRefunds = venueBookings.filter(vb => vb.payment_status === 'refunded').reduce((sum, vb) => sum + (parseFloat(vb.total_price) * 0.9), 0);
+  const totalRefundedAmount = ticketRefunds + venueRefunds;
   const totalVenuesBooked = venueBookings.filter(vb => vb.status === 'approved').length;
 
   if (loading) {
@@ -585,9 +625,13 @@ const CustomerDashboard = () => {
                       <div>
                         <span className="text-xs font-semibold text-dark-muted uppercase">Paid</span>
                         {booking.payment_status === 'refunded' ? (
-                          <p className="font-bold text-red-400 mt-0.5 line-through">₹{booking.total_price}</p>
+                          <p className="font-bold text-red-400 mt-0.5 line-through">
+                            ₹{(parseFloat(booking.total_price) + (parseFloat(booking.event_details?.price) > 0 ? booking.tickets_count * 15 : 0)).toFixed(2)}
+                          </p>
                         ) : (
-                          <p className="font-bold text-brand-primary mt-0.5">₹{booking.total_price}</p>
+                          <p className="font-bold text-brand-primary mt-0.5">
+                            ₹{(parseFloat(booking.total_price) + (parseFloat(booking.event_details?.price) > 0 ? booking.tickets_count * 15 : 0)).toFixed(2)}
+                          </p>
                         )}
                       </div>
                       {booking.payment_status === 'refunded' ? (
@@ -1208,7 +1252,9 @@ const CustomerDashboard = () => {
                         <div className="bg-white/5 border border-white/5 p-4 rounded-xl">
                           <h4 className="font-bold text-sm text-dark-text">{selectedCancelBooking.event_details?.title}</h4>
                           <p className="text-[10px] text-dark-muted mt-1">Booked: {selectedCancelBooking.tickets_count} ticket(s) ({selectedCancelBooking.ticket_category})</p>
-                          <p className="text-xs font-semibold text-brand-primary mt-2">Paid amount: ₹{selectedCancelBooking.total_price}</p>
+                          <p className="text-xs font-semibold text-brand-primary mt-2">
+                             Paid amount: ₹{(parseFloat(selectedCancelBooking.total_price) + (parseFloat(selectedCancelBooking.event_details?.price) > 0 ? selectedCancelBooking.tickets_count * 15 : 0)).toFixed(2)}
+                           </p>
                         </div>
                         
                         <div className="bg-amber-500/10 border border-amber-500/20 text-amber-400 p-3 rounded-xl text-[10px] leading-relaxed">
@@ -1326,9 +1372,10 @@ const CustomerDashboard = () => {
                         type="text"
                         value={cardNumber}
                         onChange={(e) => {
-                          const val = e.target.value.replace(/\D/g, '').slice(0, 16);
-                          setCardNumber(val);
+                          const val = e.target.value.replace(/\D/g, '').replace(/(\d{4})/g, '$1 ').trim();
+                          setCardNumber(val.slice(0, 19));
                         }}
+                        maxLength="19"
                         placeholder="1234 5678 1234 5678"
                         className="glass-input w-full px-4 py-2 rounded-xl text-sm bg-dark-bg border border-white/10"
                         required
@@ -1507,6 +1554,38 @@ const CustomerDashboard = () => {
                 type="button"
                 onClick={() => setSuccessPopupMessage('')}
                 className="w-full bg-brand-primary hover:bg-[#0ea5e9] text-white py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-md"
+              >
+                OK
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Error Message Popup */}
+      <AnimatePresence>
+        {errorPopupMessage && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[999] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="glass-panel w-full max-w-sm rounded-2xl p-6 shadow-2xl relative border border-white/10 text-center space-y-5 bg-dark-bg/95"
+            >
+              <div className="flex flex-col items-center space-y-3">
+                <div className="w-12 h-12 bg-red-500/10 text-red-400 rounded-full flex items-center justify-center border border-red-500/20">
+                  <XCircle className="w-6 h-6" />
+                </div>
+                <h3 className="text-base font-bold text-dark-text uppercase tracking-wider">Validation Error</h3>
+                <p className="text-xs text-dark-muted leading-relaxed px-2">
+                  {errorPopupMessage}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setErrorPopupMessage('')}
+                className="w-full bg-red-500 hover:bg-red-600 text-white py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-md"
               >
                 OK
               </button>
