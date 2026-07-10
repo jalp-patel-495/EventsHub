@@ -160,7 +160,7 @@ const CustomerDashboard = () => {
         <p style="margin: 5px 0; font-size: 12px; color: #9CA3AF;"><strong>Attendee:</strong> ${booking.user_details.first_name} ${booking.user_details.last_name}</p>
         <p style="margin: 5px 0; font-size: 12px; color: #9CA3AF;"><strong>Email:</strong> ${booking.user_details.email}</p>
         <p style="margin: 5px 0; font-size: 12px; color: #9CA3AF;"><strong>Quantity:</strong> ${booking.tickets_count} Ticket(s) (${booking.ticket_category} Pass)</p>
-        <p style="margin: 5px 0; font-size: 12px; color: #9CA3AF;"><strong>Amount Paid:</strong> ₹${booking.total_price}</p>
+        <p style="margin: 5px 0; font-size: 12px; color: #9CA3AF;"><strong>Amount Paid:</strong> ₹${(parseFloat(booking.total_price) + (parseFloat(booking.event_details?.price) > 0 ? booking.tickets_count * 15 : 0)).toFixed(2)}</p>
       </div>
       <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; margin-top: 10px;">
         <div id="ticket-qr-container" style="background: white; padding: 10px; border-radius: 12px; margin-bottom: 10px; display: inline-block;"></div>
@@ -612,9 +612,13 @@ const CustomerDashboard = () => {
                       <div>
                         <span className="text-xs font-semibold text-dark-muted uppercase">Paid</span>
                         {booking.payment_status === 'refunded' ? (
-                          <p className="font-bold text-red-400 mt-0.5 line-through">₹{booking.total_price}</p>
+                          <p className="font-bold text-red-400 mt-0.5 line-through">
+                            ₹{(parseFloat(booking.total_price) + (parseFloat(booking.event_details?.price) > 0 ? booking.tickets_count * 15 : 0)).toFixed(2)}
+                          </p>
                         ) : (
-                          <p className="font-bold text-brand-primary mt-0.5">₹{booking.total_price}</p>
+                          <p className="font-bold text-brand-primary mt-0.5">
+                            ₹{(parseFloat(booking.total_price) + (parseFloat(booking.event_details?.price) > 0 ? booking.tickets_count * 15 : 0)).toFixed(2)}
+                          </p>
                         )}
                       </div>
                       {booking.payment_status === 'refunded' ? (
@@ -1235,7 +1239,9 @@ const CustomerDashboard = () => {
                         <div className="bg-white/5 border border-white/5 p-4 rounded-xl">
                           <h4 className="font-bold text-sm text-dark-text">{selectedCancelBooking.event_details?.title}</h4>
                           <p className="text-[10px] text-dark-muted mt-1">Booked: {selectedCancelBooking.tickets_count} ticket(s) ({selectedCancelBooking.ticket_category})</p>
-                          <p className="text-xs font-semibold text-brand-primary mt-2">Paid amount: ₹{selectedCancelBooking.total_price}</p>
+                          <p className="text-xs font-semibold text-brand-primary mt-2">
+                             Paid amount: ₹{(parseFloat(selectedCancelBooking.total_price) + (parseFloat(selectedCancelBooking.event_details?.price) > 0 ? selectedCancelBooking.tickets_count * 15 : 0)).toFixed(2)}
+                           </p>
                         </div>
                         
                         <div className="bg-amber-500/10 border border-amber-500/20 text-amber-400 p-3 rounded-xl text-[10px] leading-relaxed">
