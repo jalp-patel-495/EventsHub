@@ -167,6 +167,7 @@ const Navbar = () => {
     : [
         { name: 'Home', path: '/' },
         { name: 'Explore', path: '/explore' },
+        { name: 'Venues', path: '/bookings?tab=venues' },
         { name: 'Live Feed', path: '/live-feed' },
         { name: 'Contact', path: '/contact' },
       ];
