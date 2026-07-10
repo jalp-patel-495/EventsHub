@@ -262,12 +262,36 @@ const CustomerDashboard = () => {
         alert("Please fill in all card details.");
         return;
       }
-      if (cardNumber.replace(/\s/g, '').length !== 16) {
-        alert("Card number must be 16 digits.");
+      if (cardholderName.trim().length < 3) {
+        alert("Cardholder Name must be at least 3 characters.");
+        return;
+      }
+      if (!/^[a-zA-Z\s]+$/.test(cardholderName.trim())) {
+        alert("Cardholder name must contain only letters and spaces.");
+        return;
+      }
+      const cleanedCardNumber = cardNumber.replace(/\s/g, '');
+      if (cleanedCardNumber.length !== 16) {
+        alert("Card number must be exactly 16 digits.");
+        return;
+      }
+      if (!/^\d{2}\/\d{2}$/.test(expiryDate)) {
+        alert("Expiry Date must be in MM/YY format.");
+        return;
+      }
+      const [expMonth, expYear] = expiryDate.split('/').map(Number);
+      if (expMonth < 1 || expMonth > 12) {
+        alert("Expiry Month must be between 01 and 12.");
+        return;
+      }
+      const currentYear = Number(new Date().getFullYear().toString().slice(-2));
+      const currentMonth = new Date().getMonth() + 1; // 1-12
+      if (expYear < currentYear || (expYear === currentYear && expMonth < currentMonth)) {
+        alert("Expiry Date cannot be in the past.");
         return;
       }
       if (cvv.length !== 3) {
-        alert("CVV must be 3 digits.");
+        alert("CVV must be exactly 3 digits.");
         return;
       }
     }
@@ -1326,9 +1350,10 @@ const CustomerDashboard = () => {
                         type="text"
                         value={cardNumber}
                         onChange={(e) => {
-                          const val = e.target.value.replace(/\D/g, '').slice(0, 16);
-                          setCardNumber(val);
+                          const val = e.target.value.replace(/\D/g, '').replace(/(\d{4})/g, '$1 ').trim();
+                          setCardNumber(val.slice(0, 19));
                         }}
+                        maxLength="19"
                         placeholder="1234 5678 1234 5678"
                         className="glass-input w-full px-4 py-2 rounded-xl text-sm bg-dark-bg border border-white/10"
                         required
