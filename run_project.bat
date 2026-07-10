@@ -26,7 +26,7 @@ if not exist .venv (
         exit /b 1
     )
     
-    echo [2/4] Installing backend dependencies (this may take a minute)...
+    echo [2/4] Installing backend dependencies [this may take a minute]...
     .venv\Scripts\python.exe -m pip install --upgrade pip
     .venv\Scripts\pip.exe install -r requirements.txt
     if %ERRORLEVEL% neq 0 (

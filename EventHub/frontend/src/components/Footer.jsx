@@ -71,11 +71,11 @@ const Footer = () => {
             <ul className="space-y-2 text-xs">
               <li>
                 <Link to="/explore" className="text-dark-muted hover:text-brand-primary transition-colors flex items-center gap-1">
-                  Browse Concerts & Garba
+                  Browse Events
                 </Link>
               </li>
               <li>
-                <Link to="/explore?category=party-plot" className="text-dark-muted hover:text-brand-primary transition-colors flex items-center gap-1">
+                <Link to="/venues" className="text-dark-muted hover:text-brand-primary transition-colors flex items-center gap-1">
                   Book Venues & Plots
                 </Link>
               </li>
