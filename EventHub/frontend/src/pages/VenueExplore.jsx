@@ -47,7 +47,7 @@ const VenueExplore = () => {
   };
 
   return (
-    <div className="min-h-screen bg-dark-bg py-12 px-4 sm:px-6 lg:px-8">
+    <div className="w-full max-w-none px-4 sm:px-6 lg:px-12 py-12 bg-dark-bg min-h-screen">
       {/* Hero Header */}
       <div className="max-w-7xl mx-auto text-center mb-12 relative">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-48 bg-gradient-to-tr from-brand-primary/10 to-indigo-500/10 blur-[80px] -z-10 rounded-full" />
@@ -59,7 +59,7 @@ const VenueExplore = () => {
         </p>
       </div>
 
-      <div className="max-w-7xl mx-auto space-y-8">
+      <div className="w-full space-y-8">
         {/* Search Filter */}
         <div className="max-w-md mx-auto bg-dark-card border border-dark-border rounded-2xl p-4 shadow-md flex items-center space-x-3">
           <Search className="w-5 h-5 text-dark-muted flex-shrink-0" />
