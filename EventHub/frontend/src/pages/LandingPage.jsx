@@ -43,7 +43,7 @@ const LandingPage = () => {
       <ThreeDEventBackground />
       {/* Hero Section */}
       <motion.section 
-        className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center"
+        className="relative z-10 w-full max-w-none px-4 sm:px-6 lg:px-12 pt-20 pb-16 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center"
         initial="hidden"
         animate="visible"
         variants={containerVariants}
@@ -128,7 +128,7 @@ const LandingPage = () => {
       </motion.section>
 
       {/* Roles Grid Section */}
-      <section className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+      <section className="relative z-10 w-full max-w-none px-4 sm:px-6 lg:px-12 py-16">
         <div className="text-center mb-12">
           <h2 className="text-2xl sm:text-4xl font-bold tracking-tight">One Platform, Endless Possibilities</h2>
           <p className="text-dark-muted mt-2">Tailored experiences for every stakeholder</p>

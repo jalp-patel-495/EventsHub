@@ -63,7 +63,7 @@ const Register = () => {
       return;
     }
 
-    if (phone && phone.length !== 10) {
+    if (!phone || phone.length !== 10) {
       setErrorMsg('Phone number must be exactly 10 digits.');
       return;
     }
@@ -328,8 +328,13 @@ const Register = () => {
                     <input
                       type="tel"
                       value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="+91 98765 43210"
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                        setPhone(val);
+                      }}
+                      placeholder="9876543210"
+                      maxLength="10"
+                      pattern="[0-9]{10}"
                       className="glass-input w-full pl-10 pr-4 py-2.5 rounded-xl text-sm"
                       required
                     />

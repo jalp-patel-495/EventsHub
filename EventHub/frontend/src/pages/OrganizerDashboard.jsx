@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import api from '../api/api';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, Trash2, Edit2, Plus, Sparkles, TrendingUp, Users, IndianRupee, Star, FileText, Upload, X, ShieldAlert, MapPin, Building, CheckCircle, XCircle } from 'lucide-react';
+import { Calendar, Trash2, Edit2, Plus, Sparkles, TrendingUp, Users, IndianRupee, Star, FileText, Upload, X, ShieldAlert, MapPin, Building, CheckCircle, XCircle, LayoutDashboard, Ticket } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import VenuePaymentModal from '../components/VenuePaymentModal';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -26,14 +26,17 @@ const OrganizerDashboard = () => {
         ? 'reviews'
         : routeLocation.pathname === '/organizer/analytics'
           ? 'analytics'
-          : 'events';
+          : routeLocation.pathname === '/organizer/refunds'
+            ? 'refunds'
+            : 'events';
   const setActiveTab = (tabId) => {
     const paths = {
       events: '/organizer/events',
       bookings: '/organizer/sales',
       venue_rentals: '/organizer/rentals',
       reviews: '/organizer/reviews',
-      analytics: '/organizer/analytics'
+      analytics: '/organizer/analytics',
+      refunds: '/organizer/refunds'
     };
     navigate(paths[tabId] || '/organizer/events');
   };
@@ -58,6 +61,12 @@ const OrganizerDashboard = () => {
   const [aiGenerating, setAiGenerating] = useState(false);
   const [aiAnalytics, setAiAnalytics] = useState(null);
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
+  const [feedbackMsg, setFeedbackMsg] = useState(null);
+
+  const showFeedback = (text, type = 'success') => {
+    setFeedbackMsg({ text, type });
+    setTimeout(() => setFeedbackMsg(null), 4000);
+  };
 
   // Google Maps & Venue Selection States
   const [approvedVenues, setApprovedVenues] = useState([]);
@@ -199,14 +208,18 @@ const OrganizerDashboard = () => {
     }
   };
 
-  const handleApproveRefund = async (bookingId) => {
-    if (!window.confirm("Are you sure you want to approve this refund request? This will refund 50% to the attendee.")) return;
+  const [refundConfirmBookingId, setRefundConfirmBookingId] = useState(null);
+
+  const executeApproveRefund = async () => {
+    if (!refundConfirmBookingId) return;
+    const bookingId = refundConfirmBookingId;
+    setRefundConfirmBookingId(null);
     try {
       await api.post(`events/bookings/${bookingId}/approve-refund/`);
-      alert("Refund request approved successfully.");
+      showFeedback("Refund request approved successfully.", "success");
       fetchDashboardData();
     } catch (err) {
-      alert(err.response?.data?.error || "Failed to approve refund.");
+      showFeedback(err.response?.data?.error || "Failed to approve refund.", "error");
     }
   };
 
@@ -532,12 +545,49 @@ const OrganizerDashboard = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div className="w-full px-4 sm:px-6 lg:px-12 py-10">
+      {/* Toast Alert Feedback */}
+      <AnimatePresence>
+        {feedbackMsg && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            className={`fixed top-24 right-6 z-50 px-5 py-3.5 rounded-xl border shadow-xl flex items-center space-x-3 backdrop-blur-md ${
+              feedbackMsg.type === 'error'
+                ? 'bg-red-500/10 border-red-500/35 text-red-400'
+                : 'bg-emerald-500/10 border-emerald-500/35 text-emerald-400'
+            }`}
+          >
+            {feedbackMsg.type === 'error' ? (
+              <XCircle className="w-5 h-5 flex-shrink-0" />
+            ) : (
+              <CheckCircle className="w-5 h-5 flex-shrink-0" />
+            )}
+            <span className="text-sm font-semibold">{feedbackMsg.text}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-10">
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-dark-text">Organizer Dashboard</h1>
-          <p className="text-dark-muted mt-1">Host events, review ticketing metrics, and manage customer sales</p>
+          <h1 className="text-3xl font-black tracking-tight text-dark-text">
+            {activeTab === 'events' && 'Organizer Dashboard'}
+            {activeTab === 'bookings' && 'Ticket Sales'}
+            {activeTab === 'refunds' && 'Refund Ticket Requests'}
+            {activeTab === 'venue_rentals' && 'Venue Rentals'}
+            {activeTab === 'reviews' && 'Customer Reviews'}
+            {activeTab === 'analytics' && 'Revenue Analytics'}
+          </h1>
+          <p className="text-dark-muted mt-1">
+            {activeTab === 'events' && 'Host events, review ticketing metrics, and manage customer sales'}
+            {activeTab === 'bookings' && 'View and track all event tickets purchased by customers'}
+            {activeTab === 'refunds' && 'Manage and approve cancelation refund requests submitted by attendees'}
+            {activeTab === 'venue_rentals' && 'View lawns, plots, and halls booked for your events'}
+            {activeTab === 'reviews' && 'Review feedback and ratings received from event attendees'}
+            {activeTab === 'analytics' && 'Detailed overview of organizer income and event performance reports'}
+          </p>
         </div>
         <button
           onClick={handleOpenCreateModal}
@@ -547,6 +597,7 @@ const OrganizerDashboard = () => {
           <span>Create New Event</span>
         </button>
       </div>
+
 
       {/* Grid Stats */}
       {activeTab === 'events' && (
@@ -775,14 +826,78 @@ const OrganizerDashboard = () => {
                           <td className="px-6 py-4 text-right text-xs">
                             {booking.refund_requested ? (
                               <button
-                                onClick={() => handleApproveRefund(booking.id)}
-                                className="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/15 px-3 py-1.5 rounded-lg font-bold text-[10px] transition-colors"
+                                onClick={() => setRefundConfirmBookingId(booking.id)}
+                                className="bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/15 px-3 py-1.5 rounded-lg font-bold text-[10px] transition-colors"
                               >
                                 Approve Refund
                               </button>
                             ) : (
                               <span className="text-[10px] text-dark-muted font-semibold">—</span>
                             )}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </motion.div>
+          )}
+
+          {activeTab === 'refunds' && (
+            <motion.div
+              key="refunds"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 15 }}
+              className="glass-panel rounded-2xl overflow-hidden animate-fadeIn"
+            >
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-white/5 bg-white/5 text-xs font-semibold text-dark-muted uppercase tracking-wider">
+                      <th className="px-6 py-4">Attendee</th>
+                      <th className="px-6 py-4">Event</th>
+                      <th className="px-6 py-4">Tickets</th>
+                      <th className="px-6 py-4">Amount to Refund</th>
+                      <th className="px-6 py-4">Status</th>
+                      <th className="px-6 py-4">Request Date</th>
+                      <th className="px-6 py-4 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="text-sm divide-y divide-white/5">
+                    {bookings.filter(b => b.refund_requested).length === 0 ? (
+                      <tr>
+                        <td colSpan="7" className="text-center py-12 text-dark-muted">No refund requests found.</td>
+                      </tr>
+                    ) : (
+                      bookings.filter(b => b.refund_requested).map((booking) => (
+                        <tr key={booking.id} className="hover:bg-white/5 transition-colors">
+                          <td className="px-6 py-4">
+                            <p className="font-bold text-dark-text">{booking.user_details.first_name} {booking.user_details.last_name}</p>
+                            <p className="text-xs text-dark-muted mt-0.5">{booking.user_details.email}</p>
+                          </td>
+                          <td className="px-6 py-4 font-semibold text-dark-text">{booking.event_details.title}</td>
+                          <td className="px-6 py-4 font-bold text-dark-text">
+                            {booking.tickets_count} <span className="text-[9px] text-emerald-400 font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 uppercase ml-2">{booking.ticket_category}</span>
+                          </td>
+                          <td className="px-6 py-4 font-bold text-red-400">
+                            ₹{(parseFloat(booking.total_price) * 0.5).toLocaleString('en-IN')}
+                            <span className="text-[9px] text-dark-muted block mt-0.5 font-normal">(50% of ₹{parseFloat(booking.total_price).toLocaleString('en-IN')})</span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className="px-2 py-0.5 rounded text-[8px] bg-amber-500/10 text-amber-400 border border-amber-500/15 font-bold w-fit mt-1 animate-pulse">
+                              Refund Requested
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-xs text-dark-muted">{new Date(booking.created_at).toLocaleDateString()}</td>
+                          <td className="px-6 py-4 text-right text-xs">
+                            <button
+                              onClick={() => setRefundConfirmBookingId(booking.id)}
+                              className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white shadow-md shadow-blue-950/20 px-4 py-2 rounded-xl font-bold text-[10px] transition-colors uppercase tracking-wider"
+                            >
+                              Approve Refund
+                            </button>
                           </td>
                         </tr>
                       ))
@@ -1399,6 +1514,55 @@ const OrganizerDashboard = () => {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Custom Refund Confirmation Modal */}
+      <AnimatePresence>
+        {refundConfirmBookingId && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setRefundConfirmBookingId(null)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+            />
+
+            {/* Modal Box */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="glass-panel border border-white/10 w-full max-w-md p-6 rounded-2xl shadow-2xl relative z-10 space-y-4"
+            >
+              <div className="flex items-center space-x-3 text-amber-400">
+                <ShieldAlert className="w-6 h-6" />
+                <h4 className="font-extrabold text-base text-dark-text tracking-tight uppercase">Approve Refund Request</h4>
+              </div>
+              
+              <p className="text-xs text-dark-muted leading-relaxed">
+                Are you sure you want to approve this refund request? Approving will return <strong className="text-dark-text">50%</strong> of the ticket price back to the attendee and cancel their reservation permanently.
+              </p>
+
+              <div className="flex items-center justify-end space-x-3 pt-2">
+                <button
+                  onClick={() => setRefundConfirmBookingId(null)}
+                  className="px-4 py-2 border border-white/5 bg-white/5 text-dark-text hover:bg-white/10 rounded-xl text-xs font-bold transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={executeApproveRefund}
+                  className="px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-950/20 transition-all"
+                >
+                  Confirm Approve
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       {showPaymentModal && paymentVenue && (
         <VenuePaymentModal
           venue={paymentVenue}

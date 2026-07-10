@@ -125,7 +125,7 @@ const About = () => {
   const currentTab = tabs.find(t => t.id === activeTab);
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8 sm:py-12">
+    <div className="w-full max-w-none px-4 sm:px-6 lg:px-12 py-8 sm:py-12">
       {/* Tabs list */}
       <div className="flex justify-center p-1 rounded-xl glass-panel max-w-lg mx-auto mb-16 border-white/5">
         {tabs.map((tab) => {

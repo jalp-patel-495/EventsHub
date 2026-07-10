@@ -137,8 +137,11 @@ const Navbar = () => {
   const navLinks = isAuthenticated
     ? user?.role === 'plot_owner'
       ? [
+          { name: 'Dashboard', path: '/venues/dashboard' },
           { name: 'My Venues', path: '/venues/manage' },
           { name: 'Rental Requests', path: '/venues/requests' },
+          { name: 'Refund Requests', path: '/venues/refunds' },
+          { name: 'Manage Services', path: '/venues/services' },
           { name: 'Customer Reviews', path: '/venues/reviews' },
           { name: 'Availability Calendar', path: '/venues/calendar' },
         ]
@@ -146,6 +149,7 @@ const Navbar = () => {
         ? [
             { name: 'Dashboard', path: '/organizer/events' },
             { name: 'Ticket Sales', path: '/organizer/sales' },
+            { name: 'Refund Ticket Requests', path: '/organizer/refunds' },
             { name: 'Venue Rentals', path: '/organizer/rentals' },
             { name: 'Customer Reviews', path: '/organizer/reviews' },
             { name: 'Revenue', path: '/organizer/analytics' },
@@ -153,7 +157,7 @@ const Navbar = () => {
           ]
         : user?.role === 'admin'
           ? [
-              { name: 'Overview', path: '/admin/overview' },
+              { name: 'Dashboard', path: '/admin/overview' },
               { name: 'Revenue', path: '/admin/revenue' },
               { name: 'Approvals', path: '/admin/approvals' },
               { name: 'All Events', path: '/admin/events' },
@@ -229,11 +233,11 @@ const Navbar = () => {
       </AnimatePresence>
 
       <nav className="glass-nav sticky top-0 z-50 w-full">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full px-4 sm:px-6 lg:px-12">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <Link 
-              to={isAuthenticated ? (user?.role === 'admin' ? '/admin-dashboard' : user?.role === 'organizer' ? '/organizer/events' : user?.role === 'plot_owner' ? '/venues/manage' : '/bookings') : '/'} 
+              to={isAuthenticated ? (user?.role === 'admin' ? '/admin-dashboard' : user?.role === 'organizer' ? '/organizer/events' : user?.role === 'plot_owner' ? '/venues/dashboard' : '/bookings') : '/'} 
               className="flex items-center space-x-2"
             >
               <span className="font-extrabold text-xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-rose-500 via-pink-500 to-amber-500 font-sans">
@@ -407,7 +411,7 @@ const Navbar = () => {
                               </span>
                             </div>
                             <Link
-                              to={user?.role === 'admin' ? '/admin-dashboard' : user?.role === 'organizer' ? '/organizer/events' : user?.role === 'plot_owner' ? '/venues/manage' : '/bookings'}
+                              to={user?.role === 'admin' ? '/admin-dashboard' : user?.role === 'organizer' ? '/organizer/events' : user?.role === 'plot_owner' ? '/venues/dashboard' : '/bookings'}
                               className="flex items-center space-x-2 px-4 py-2 text-sm text-slate-300 hover:text-white hover:bg-blue-600 transition-colors"
                               onClick={() => setDropdownOpen(false)}
                             >

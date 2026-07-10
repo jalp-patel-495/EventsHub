@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import api from '../api/api';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, Trash2, Edit2, Plus, Sparkles, Building, CheckCircle, XCircle, IndianRupee, Calendar, Upload, X, ShieldAlert, BadgeCheck, MapPin, UtensilsCrossed, Music2, Palette, Star } from 'lucide-react';
+import { Home, Trash2, Edit2, Plus, Sparkles, Building, CheckCircle, XCircle, IndianRupee, Calendar, Upload, X, ShieldAlert, BadgeCheck, MapPin, UtensilsCrossed, Music2, Palette, Star, ClipboardList, LayoutDashboard, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLocation, useNavigate } from 'react-router-dom';
-
 const CUISINE_TEMPLATES = {
   'Gujarati Thali': '2 Sabzis (Paneer & Potato/Green), Dal/Kadhi, Rice/Khichdi, Roti/Puri, 2 Farsan, 1 Sweet, Butter Milk, Papad, Salad',
   'Punjabi': 'Paneer Tikka Masala, Veg Jaipuri, Dal Makhani, Jeera Rice, Butter Naan/Tandoori Roti, 1 Starter, Sweet, Raita, Salad',
@@ -67,21 +66,138 @@ const PlotOwnerDashboard = () => {
   const [loading, setLoading] = useState(true);
   const routeLocation = useLocation();
   const navigate = useNavigate();
-  const activeTab = routeLocation.pathname === '/venues/requests'
-    ? 'requests'
-    : routeLocation.pathname === '/venues/reviews'
-      ? 'reviews'
-      : routeLocation.pathname === '/venues/calendar'
-        ? 'calendar'
-        : 'venues';
+  const activeTab = routeLocation.pathname === '/venues/dashboard'
+    ? 'dashboard'
+    : routeLocation.pathname === '/venues/requests'
+      ? 'requests'
+      : routeLocation.pathname === '/venues/reviews'
+        ? 'reviews'
+        : routeLocation.pathname === '/venues/calendar'
+          ? 'calendar'
+          : routeLocation.pathname === '/venues/services'
+            ? 'services'
+            : routeLocation.pathname === '/venues/refunds'
+              ? 'refunds'
+              : 'venues';
   const setActiveTab = (tabId) => {
     const paths = {
+      dashboard: '/venues/dashboard',
       venues: '/venues/manage',
       requests: '/venues/requests',
+      refunds: '/venues/refunds',
       reviews: '/venues/reviews',
-      calendar: '/venues/calendar'
+      calendar: '/venues/calendar',
+      services: '/venues/services'
     };
-    navigate(paths[tabId] || '/venues/manage');
+    navigate(paths[tabId] || '/venues/dashboard');
+  };
+
+  // Dedicated Service Tabs State
+  const [confirmRefundModal, setConfirmRefundModal] = useState({ show: false, bookingId: null, amount: 0, retained: 0 });
+  const [selectedServiceVenueId, setSelectedServiceVenueId] = useState('');
+  const [activeServiceTab, setActiveServiceTab] = useState('catering');
+  const [serviceHasCatering, setServiceHasCatering] = useState(false);
+  const [serviceCateringMinPlates, setServiceCateringMinPlates] = useState('');
+  const [serviceCateringOptions, setServiceCateringOptions] = useState([]);
+  const [serviceHasDj, setServiceHasDj] = useState(false);
+  const [serviceDjOptions, setServiceDjOptions] = useState([]);
+  const [serviceHasDecor, setServiceHasDecor] = useState(false);
+  const [serviceDecorOptions, setServiceDecorOptions] = useState([]);
+
+  // Auto-initialize selected service venue when tab or venues list changes
+  useEffect(() => {
+    if (venues.length > 0 && !selectedServiceVenueId) {
+      setSelectedServiceVenueId(venues[0].id);
+    }
+  }, [venues, selectedServiceVenueId]);
+
+  // Load selected venue's settings into service form states
+  useEffect(() => {
+    if (!selectedServiceVenueId || venues.length === 0) return;
+    const selectedVenue = venues.find(v => v.id === parseInt(selectedServiceVenueId) || v.id === selectedServiceVenueId);
+    if (!selectedVenue) return;
+
+    setServiceHasCatering(selectedVenue.has_catering || false);
+    setServiceCateringMinPlates(selectedVenue.catering_min_plates || '10');
+    
+    const parseJSON = (str, fallback) => {
+      try {
+        if (!str) return fallback;
+        const parsed = JSON.parse(str);
+        if (Array.isArray(parsed)) return parsed;
+        return fallback;
+      } catch (e) {
+        if (typeof str === 'string' && str.trim()) {
+          return [{ name: 'Standard Option', price: String(selectedVenue.catering_price_per_plate || '350'), description: str }];
+        }
+        return fallback;
+      }
+    };
+
+    setServiceCateringOptions(parseJSON(selectedVenue.catering_description, [
+      { name: 'Standard Gujarati Menu', price: String(selectedVenue.catering_price_per_plate || '350'), description: '2 Sabzis, Dal/Kadhi, Rice, Roti, 2 Farsan, 1 Sweet' }
+    ]));
+
+    setServiceHasDj(selectedVenue.has_dj || false);
+    setServiceDjOptions(parseJSON(selectedVenue.dj_equipment, [
+      { name: 'Standard DJ Setup', price: String(selectedVenue.dj_price || '8000'), equipment: '2x 15-inch Speakers, Basic Mixer, Wired Mic' }
+    ]));
+
+    setServiceHasDecor(selectedVenue.has_decor || false);
+    setServiceDecorOptions(parseJSON(selectedVenue.decor_themes, [
+      { name: 'Classic Floral Decor', price: String(selectedVenue.decor_price || '15000'), description: 'Entrance gate flowers, stage background, pathway lights' }
+    ]));
+
+  }, [selectedServiceVenueId, venues, activeTab]);
+
+  const handleSaveServiceSettings = async (venueId, serviceType, serviceData) => {
+    const venue = venues.find(v => v.id === parseInt(venueId) || v.id === venueId);
+    if (!venue) return;
+
+    setLoading(true);
+    const formData = new FormData();
+    formData.append('name', venue.name);
+    formData.append('description', venue.description);
+    formData.append('location', venue.location);
+    formData.append('price_per_day', venue.price_per_day);
+    formData.append('facilities', typeof venue.facilities === 'string' ? venue.facilities : JSON.stringify(venue.facilities || []));
+
+    // Catering configuration
+    const isCat = serviceType === 'catering';
+    formData.append('has_catering', isCat ? serviceData.hasCatering : (venue.has_catering || false));
+    const catOpts = isCat ? serviceData.cateringOptions : (typeof venue.catering_description === 'string' ? JSON.parse(venue.catering_description || '[]') : venue.catering_description || []);
+    formData.append('catering_price_per_plate', catOpts.length > 0 ? parseFloat(catOpts[0].price) : 0);
+    formData.append('catering_min_plates', isCat ? serviceData.cateringMinPlates : (venue.catering_min_plates || 10));
+    formData.append('catering_description', JSON.stringify(catOpts));
+    formData.append('catering_cuisine', catOpts.length > 0 ? catOpts[0].name : '');
+
+    // DJ configuration
+    const isDj = serviceType === 'dj';
+    formData.append('has_dj', isDj ? serviceData.hasDj : (venue.has_dj || false));
+    const djOpts = isDj ? serviceData.djOptions : (typeof venue.dj_equipment === 'string' ? JSON.parse(venue.dj_equipment || '[]') : venue.dj_equipment || []);
+    formData.append('dj_price', djOpts.length > 0 ? parseFloat(djOpts[0].price) : 0);
+    formData.append('dj_equipment', JSON.stringify(djOpts));
+
+    // Decor configuration
+    const isDecor = serviceType === 'decor';
+    formData.append('has_decor', isDecor ? serviceData.hasDecor : (venue.has_decor || false));
+    const decorOpts = isDecor ? serviceData.decorOptions : (typeof venue.decor_themes === 'string' ? JSON.parse(venue.decor_themes || '[]') : venue.decor_themes || []);
+    formData.append('decor_price', decorOpts.length > 0 ? parseFloat(decorOpts[0].price) : 0);
+    formData.append('decor_themes', JSON.stringify(decorOpts));
+
+    try {
+      await api.put(`venues/listings/${venue.id}/`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      fetchDashboardData();
+      setFormError('');
+      alert(`${serviceType.toUpperCase()} service settings updated successfully!`);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to update service settings. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
  
   // Sub-facilities configure states
@@ -537,6 +653,18 @@ const PlotOwnerDashboard = () => {
     }
   };
 
+  const handleConfirmApproveRefund = async () => {
+    const { bookingId } = confirmRefundModal;
+    if (!bookingId) return;
+    try {
+      await api.post(`venues/bookings/${bookingId}/approve_cancel/`);
+      setConfirmRefundModal({ show: false, bookingId: null, amount: 0, retained: 0 });
+      fetchDashboardData();
+    } catch (err) {
+      alert(err.response?.data?.error || "Failed to process cancellation refund request.");
+    }
+  };
+
   const activeRequestsCount = bookings.filter(b => b.status === 'pending').length;
   const approvedBookings = bookings.filter(b => b.status === 'approved');
   const cancelledBookings = bookings.filter(b => b.status === 'cancelled');
@@ -575,95 +703,184 @@ const PlotOwnerDashboard = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div className="w-full px-4 sm:px-6 lg:px-12 py-10">
+      {/* Dynamic Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-10">
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-dark-text">Plot Owner Dashboard</h1>
-          <p className="text-dark-muted mt-1">List venue halls, manage rental requests, and view booking calendars</p>
+          <h1 className="text-3xl font-black tracking-tight text-dark-text">
+            {activeTab === 'dashboard' && 'Plot Owner Dashboard'}
+            {activeTab === 'venues' && 'My Venues'}
+            {activeTab === 'requests' && 'Rental Booking Requests'}
+            {activeTab === 'refunds' && 'Refund Ticket Requests'}
+            {activeTab === 'reviews' && 'Customer Reviews'}
+            {activeTab === 'calendar' && 'Availability Calendar'}
+            {activeTab === 'services' && 'Manage Venue Services'}
+          </h1>
+          <p className="text-dark-muted mt-1">
+            {activeTab === 'dashboard' && 'Overview of rental earnings, pending booking requests, and venue performance statistics'}
+            {activeTab === 'venues' && 'Register and manage your lawns, halls, and party spaces'}
+            {activeTab === 'requests' && 'Review, approve, or cancel booking requests from event organizers'}
+            {activeTab === 'refunds' && 'Manage and approve cancellation refund requests submitted by event organizers'}
+            {activeTab === 'reviews' && 'View feedback, ratings, and customer reviews left for your venues'}
+            {activeTab === 'calendar' && 'Track and manage booking schedules and dates for your properties'}
+            {activeTab === 'services' && 'Configure and customize catering, DJ, and decoration services for your plots'}
+          </p>
         </div>
-        <button
-          onClick={handleOpenCreateModal}
-          className="flex items-center space-x-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-medium px-5 py-2.5 rounded-xl hover:from-emerald-600 hover:to-teal-600 shadow-md shadow-emerald-950/20 transition-all transform hover:-translate-y-0.5"
-        >
-          <Plus className="w-5 h-5" />
-          <span>Add New Venue</span>
-        </button>
+        {activeTab === 'venues' && (
+          <button
+            onClick={handleOpenCreateModal}
+            className="flex items-center space-x-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-medium px-5 py-2.5 rounded-xl hover:from-emerald-600 hover:to-teal-600 shadow-md shadow-emerald-950/20 transition-all transform hover:-translate-y-0.5"
+          >
+            <Plus className="w-5 h-5" />
+            <span>Add New Venue</span>
+          </button>
+        )}
       </div>
-
-      {/* Grid Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-        {/* Total Income */}
-        <div className="glass-panel rounded-2xl p-6 flex items-start space-x-4">
-          <div className="p-3 bg-emerald-500/10 text-emerald-400 rounded-xl mt-1">
-            <IndianRupee className="w-6 h-6" />
-          </div>
-          <div className="flex-grow">
-            <p className="text-xs font-semibold text-dark-muted uppercase tracking-wider">Rental Income (Net)</p>
-            <h3 className="text-2xl font-bold mt-1 text-emerald-400">₹{plotOwnerNet.toLocaleString('en-IN')}</h3>
-            <div className="mt-3 space-y-1 text-[10px] text-dark-muted border-t border-white/5 pt-2">
-              <div className="flex justify-between">
-                <span>Gross Approved:</span>
-                <span className="text-dark-text font-medium">₹{grossRentalIncome.toLocaleString('en-IN')}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Admin Cut (20%):</span>
-                <span className="text-red-400 font-medium">-₹{adminVenueCut.toLocaleString('en-IN')}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Total Refunded (90%):</span>
-                <span className="text-blue-400 font-medium">₹{totalRefundedToOrg.toLocaleString('en-IN')}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Retained Profit (10%):</span>
-                <span className="text-emerald-400 font-medium">₹{cancellationRetainedProfit.toLocaleString('en-IN')}</span>
-              </div>
-              <div className="flex justify-between text-emerald-400 font-semibold border-t border-white/5 pt-1 mt-1">
-                <span>Owner Net Earnings:</span>
-                <span>₹{plotOwnerNet.toLocaleString('en-IN')}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Pending requests */}
-        <div className="glass-panel rounded-2xl p-6 flex items-center space-x-4">
-          <div className="p-3 bg-blue-500/10 text-blue-400 rounded-xl">
-            <Calendar className="w-6 h-6" />
-          </div>
-          <div>
-            <p className="text-xs font-semibold text-dark-muted uppercase tracking-wider">Booking Requests</p>
-            <h3 className="text-2xl font-bold mt-1">{activeRequestsCount} <span className="text-xs text-dark-muted font-normal">pending</span></h3>
-          </div>
-        </div>
-
-        {/* Venues Count */}
-        <div className="glass-panel rounded-2xl p-6 flex items-center space-x-4">
-          <div className="p-3 bg-purple-500/10 text-purple-400 rounded-xl">
-            <Building className="w-6 h-6" />
-          </div>
-          <div>
-            <p className="text-xs font-semibold text-dark-muted uppercase tracking-wider">Venues Registered</p>
-            <h3 className="text-2xl font-bold mt-1">{venues.length}</h3>
-          </div>
-        </div>
-
-        {/* Average Rating */}
-        <div className="glass-panel rounded-2xl p-6 flex items-center space-x-4">
-          <div className="p-3 bg-amber-500/10 text-amber-400 rounded-xl">
-            <Star className="w-6 h-6 animate-pulse" />
-          </div>
-          <div>
-            <p className="text-xs font-semibold text-dark-muted uppercase tracking-wider">Average Rating</p>
-            <h3 className="text-2xl font-bold mt-1">{averageRating} <span className="text-xs text-dark-muted">/ 5</span></h3>
-          </div>
-        </div>
-      </div>
-
-
 
       {/* Panels */}
       <div className="mt-8">
         <AnimatePresence mode="wait">
+          {activeTab === 'dashboard' && (
+            <motion.div
+              key="dashboard"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 15 }}
+              className="space-y-10"
+            >
+              {/* Grid Stats */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {/* Total Income */}
+                <div className="glass-panel rounded-2xl p-6 flex items-start space-x-4">
+                  <div className="p-3 bg-emerald-500/10 text-emerald-400 rounded-xl mt-1">
+                    <IndianRupee className="w-6 h-6" />
+                  </div>
+                  <div className="flex-grow">
+                    <p className="text-xs font-semibold text-dark-muted uppercase tracking-wider">Rental Income (Net)</p>
+                    <h3 className="text-2xl font-bold mt-1 text-emerald-400">₹{plotOwnerNet.toLocaleString('en-IN')}</h3>
+                    <div className="mt-3 space-y-1 text-[10px] text-dark-muted border-t border-white/5 pt-2">
+                      <div className="flex justify-between">
+                        <span>Gross Approved:</span>
+                        <span className="text-dark-text font-medium">₹{grossRentalIncome.toLocaleString('en-IN')}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Admin Cut (20%):</span>
+                        <span className="text-red-400 font-medium">-₹{adminVenueCut.toLocaleString('en-IN')}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Total Refunded (90%):</span>
+                        <span className="text-blue-400 font-medium">₹{totalRefundedToOrg.toLocaleString('en-IN')}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Retained Profit (10%):</span>
+                        <span className="text-emerald-400 font-medium">₹{cancellationRetainedProfit.toLocaleString('en-IN')}</span>
+                      </div>
+                      <div className="flex justify-between text-emerald-400 font-semibold border-t border-white/5 pt-1 mt-1">
+                        <span>Owner Net Earnings:</span>
+                        <span>₹{plotOwnerNet.toLocaleString('en-IN')}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Pending requests */}
+                <div className="glass-panel rounded-2xl p-6 flex items-center space-x-4">
+                  <div className="p-3 bg-blue-500/10 text-blue-400 rounded-xl">
+                    <Calendar className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-dark-muted uppercase tracking-wider">Booking Requests</p>
+                    <h3 className="text-2xl font-bold mt-1">{activeRequestsCount} <span className="text-xs text-dark-muted font-normal">pending</span></h3>
+                  </div>
+                </div>
+
+                {/* Venues Count */}
+                <div className="glass-panel rounded-2xl p-6 flex items-center space-x-4">
+                  <div className="p-3 bg-purple-500/10 text-purple-400 rounded-xl">
+                    <Building className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-dark-muted uppercase tracking-wider">Venues Registered</p>
+                    <h3 className="text-2xl font-bold mt-1">{venues.length}</h3>
+                  </div>
+                </div>
+
+                {/* Average Rating */}
+                <div className="glass-panel rounded-2xl p-6 flex items-center space-x-4">
+                  <div className="p-3 bg-amber-500/10 text-amber-400 rounded-xl">
+                    <Star className="w-6 h-6 animate-pulse" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-dark-muted uppercase tracking-wider">Average Rating</p>
+                    <h3 className="text-2xl font-bold mt-1">{averageRating} <span className="text-xs text-dark-muted">/ 5</span></h3>
+                  </div>
+                </div>
+              </div>
+
+              {/* Rental Request Center Summary */}
+              <div className="glass-panel rounded-2xl p-6">
+                <div className="flex items-center justify-between mb-6 border-b border-white/5 pb-4">
+                  <div>
+                    <h4 className="font-extrabold text-base text-dark-text uppercase tracking-wider">Rental Booking Requests</h4>
+                    <p className="text-xs text-dark-muted mt-1">Pending and active reservation requests from event organizers</p>
+                  </div>
+                  <button
+                    onClick={() => setActiveTab('requests')}
+                    className="text-xs font-bold text-brand-primary hover:text-brand-primary/80 transition-colors"
+                  >
+                    Manage Requests Center &rarr;
+                  </button>
+                </div>
+                {bookings.length === 0 ? (
+                  <div className="text-center py-12 text-dark-muted">
+                    <Calendar className="w-12 h-12 mx-auto mb-3 opacity-40" />
+                    <p>No booking requests received yet.</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="text-[10px] text-dark-muted uppercase tracking-wider border-b border-white/5">
+                          <th className="px-4 py-3 text-left">Venue</th>
+                          <th className="px-4 py-3 text-left">Organizer</th>
+                          <th className="px-4 py-3 text-left">Dates</th>
+                          <th className="px-4 py-3 text-left">Amount</th>
+                          <th className="px-4 py-3 text-left">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-white/[0.03]">
+                        {bookings.slice(0, 5).map((booking) => (
+                          <tr key={booking.id} className="hover:bg-white/[0.01] transition-colors">
+                            <td className="px-4 py-4 font-semibold text-dark-text text-xs">{booking.venue_details?.name}</td>
+                            <td className="px-4 py-4 text-xs text-dark-muted">
+                              {booking.organizer_details?.first_name} {booking.organizer_details?.last_name}
+                              <span className="block text-[10px] opacity-60">{booking.organizer_details?.email}</span>
+                            </td>
+                            <td className="px-4 py-4 text-xs text-dark-muted">
+                              {new Date(booking.start_date).toLocaleDateString()} to {new Date(booking.end_date).toLocaleDateString()}
+                            </td>
+                            <td className="px-4 py-4 text-xs text-brand-primary font-bold">
+                              ₹{parseFloat(booking.total_price).toLocaleString('en-IN')}
+                            </td>
+                            <td className="px-4 py-4 text-xs">
+                              <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                                booking.status === 'approved' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+                                booking.status === 'cancelled' ? 'bg-red-500/10 text-red-400 border border-red-500/20' :
+                                'bg-blue-500/10 text-blue-400 border border-blue-500/20 animate-pulse'
+                              }`}>
+                                {booking.status}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+
           {activeTab === 'venues' && (
             <motion.div
               key="venues"
@@ -889,6 +1106,98 @@ const PlotOwnerDashboard = () => {
             </motion.div>
           )}
 
+          {activeTab === 'refunds' && (
+            <motion.div
+              key="refunds"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 15 }}
+              className="glass-panel rounded-2xl p-6 space-y-6"
+            >
+              <div>
+                <h4 className="font-bold text-base text-dark-text uppercase tracking-wider">Refund Ticket Requests</h4>
+                <p className="text-xs text-dark-muted mt-1">Review and approve cancellation refund requests submitted by event organizers for venue bookings.</p>
+              </div>
+
+              {bookings.filter(b => b.cancel_requested || b.status === 'cancelled').length === 0 ? (
+                <div className="text-center py-12 text-dark-muted">
+                  <Calendar className="w-12 h-12 mx-auto mb-3 opacity-40" />
+                  <p>No refund or cancellation requests found.</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-[10px] text-dark-muted uppercase tracking-wider border-b border-white/5">
+                        <th className="px-4 py-3 text-left">Venue</th>
+                        <th className="px-4 py-3 text-left">Organizer</th>
+                        <th className="px-4 py-3 text-left">Dates</th>
+                        <th className="px-4 py-3 text-left">Total Price</th>
+                        <th className="px-4 py-3 text-left">Refund Details</th>
+                        <th className="px-4 py-3 text-left">Status</th>
+                        <th className="px-4 py-3 text-right">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/[0.03]">
+                      {bookings.filter(b => b.cancel_requested || b.status === 'cancelled').map((booking) => {
+                        const refundAmount = (parseFloat(booking.total_price) * 0.9).toFixed(2);
+                        const ownerProfit = (parseFloat(booking.total_price) * 0.05).toFixed(2);
+                        return (
+                          <tr key={booking.id} className="hover:bg-white/[0.01] transition-colors">
+                            <td className="px-4 py-4 font-semibold text-dark-text text-xs">{booking.venue_details?.name}</td>
+                            <td className="px-4 py-4 text-xs text-dark-muted">
+                              {booking.organizer_details?.first_name} {booking.organizer_details?.last_name}
+                              <span className="block text-[10px] opacity-60">{booking.organizer_details?.email}</span>
+                            </td>
+                            <td className="px-4 py-4 text-xs text-dark-muted">
+                              <span className="block">{booking.start_date}</span>
+                              <span className="block text-[10px] opacity-60">to {booking.end_date}</span>
+                            </td>
+                            <td className="px-4 py-4 text-xs text-brand-primary font-bold">
+                              ₹{booking.total_price}
+                            </td>
+                            <td className="px-4 py-4 text-xs">
+                              <div className="space-y-0.5">
+                                <span className="text-blue-400 block">Refund Amount (90%): ₹{refundAmount}</span>
+                                <span className="text-emerald-400 block">Owner Profit (5%): ₹{ownerProfit}</span>
+                              </div>
+                            </td>
+                            <td className="px-4 py-4">
+                              {booking.cancel_requested && booking.status === 'approved' ? (
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-yellow-500/10 text-yellow-400">
+                                  Pending Approval
+                                </span>
+                              ) : (
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-red-500/10 text-red-400">
+                                  Cancelled & Refunded
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-4 py-4 text-right">
+                              {booking.cancel_requested && booking.status === 'approved' && (
+                                <button
+                                  onClick={() => setConfirmRefundModal({
+                                    show: true,
+                                    bookingId: booking.id,
+                                    amount: refundAmount,
+                                    retained: ownerProfit
+                                  })}
+                                  className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-all text-xs font-bold shadow-md shadow-blue-950/20 cursor-pointer"
+                                >
+                                  Approve Refund
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </motion.div>
+          )}
+
           {activeTab === 'reviews' && (
             <motion.div
               key="reviews"
@@ -988,6 +1297,479 @@ const PlotOwnerDashboard = () => {
                   ))}
                 </div>
               )}
+            </motion.div>
+          )}
+
+          {activeTab === 'services' && (
+            <motion.div
+              key="services"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 15 }}
+              className="space-y-6"
+            >
+              {/* Service Sub-navigation */}
+              <div className="flex space-x-1.5 p-1 bg-white/5 border border-white/5 rounded-2xl w-fit">
+                {[
+                  { id: 'catering', label: 'Catering Service', icon: UtensilsCrossed },
+                  { id: 'dj', label: 'DJ Service', icon: Music2 },
+                  { id: 'decor', label: 'Decoration Service', icon: Palette }
+                ].map(subTab => {
+                  const Icon = subTab.icon;
+                  const isActive = activeServiceTab === subTab.id;
+                  return (
+                    <button
+                      key={subTab.id}
+                      onClick={() => setActiveServiceTab(subTab.id)}
+                      className={`flex items-center space-x-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        isActive
+                          ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-950/20'
+                          : 'text-dark-muted hover:text-dark-text hover:bg-white/5'
+                      }`}
+                    >
+                      <Icon className="w-4 h-4" />
+                      <span>{subTab.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Sub-tab content */}
+              <div className="glass-panel rounded-2xl p-6 space-y-6">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-white/5">
+                  <div>
+                    <h4 className="font-bold text-lg text-dark-text">
+                      {activeServiceTab === 'catering' && 'Catering Service Configuration'}
+                      {activeServiceTab === 'dj' && 'DJ Setup Package Customization'}
+                      {activeServiceTab === 'decor' && 'Decoration Theme Customization'}
+                    </h4>
+                    <p className="text-xs text-dark-muted mt-0.5">
+                      {activeServiceTab === 'catering' && 'Toggle and configure custom menus and pricing per plate for any of your venues.'}
+                      {activeServiceTab === 'dj' && 'Toggle and configure DJ setups, equipment packages, and pricing for any of your venues.'}
+                      {activeServiceTab === 'decor' && 'Toggle and configure decor packages, floral arrangements, themes, and pricing for any of your venues.'}
+                    </p>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <label className="text-xs font-bold text-dark-muted uppercase tracking-wider">Select Venue:</label>
+                    <select
+                      value={selectedServiceVenueId}
+                      onChange={(e) => setSelectedServiceVenueId(e.target.value)}
+                      className="glass-input px-3 py-2 rounded-xl text-xs cursor-pointer bg-[#121a2e] text-slate-100 border border-white/5"
+                    >
+                      <option value="">Select Venue...</option>
+                      {venues.map(v => (
+                        <option key={v.id} value={v.id}>{v.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {selectedServiceVenueId ? (
+                  <div className="space-y-6">
+                    {/* CATERING EDITOR */}
+                    {activeServiceTab === 'catering' && (
+                      <div className="space-y-6">
+                        {/* Toggle */}
+                        <label className="flex items-center gap-3 cursor-pointer">
+                          <div className={`w-10 h-6 rounded-full transition-colors relative ${serviceHasCatering ? 'bg-blue-600' : 'bg-white/10'}`} onClick={() => setServiceHasCatering(!serviceHasCatering)}>
+                            <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${serviceHasCatering ? 'translate-x-5' : 'translate-x-1'}`} />
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <UtensilsCrossed className={`w-4 h-4 ${serviceHasCatering ? 'text-blue-400' : 'text-dark-muted'}`} />
+                            <span className={`text-sm font-bold uppercase tracking-wider ${serviceHasCatering ? 'text-blue-400' : 'text-dark-muted'}`}>Offer Catering Service</span>
+                          </div>
+                        </label>
+
+                        {serviceHasCatering && (
+                          <div className="space-y-4 pl-4 border-l-2 border-blue-500/30 animate-fadeIn">
+                            <div>
+                              <label className="block text-xs font-semibold text-dark-muted uppercase tracking-wider mb-2">Min. Plate Order</label>
+                              <input
+                                type="number"
+                                value={serviceCateringMinPlates}
+                                onChange={(e) => setServiceCateringMinPlates(e.target.value)}
+                                placeholder="50"
+                                min="10"
+                                className="glass-input w-full max-w-xs px-4 py-2.5 rounded-xl text-sm"
+                              />
+                              <p className="text-[10px] text-dark-muted mt-1">Minimum 10 plates required</p>
+                            </div>
+                            
+                            <div className="space-y-3">
+                              <label className="block text-xs font-bold text-blue-400 uppercase tracking-wider">Cuisine Options & Pricing</label>
+                              {serviceCateringOptions.map((opt, idx) => (
+                                <div key={idx} className="grid grid-cols-1 sm:grid-cols-12 gap-3 p-3 bg-white/5 rounded-xl border border-white/5 relative">
+                                  <div className="sm:col-span-4">
+                                    <label className="block text-[10px] font-semibold text-dark-muted uppercase mb-1">Cuisine / Option Name *</label>
+                                    <div className="space-y-1.5">
+                                      <select
+                                        value={Object.keys(CUISINE_TEMPLATES).includes(opt.name) ? opt.name : 'Custom / Mixed'}
+                                        onChange={(e) => {
+                                          const selectedName = e.target.value;
+                                          const updated = [...serviceCateringOptions];
+                                          updated[idx] = {
+                                            name: selectedName,
+                                            price: selectedName === 'Custom / Mixed' ? '' : CUISINE_TEMPLATES[selectedName] ? '350' : '',
+                                            description: CUISINE_TEMPLATES[selectedName] || ''
+                                          };
+                                          setServiceCateringOptions(updated);
+                                        }}
+                                        className="glass-input w-full px-3 py-1.5 rounded-lg text-xs cursor-pointer bg-[#121a2e] text-slate-100"
+                                        required
+                                      >
+                                        <option value="" className="bg-[#121a2e] text-slate-400">Select Cuisine...</option>
+                                        {Object.keys(CUISINE_TEMPLATES).map(k => (
+                                          <option key={k} value={k} className="bg-[#121a2e] text-slate-100">{k}</option>
+                                        ))}
+                                      </select>
+                                      {(!Object.keys(CUISINE_TEMPLATES).includes(opt.name) || opt.name === 'Custom / Mixed') && (
+                                        <input
+                                          type="text"
+                                          value={opt.name === 'Custom / Mixed' ? '' : opt.name}
+                                          onChange={(e) => {
+                                            const updated = [...serviceCateringOptions];
+                                            updated[idx].name = e.target.value || 'Custom / Mixed';
+                                            setServiceCateringOptions(updated);
+                                          }}
+                                          placeholder="Type custom cuisine name..."
+                                          className="glass-input w-full px-3 py-1.5 rounded-lg text-xs animate-fadeIn"
+                                          required
+                                        />
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="sm:col-span-3">
+                                    <label className="block text-[10px] font-semibold text-dark-muted uppercase mb-1">Price Per Plate (₹) *</label>
+                                    <input
+                                      type="number"
+                                      value={opt.price}
+                                      onChange={(e) => {
+                                        const updated = [...serviceCateringOptions];
+                                        updated[idx].price = e.target.value;
+                                        setServiceCateringOptions(updated);
+                                      }}
+                                      placeholder="350"
+                                      min="1"
+                                      className="glass-input w-full px-3 py-1.5 rounded-lg text-xs"
+                                      required
+                                    />
+                                  </div>
+                                  <div className="sm:col-span-4">
+                                    <label className="block text-[10px] font-semibold text-dark-muted uppercase mb-1">Menu Description / Items *</label>
+                                    <textarea
+                                      value={opt.description}
+                                      onChange={(e) => {
+                                        const updated = [...serviceCateringOptions];
+                                        updated[idx].description = e.target.value;
+                                        setServiceCateringOptions(updated);
+                                      }}
+                                      placeholder="Roti, Sabji, Dal, Rice, Sweet..."
+                                      className="glass-input w-full px-3 py-1.5 rounded-lg text-xs h-[38px] resize-none"
+                                      required
+                                    />
+                                  </div>
+                                  <div className="sm:col-span-1 flex items-end justify-center pb-1">
+                                    {serviceCateringOptions.length > 1 && (
+                                      <button
+                                        type="button"
+                                        onClick={() => setServiceCateringOptions(serviceCateringOptions.filter((_, i) => i !== idx))}
+                                        className="p-1.5 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors"
+                                        title="Delete Option"
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                              <button
+                                type="button"
+                                onClick={() => setServiceCateringOptions([...serviceCateringOptions, { name: '', price: '', description: '' }])}
+                                className="flex items-center gap-1 text-[11px] font-bold text-blue-400 hover:text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 px-3 py-1.5 rounded-lg transition-colors cursor-pointer w-fit"
+                              >
+                                <Plus className="w-3.5 h-3.5" /> Add Cuisine Option
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="pt-4 border-t border-white/5">
+                          <button
+                            onClick={() => handleSaveServiceSettings(selectedServiceVenueId, 'catering', {
+                              hasCatering: serviceHasCatering,
+                              cateringMinPlates: serviceCateringMinPlates,
+                              cateringOptions: serviceCateringOptions
+                            })}
+                            className="px-6 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-bold rounded-xl text-xs uppercase tracking-wider hover:from-blue-600 hover:to-indigo-600 transition-all cursor-pointer"
+                          >
+                            Save Catering Settings
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* DJ EDITOR */}
+                    {activeServiceTab === 'dj' && (
+                      <div className="space-y-6">
+                        {/* Toggle */}
+                        <label className="flex items-center gap-3 cursor-pointer">
+                          <div className={`w-10 h-6 rounded-full transition-colors relative ${serviceHasDj ? 'bg-blue-600' : 'bg-white/10'}`} onClick={() => setServiceHasDj(!serviceHasDj)}>
+                            <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${serviceHasDj ? 'translate-x-5' : 'translate-x-1'}`} />
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Music2 className={`w-4 h-4 ${serviceHasDj ? 'text-blue-400' : 'text-dark-muted'}`} />
+                            <span className={`text-sm font-bold uppercase tracking-wider ${serviceHasDj ? 'text-blue-400' : 'text-dark-muted'}`}>Offer DJ Service</span>
+                          </div>
+                        </label>
+
+                        {serviceHasDj && (
+                          <div className="space-y-4 pl-4 border-l-2 border-blue-500/30 animate-fadeIn">
+                            <div className="space-y-3">
+                              <label className="block text-xs font-bold text-blue-400 uppercase tracking-wider">DJ Setup Packages & Pricing</label>
+                              {serviceDjOptions.map((opt, idx) => (
+                                <div key={idx} className="grid grid-cols-1 sm:grid-cols-12 gap-3 p-3 bg-white/5 rounded-xl border border-white/5 relative">
+                                  <div className="sm:col-span-4">
+                                    <label className="block text-[10px] font-semibold text-dark-muted uppercase mb-1">Package Name *</label>
+                                    <div className="space-y-1.5">
+                                      <select
+                                        value={Object.keys(DJ_TEMPLATES).includes(opt.name) ? opt.name : 'Custom DJ Setup'}
+                                        onChange={(e) => {
+                                          const val = e.target.value;
+                                          const updated = [...serviceDjOptions];
+                                          updated[idx] = {
+                                            name: val,
+                                            price: val === 'Custom DJ Setup' ? '' : DJ_TEMPLATES[val]?.price || '',
+                                            equipment: val === 'Custom DJ Setup' ? '' : DJ_TEMPLATES[val]?.equipment || ''
+                                          };
+                                          setServiceDjOptions(updated);
+                                        }}
+                                        className="glass-input w-full px-3 py-1.5 rounded-lg text-xs cursor-pointer bg-[#121a2e] text-slate-100"
+                                        required
+                                      >
+                                        <option value="" className="bg-[#121a2e] text-slate-400">Select Setup...</option>
+                                        {Object.keys(DJ_TEMPLATES).map(k => (
+                                          <option key={k} value={k} className="bg-[#121a2e] text-slate-100">{k}</option>
+                                        ))}
+                                      </select>
+                                      {(!Object.keys(DJ_TEMPLATES).includes(opt.name) || opt.name === 'Custom DJ Setup') && (
+                                        <input
+                                          type="text"
+                                          value={opt.name === 'Custom DJ Setup' ? '' : opt.name}
+                                          onChange={(e) => {
+                                            const updated = [...serviceDjOptions];
+                                            updated[idx].name = e.target.value || 'Custom DJ Setup';
+                                            setServiceDjOptions(updated);
+                                          }}
+                                          placeholder="Type custom package name..."
+                                          className="glass-input w-full px-3 py-1.5 rounded-lg text-xs animate-fadeIn"
+                                          required
+                                        />
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="sm:col-span-3">
+                                    <label className="block text-[10px] font-semibold text-dark-muted uppercase mb-1">Price Per Day (₹) *</label>
+                                    <input
+                                      type="number"
+                                      value={opt.price}
+                                      onChange={(e) => {
+                                        const updated = [...serviceDjOptions];
+                                        updated[idx].price = e.target.value;
+                                        setServiceDjOptions(updated);
+                                      }}
+                                      placeholder="8000"
+                                      min="1"
+                                      className="glass-input w-full px-3 py-1.5 rounded-lg text-xs"
+                                      required
+                                    />
+                                  </div>
+                                  <div className="sm:col-span-4">
+                                    <label className="block text-[10px] font-semibold text-dark-muted uppercase mb-1">Equipment Details *</label>
+                                    <input
+                                      type="text"
+                                      value={opt.equipment}
+                                      onChange={(e) => {
+                                        const updated = [...serviceDjOptions];
+                                        updated[idx].equipment = e.target.value;
+                                        setServiceDjOptions(updated);
+                                      }}
+                                      placeholder="4 Speakers, Lights, Mic..."
+                                      className="glass-input w-full px-3 py-1.5 rounded-lg text-xs"
+                                      required
+                                    />
+                                  </div>
+                                  <div className="sm:col-span-1 flex items-end justify-center pb-1">
+                                    {serviceDjOptions.length > 1 && (
+                                      <button
+                                        type="button"
+                                        onClick={() => setServiceDjOptions(serviceDjOptions.filter((_, i) => i !== idx))}
+                                        className="p-1.5 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors"
+                                        title="Delete Package"
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                              <button
+                                type="button"
+                                onClick={() => setServiceDjOptions([...serviceDjOptions, { name: '', price: '', equipment: '' }])}
+                                className="flex items-center gap-1 text-[11px] font-bold text-blue-400 hover:text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 px-3 py-1.5 rounded-lg transition-colors cursor-pointer w-fit"
+                              >
+                                <Plus className="w-3.5 h-3.5" /> Add DJ Package Option
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="pt-4 border-t border-white/5">
+                          <button
+                            onClick={() => handleSaveServiceSettings(selectedServiceVenueId, 'dj', {
+                              hasDj: serviceHasDj,
+                              djOptions: serviceDjOptions
+                            })}
+                            className="px-6 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-bold rounded-xl text-xs uppercase tracking-wider hover:from-blue-600 hover:to-indigo-600 transition-all cursor-pointer"
+                          >
+                            Save DJ Settings
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* DECOR EDITOR */}
+                    {activeServiceTab === 'decor' && (
+                      <div className="space-y-6">
+                        {/* Toggle */}
+                        <label className="flex items-center gap-3 cursor-pointer">
+                          <div className={`w-10 h-6 rounded-full transition-colors relative ${serviceHasDecor ? 'bg-blue-600' : 'bg-white/10'}`} onClick={() => setServiceHasDecor(!serviceHasDecor)}>
+                            <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${serviceHasDecor ? 'translate-x-5' : 'translate-x-1'}`} />
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Palette className={`w-4 h-4 ${serviceHasDecor ? 'text-blue-400' : 'text-dark-muted'}`} />
+                            <span className={`text-sm font-bold uppercase tracking-wider ${serviceHasDecor ? 'text-blue-400' : 'text-dark-muted'}`}>Offer Decoration Service</span>
+                          </div>
+                        </label>
+
+                        {serviceHasDecor && (
+                          <div className="space-y-4 pl-4 border-l-2 border-blue-500/30 animate-fadeIn">
+                            <div className="space-y-3">
+                              <label className="block text-xs font-bold text-blue-400 uppercase tracking-wider">Decor Theme Packages & Pricing</label>
+                              {serviceDecorOptions.map((opt, idx) => (
+                                <div key={idx} className="grid grid-cols-1 sm:grid-cols-12 gap-3 p-3 bg-white/5 rounded-xl border border-white/5 relative">
+                                  <div className="sm:col-span-4">
+                                    <label className="block text-[10px] font-semibold text-dark-muted uppercase mb-1">Theme Name *</label>
+                                    <div className="space-y-1.5">
+                                      <select
+                                        value={Object.keys(DECOR_TEMPLATES).includes(opt.name) ? opt.name : 'Custom Decoration Setup'}
+                                        onChange={(e) => {
+                                          const val = e.target.value;
+                                          const updated = [...serviceDecorOptions];
+                                          updated[idx] = {
+                                            name: val,
+                                            price: val === 'Custom Decoration Setup' ? '' : DECOR_TEMPLATES[val]?.price || '',
+                                            description: val === 'Custom Decoration Setup' ? '' : DECOR_TEMPLATES[val]?.description || ''
+                                          };
+                                          setServiceDecorOptions(updated);
+                                        }}
+                                        className="glass-input w-full px-3 py-1.5 rounded-lg text-xs cursor-pointer bg-[#121a2e] text-slate-100"
+                                        required
+                                      >
+                                        <option value="" className="bg-[#121a2e] text-slate-400">Select Theme...</option>
+                                        {Object.keys(DECOR_TEMPLATES).map(k => (
+                                          <option key={k} value={k} className="bg-[#121a2e] text-slate-100">{k}</option>
+                                        ))}
+                                      </select>
+                                      {(!Object.keys(DECOR_TEMPLATES).includes(opt.name) || opt.name === 'Custom Decoration Setup') && (
+                                        <input
+                                          type="text"
+                                          value={opt.name === 'Custom Decoration Setup' ? '' : opt.name}
+                                          onChange={(e) => {
+                                            const updated = [...serviceDecorOptions];
+                                            updated[idx].name = e.target.value || 'Custom Decoration Setup';
+                                            setServiceDecorOptions(updated);
+                                          }}
+                                          placeholder="Type custom theme name..."
+                                          className="glass-input w-full px-3 py-1.5 rounded-lg text-xs animate-fadeIn"
+                                          required
+                                        />
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="sm:col-span-3">
+                                    <label className="block text-[10px] font-semibold text-dark-muted uppercase mb-1">Price Per Setup (₹) *</label>
+                                    <input
+                                      type="number"
+                                      value={opt.price}
+                                      onChange={(e) => {
+                                        const updated = [...serviceDecorOptions];
+                                        updated[idx].price = e.target.value;
+                                        setServiceDecorOptions(updated);
+                                      }}
+                                      placeholder="15000"
+                                      min="1"
+                                      className="glass-input w-full px-3 py-1.5 rounded-lg text-xs"
+                                      required
+                                    />
+                                  </div>
+                                  <div className="sm:col-span-4">
+                                    <label className="block text-[10px] font-semibold text-dark-muted uppercase mb-1">Setup / Flower Details *</label>
+                                    <input
+                                      type="text"
+                                      value={opt.description}
+                                      onChange={(e) => {
+                                        const updated = [...serviceDecorOptions];
+                                        updated[idx].description = e.target.value;
+                                        setServiceDecorOptions(updated);
+                                      }}
+                                      placeholder="Entrance gate, background stage flowers..."
+                                      className="glass-input w-full px-3 py-1.5 rounded-lg text-xs"
+                                      required
+                                    />
+                                  </div>
+                                  <div className="sm:col-span-1 flex items-end justify-center pb-1">
+                                    {serviceDecorOptions.length > 1 && (
+                                      <button
+                                        type="button"
+                                        onClick={() => setServiceDecorOptions(serviceDecorOptions.filter((_, i) => i !== idx))}
+                                        className="p-1.5 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors"
+                                        title="Delete Theme"
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                              <button
+                                type="button"
+                                onClick={() => setServiceDecorOptions([...serviceDecorOptions, { name: '', price: '', description: '' }])}
+                                className="flex items-center gap-1 text-[11px] font-bold text-blue-400 hover:text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 px-3 py-1.5 rounded-lg transition-colors cursor-pointer w-fit"
+                              >
+                                <Plus className="w-3.5 h-3.5" /> Add Decor Theme Option
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="pt-4 border-t border-white/5">
+                          <button
+                            onClick={() => handleSaveServiceSettings(selectedServiceVenueId, 'decor', {
+                              hasDecor: serviceHasDecor,
+                              decorOptions: serviceDecorOptions
+                            })}
+                            className="px-6 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-bold rounded-xl text-xs uppercase tracking-wider hover:from-blue-600 hover:to-indigo-600 transition-all cursor-pointer"
+                          >
+                            Save Decoration Settings
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center py-12 text-dark-muted">No venues registered to configure services.</div>
+                )}
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -1494,6 +2276,72 @@ const PlotOwnerDashboard = () => {
                   </button>
                 </div>
               </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Custom Confirmation Dialog for Approving Cancellation Refund */}
+      <AnimatePresence>
+        {confirmRefundModal.show && (
+          <div className="fixed inset-0 z-[999] flex items-center justify-center px-4">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setConfirmRefundModal({ show: false, bookingId: null, amount: 0, retained: 0 })}
+              className="fixed inset-0 bg-black/70 backdrop-blur-md"
+            />
+
+            {/* Dialog Content */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 30 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 30 }}
+              className="glass-panel w-full max-w-md rounded-3xl border border-blue-500/20 bg-dark-bg/95 shadow-2xl p-6 relative z-10 text-center space-y-6 overflow-hidden"
+            >
+              {/* Top Accent Gradient Line */}
+              <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-blue-500 to-indigo-600" />
+
+              {/* Warning Icon Badge */}
+              <div className="mx-auto w-16 h-16 bg-blue-500/10 text-blue-400 rounded-full flex items-center justify-center border border-blue-500/20 animate-pulse">
+                <AlertCircle className="w-8 h-8" />
+              </div>
+
+              {/* Text Context */}
+              <div className="space-y-2">
+                <h3 className="text-xl font-extrabold text-dark-text tracking-tight">Approve Cancellation Refund</h3>
+                <p className="text-xs text-dark-muted leading-relaxed">
+                  Are you sure you want to approve this venue booking cancellation request? Approving will permanently release the dates and refund <strong className="text-dark-text">90% (₹{confirmRefundModal.amount})</strong> to the organizer.
+                </p>
+                <div className="mt-3 p-3 bg-white/5 rounded-2xl border border-white/5 text-xs text-left space-y-1">
+                  <div className="flex justify-between">
+                    <span className="text-dark-muted">Refund Amount (90%):</span>
+                    <span className="text-blue-400 font-bold">₹{confirmRefundModal.amount}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-dark-muted">Your Profit (5%):</span>
+                    <span className="text-emerald-400 font-bold">₹{confirmRefundModal.retained}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Control Buttons */}
+              <div className="flex items-center space-x-3 pt-2">
+                <button
+                  onClick={() => setConfirmRefundModal({ show: false, bookingId: null, amount: 0, retained: 0 })}
+                  className="flex-1 py-3 px-4 border border-white/10 hover:bg-white/5 text-xs font-bold text-dark-text rounded-2xl transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfirmApproveRefund}
+                  className="flex-1 py-3 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-xs font-bold text-white rounded-2xl transition-all shadow-lg shadow-blue-950/30 cursor-pointer"
+                >
+                  Approve & Refund
+                </button>
+              </div>
             </motion.div>
           </div>
         )}
