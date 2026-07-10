@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, Lock, User, Phone, CheckCircle2, AlertCircle, Eye, EyeOff, Sparkles, Building, Calendar } from 'lucide-react';
+import { Mail, Lock, User, Phone, CheckCircle2, AlertCircle, Eye, EyeOff, Sparkles, Building, Calendar, ArrowLeft } from 'lucide-react';
 import ThreeDEventBackground from '../components/ThreeDEventBackground';
 import api from '../api/api';
 
@@ -99,6 +99,9 @@ const Register = () => {
     try {
       const res = await api.post('accounts/register-otp/', { email });
       setOtpSentMessage(res.data.message || 'OTP verification code has been sent!');
+      if (res.data.debug_otp) {
+        setOtpCode(res.data.debug_otp);
+      }
       setStep(2);
     } catch (err) {
       setErrorMsg(err.response?.data?.error || 'Failed to send OTP verification email. Please check your SMTP settings.');
@@ -461,8 +464,11 @@ const Register = () => {
                     setErrorMsg('');
                     setOtpSentMessage('');
                     try {
-                      const res = await api.post('accounts/resend-otp/', { email });
+                      const res = await api.post('accounts/register-otp/', { email });
                       setOtpSentMessage(res.data.message || 'OTP verification code resent!');
+                      if (res.data.debug_otp) {
+                        setOtpCode(res.data.debug_otp);
+                      }
                     } catch (err) {
                       setErrorMsg(err.response?.data?.error || 'Failed to resend OTP.');
                     } finally {
@@ -472,6 +478,20 @@ const Register = () => {
                   className="text-brand-primary hover:text-brand-primary/80 transition-colors font-semibold bg-transparent border-none outline-none cursor-pointer"
                 >
                   Resend OTP Code
+                </button>
+              </div>
+
+              <div className="flex justify-center items-center text-xs pt-4 border-t border-white/5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStep(1);
+                    setErrorMsg('');
+                    setOtpCode('');
+                  }}
+                  className="text-dark-muted hover:text-dark-text transition-colors font-medium flex items-center bg-transparent border-none outline-none cursor-pointer"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5 mr-1" /> Back to Edit Details
                 </button>
               </div>
             </form>
