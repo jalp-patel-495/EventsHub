@@ -17,6 +17,7 @@ from .serializers import (
     ResetPasswordSerializer
 )
 from .utils import send_registration_otp, send_password_reset_email
+from django.conf import settings
 from .models import EmailOTP
 from django.utils import timezone
 import re
@@ -44,6 +45,15 @@ class RegisterOTPView(APIView):
             return Response({"message": "OTP verification code has been sent to your Gmail inbox successfully!"}, status=status.HTTP_200_OK)
         except Exception as e:
             print(f"SMTP error: {e}")
+            if settings.DEBUG:
+                print("\n" + "="*60)
+                print(f"📧  [LOCAL DEV FALLBACK] SMTP failed. OTP code is: {otp_code}")
+                print(f"To register: {email}")
+                print("="*60 + "\n")
+                return Response({
+                    "message": "Failed to send email via SMTP, but OTP code has been printed to the server terminal console! (Local Dev Fallback)",
+                    "debug_otp": otp_code
+                }, status=status.HTTP_200_OK)
             return Response({"error": "Failed to send email. Please check your SMTP settings in .env file."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class RegisterView(generics.CreateAPIView):
