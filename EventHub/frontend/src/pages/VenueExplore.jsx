@@ -18,7 +18,7 @@ const VenueExplore = () => {
     try {
       const params = {};
       if (search) params.search = search;
-      const res = await api.get('venues/', { params });
+      const res = await api.get('venues/listings/', { params });
       setVenues(res.data);
     } catch (err) {
       console.error('Error fetching venues:', err);
