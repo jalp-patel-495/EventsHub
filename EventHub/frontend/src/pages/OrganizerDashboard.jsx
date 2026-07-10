@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import api from '../api/api';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, Trash2, Edit2, Plus, Sparkles, TrendingUp, Users, IndianRupee, Star, FileText, Upload, X, ShieldAlert, MapPin, Building, CheckCircle, XCircle } from 'lucide-react';
+import { Calendar, Trash2, Edit2, Plus, Sparkles, TrendingUp, Users, IndianRupee, Star, FileText, Upload, X, ShieldAlert, MapPin, Building, CheckCircle, XCircle, LayoutDashboard, Ticket } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import VenuePaymentModal from '../components/VenuePaymentModal';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 const OrganizerDashboard = () => {
   const { user } = useAuth();
@@ -15,8 +16,30 @@ const OrganizerDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [venueBookings, setVenueBookings] = useState([]);
   
-  // Tab states: events, bookings, reviews, analytics
-  const [activeTab, setActiveTab] = useState('events');
+  const routeLocation = useLocation();
+  const navigate = useNavigate();
+  const activeTab = routeLocation.pathname === '/organizer/sales'
+    ? 'bookings'
+    : routeLocation.pathname === '/organizer/rentals'
+      ? 'venue_rentals'
+      : routeLocation.pathname === '/organizer/reviews'
+        ? 'reviews'
+        : routeLocation.pathname === '/organizer/analytics'
+          ? 'analytics'
+          : routeLocation.pathname === '/organizer/refunds'
+            ? 'refunds'
+            : 'events';
+  const setActiveTab = (tabId) => {
+    const paths = {
+      events: '/organizer/events',
+      bookings: '/organizer/sales',
+      venue_rentals: '/organizer/rentals',
+      reviews: '/organizer/reviews',
+      analytics: '/organizer/analytics',
+      refunds: '/organizer/refunds'
+    };
+    navigate(paths[tabId] || '/organizer/events');
+  };
 
   // Modal states (Create/Edit)
   const [modalOpen, setModalOpen] = useState(false);
@@ -38,6 +61,12 @@ const OrganizerDashboard = () => {
   const [aiGenerating, setAiGenerating] = useState(false);
   const [aiAnalytics, setAiAnalytics] = useState(null);
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
+  const [feedbackMsg, setFeedbackMsg] = useState(null);
+
+  const showFeedback = (text, type = 'success') => {
+    setFeedbackMsg({ text, type });
+    setTimeout(() => setFeedbackMsg(null), 4000);
+  };
 
   // Google Maps & Venue Selection States
   const [approvedVenues, setApprovedVenues] = useState([]);
@@ -176,6 +205,21 @@ const OrganizerDashboard = () => {
       console.error("Error loading organizer dashboard:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const [refundConfirmBookingId, setRefundConfirmBookingId] = useState(null);
+
+  const executeApproveRefund = async () => {
+    if (!refundConfirmBookingId) return;
+    const bookingId = refundConfirmBookingId;
+    setRefundConfirmBookingId(null);
+    try {
+      await api.post(`events/bookings/${bookingId}/approve-refund/`);
+      showFeedback("Refund request approved successfully.", "success");
+      fetchDashboardData();
+    } catch (err) {
+      showFeedback(err.response?.data?.error || "Failed to approve refund.", "error");
     }
   };
 
@@ -430,7 +474,7 @@ const OrganizerDashboard = () => {
         api.get(`events/listings/?organizer=${user.id}`),
         api.get('events/bookings/')
       ]);
-      setEvents(eventsRes.data);
+      setEvents(eventsRes.data.results || eventsRes.data);
       setBookings(bookingsRes.data);
     } catch (err) {
       alert("Venue booked but event listing creation failed: " + (err.response?.data?.detail || "Connection error"));
@@ -450,6 +494,7 @@ const OrganizerDashboard = () => {
   };
 
   // Stats calculation
+  const myEvents = events.filter(e => e.organizer === user?.id || e.organizer_details?.id === user?.id);
   const confirmedBookings = bookings.filter(b => b.status === 'confirmed');
   const refundedBookings = bookings.filter(b => b.status === 'cancelled');
 
@@ -466,11 +511,11 @@ const OrganizerDashboard = () => {
   // Organizer net share: 80% on active bookings, 40% on refunded bookings
   const organizerNet = confirmedBookings.reduce((sum, b) => sum + parseFloat(b.total_price) * 0.80, 0) +
                         refundedBookings.reduce((sum, b) => sum + parseFloat(b.total_price) * 0.40, 0);
-  const averageRating = events.length > 0 
-    ? (events.reduce((sum, e) => sum + parseFloat(e.rating_avg || 0), 0) / events.length).toFixed(1)
+  const averageRating = myEvents.length > 0 
+    ? (myEvents.reduce((sum, e) => sum + parseFloat(e.rating_avg || 0), 0) / myEvents.length).toFixed(1)
     : '0.0';
 
-  const allReviews = events.reduce((arr, e) => {
+  const allReviews = myEvents.reduce((arr, e) => {
     if (e.reviews && Array.isArray(e.reviews)) {
       e.reviews.forEach(r => {
         arr.push({ ...r, eventTitle: e.title });
@@ -500,130 +545,141 @@ const OrganizerDashboard = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div className="w-full px-4 sm:px-6 lg:px-12 py-10">
+      {/* Toast Alert Feedback */}
+      <AnimatePresence>
+        {feedbackMsg && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            className={`fixed top-24 right-6 z-50 px-5 py-3.5 rounded-xl border shadow-xl flex items-center space-x-3 backdrop-blur-md ${
+              feedbackMsg.type === 'error'
+                ? 'bg-red-500/10 border-red-500/35 text-red-400'
+                : 'bg-emerald-500/10 border-emerald-500/35 text-emerald-400'
+            }`}
+          >
+            {feedbackMsg.type === 'error' ? (
+              <XCircle className="w-5 h-5 flex-shrink-0" />
+            ) : (
+              <CheckCircle className="w-5 h-5 flex-shrink-0" />
+            )}
+            <span className="text-sm font-semibold">{feedbackMsg.text}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-10">
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-dark-text">Organizer Dashboard</h1>
-          <p className="text-dark-muted mt-1">Host events, review ticketing metrics, and manage customer sales</p>
+          <h1 className="text-3xl font-black tracking-tight text-dark-text">
+            {activeTab === 'events' && 'Organizer Dashboard'}
+            {activeTab === 'bookings' && 'Ticket Sales'}
+            {activeTab === 'refunds' && 'Refund Ticket Requests'}
+            {activeTab === 'venue_rentals' && 'Venue Rentals'}
+            {activeTab === 'reviews' && 'Customer Reviews'}
+            {activeTab === 'analytics' && 'Revenue Analytics'}
+          </h1>
+          <p className="text-dark-muted mt-1">
+            {activeTab === 'events' && 'Host events, review ticketing metrics, and manage customer sales'}
+            {activeTab === 'bookings' && 'View and track all event tickets purchased by customers'}
+            {activeTab === 'refunds' && 'Manage and approve cancelation refund requests submitted by attendees'}
+            {activeTab === 'venue_rentals' && 'View lawns, plots, and halls booked for your events'}
+            {activeTab === 'reviews' && 'Review feedback and ratings received from event attendees'}
+            {activeTab === 'analytics' && 'Detailed overview of organizer income and event performance reports'}
+          </p>
         </div>
         <button
           onClick={handleOpenCreateModal}
-          className="flex items-center space-x-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-medium px-5 py-2.5 rounded-xl hover:from-emerald-600 hover:to-teal-600 shadow-md shadow-emerald-950/20 transition-all transform hover:-translate-y-0.5"
+          className="flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium px-5 py-2.5 rounded-xl hover:from-blue-700 hover:to-indigo-700 shadow-md shadow-blue-950/20 transition-all transform hover:-translate-y-0.5"
         >
           <Plus className="w-5 h-5" />
           <span>Create New Event</span>
         </button>
       </div>
 
+
       {/* Grid Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-        <div className="glass-panel rounded-2xl p-6 flex items-start space-x-4">
-          <div className="p-3 bg-emerald-500/10 text-emerald-400 rounded-xl mt-1">
-            <IndianRupee className="w-6 h-6" />
-          </div>
-          <div className="flex-grow">
-            <p className="text-xs font-semibold text-dark-muted uppercase tracking-wider">Total Sales (Net)</p>
-            <h3 className="text-2xl font-bold mt-1 text-emerald-400">₹{organizerNet.toLocaleString('en-IN')}</h3>
-            <div className="mt-3 space-y-1 text-[10px] text-dark-muted border-t border-white/5 pt-2">
-              <div className="flex justify-between">
-                <span>Gross Ticketing Sales:</span>
-                <span className="text-dark-text font-medium">₹{grossSales.toLocaleString('en-IN')}</span>
-              </div>
-              <div className="flex justify-between border-b border-white/5 pb-1 mb-1">
-                <span>Active Sales (80% Org / 20% Admin):</span>
-                <span className="text-emerald-400 font-medium">₹{confirmedBookings.reduce((sum, b) => sum + parseFloat(b.total_price) * 0.80, 0).toLocaleString('en-IN')}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Cancelled Tickets Count:</span>
-                <span className="text-dark-text font-medium">{refundedBookings.reduce((sum, b) => sum + b.tickets_count, 0)} tickets</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Total Cancelled Sales:</span>
-                <span className="text-red-400 font-medium">₹{refundedBookings.reduce((sum, b) => sum + parseFloat(b.total_price), 0).toLocaleString('en-IN')}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Refunded to Cust. (50%):</span>
-                <span className="text-blue-400 font-medium">₹{refundedBookings.reduce((sum, b) => sum + parseFloat(b.total_price) * 0.5, 0).toLocaleString('en-IN')}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Admin Retained Cut (10%):</span>
-                <span className="text-red-400 font-medium">-₹{refundedBookings.reduce((sum, b) => sum + parseFloat(b.total_price) * 0.1, 0).toLocaleString('en-IN')}</span>
-              </div>
-              <div className="flex justify-between border-b border-white/5 pb-1 mb-1">
-                <span>Org Net Retained (40%):</span>
-                <span className="text-emerald-400 font-medium">₹{refundedBookings.reduce((sum, b) => sum + parseFloat(b.total_price) * 0.4, 0).toLocaleString('en-IN')}</span>
-              </div>
-              <div className="flex justify-between text-emerald-400 font-semibold pt-1">
-                <span>Org Net Profit:</span>
-                <span>₹{organizerNet.toLocaleString('en-IN')}</span>
+      {activeTab === 'events' && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+          <div className="glass-panel rounded-2xl p-6 flex items-start space-x-4">
+            <div className="p-3 bg-emerald-500/10 text-emerald-400 rounded-xl mt-1">
+              <IndianRupee className="w-6 h-6" />
+            </div>
+            <div className="flex-grow">
+              <p className="text-xs font-semibold text-dark-muted uppercase tracking-wider">Total Sales (Net)</p>
+              <h3 className="text-2xl font-bold mt-1 text-emerald-400">₹{organizerNet.toLocaleString('en-IN')}</h3>
+              <div className="mt-3 space-y-1 text-[10px] text-dark-muted border-t border-white/5 pt-2">
+                <div className="flex justify-between">
+                  <span>Gross Ticketing Sales:</span>
+                  <span className="text-dark-text font-medium">₹{grossSales.toLocaleString('en-IN')}</span>
+                </div>
+                <div className="flex justify-between border-b border-white/5 pb-1 mb-1">
+                  <span>Active Sales (80% Org / 20% Admin):</span>
+                  <span className="text-emerald-400 font-medium">₹{confirmedBookings.reduce((sum, b) => sum + parseFloat(b.total_price) * 0.80, 0).toLocaleString('en-IN')}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Cancelled Tickets Count:</span>
+                  <span className="text-dark-text font-medium">{refundedBookings.reduce((sum, b) => sum + b.tickets_count, 0)} tickets</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Total Cancelled Sales:</span>
+                  <span className="text-red-400 font-medium">₹{refundedBookings.reduce((sum, b) => sum + parseFloat(b.total_price), 0).toLocaleString('en-IN')}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Refunded to Cust. (50%):</span>
+                  <span className="text-blue-400 font-medium">₹{refundedBookings.reduce((sum, b) => sum + parseFloat(b.total_price) * 0.5, 0).toLocaleString('en-IN')}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Admin Retained Cut (10%):</span>
+                  <span className="text-red-400 font-medium">-₹{refundedBookings.reduce((sum, b) => sum + parseFloat(b.total_price) * 0.1, 0).toLocaleString('en-IN')}</span>
+                </div>
+                <div className="flex justify-between border-b border-white/5 pb-1 mb-1">
+                  <span>Org Net Retained (40%):</span>
+                  <span className="text-emerald-400 font-medium">₹{refundedBookings.reduce((sum, b) => sum + parseFloat(b.total_price) * 0.4, 0).toLocaleString('en-IN')}</span>
+                </div>
+                <div className="flex justify-between text-emerald-400 font-semibold pt-1">
+                  <span>Org Net Profit:</span>
+                  <span>₹{organizerNet.toLocaleString('en-IN')}</span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <div className="glass-panel rounded-2xl p-6 flex items-center space-x-4">
-          <div className="p-3 bg-blue-500/10 text-blue-400 rounded-xl">
-            <Users className="w-6 h-6" />
+          <div className="glass-panel rounded-2xl p-6 flex items-center space-x-4">
+            <div className="p-3 bg-blue-500/10 text-blue-400 rounded-xl">
+              <Users className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-dark-muted uppercase tracking-wider">Tickets Sold</p>
+              <h3 className="text-2xl font-bold mt-1">{totalTicketsSold}</h3>
+            </div>
           </div>
-          <div>
-            <p className="text-xs font-semibold text-dark-muted uppercase tracking-wider">Tickets Sold</p>
-            <h3 className="text-2xl font-bold mt-1">{totalTicketsSold}</h3>
+
+          <div className="glass-panel rounded-2xl p-6 flex items-center space-x-4">
+            <div className="p-3 bg-purple-500/10 text-purple-400 rounded-xl">
+              <Calendar className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-dark-muted uppercase tracking-wider">Events Hosted</p>
+              <h3 className="text-2xl font-bold mt-1">{myEvents.length}</h3>
+            </div>
+          </div>
+
+          <div className="glass-panel rounded-2xl p-6 flex items-center space-x-4">
+            <div className="p-3 bg-amber-500/10 text-amber-400 rounded-xl">
+              <Star className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-dark-muted uppercase tracking-wider">Average Rating</p>
+              <h3 className="text-2xl font-bold mt-1">{averageRating} <span className="text-xs text-dark-muted">/ 5</span></h3>
+            </div>
           </div>
         </div>
-
-        <div className="glass-panel rounded-2xl p-6 flex items-center space-x-4">
-          <div className="p-3 bg-purple-500/10 text-purple-400 rounded-xl">
-            <Calendar className="w-6 h-6" />
-          </div>
-          <div>
-            <p className="text-xs font-semibold text-dark-muted uppercase tracking-wider">Events Hosted</p>
-            <h3 className="text-2xl font-bold mt-1">{events.length}</h3>
-          </div>
-        </div>
-
-        <div className="glass-panel rounded-2xl p-6 flex items-center space-x-4">
-          <div className="p-3 bg-amber-500/10 text-amber-400 rounded-xl">
-            <Star className="w-6 h-6" />
-          </div>
-          <div>
-            <p className="text-xs font-semibold text-dark-muted uppercase tracking-wider">Average Rating</p>
-            <h3 className="text-2xl font-bold mt-1">{averageRating} <span className="text-xs text-dark-muted">/ 5</span></h3>
-          </div>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex border-b border-white/5 space-x-6 mb-8">
-        {[
-          { id: 'events', label: 'My Listings', count: events.length },
-          { id: 'bookings', label: 'Ticket Sales', count: bookings.length },
-          { id: 'venue_rentals', label: 'Venue Rentals', count: venueBookings.length },
-          { id: 'reviews', label: 'Customer Reviews', count: allReviews.length },
-          { id: 'analytics', label: 'Revenue Analytics', count: null }
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`pb-4 text-sm font-semibold relative transition-colors ${
-              activeTab === tab.id ? 'text-brand-primary' : 'text-dark-muted hover:text-dark-text'
-            }`}
-          >
-            <span>{tab.label}</span>
-            {tab.count !== null && (
-              <span className="ml-1.5 px-2 py-0.5 text-xs bg-white/5 text-dark-text rounded-full font-medium">
-                {tab.count}
-              </span>
-            )}
-            {activeTab === tab.id && (
-              <motion.div layoutId="orgTabUnderline" className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-primary" />
-            )}
-          </button>
-        ))}
-      </div>
+      )}
 
       {/* Tab Panels */}
-      <div>
+      <div className="mt-8">
         <AnimatePresence mode="wait">
           {activeTab === 'events' && (
             <motion.div
@@ -633,13 +689,13 @@ const OrganizerDashboard = () => {
               exit={{ opacity: 0, y: 15 }}
               className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
             >
-              {events.length === 0 ? (
+              {myEvents.length === 0 ? (
                 <div className="col-span-full glass-panel text-center py-16 rounded-2xl">
                   <Calendar className="w-12 h-12 text-dark-muted mx-auto mb-4" />
                   <p className="text-dark-muted">You haven't created any events yet. Click "Create New Event" to get started!</p>
                 </div>
               ) : (
-                events.map((event) => (
+                myEvents.map((event) => (
                   <div key={event.id} className="glass-card rounded-2xl overflow-hidden flex flex-col">
                     {event.image ? (
                       <img
@@ -718,12 +774,13 @@ const OrganizerDashboard = () => {
                       <th className="px-6 py-4">Revenue</th>
                       <th className="px-6 py-4">Status</th>
                       <th className="px-6 py-4">Date</th>
+                      <th className="px-6 py-4 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="text-sm divide-y divide-white/5">
                     {bookings.length === 0 ? (
                       <tr>
-                        <td colSpan="6" className="text-center py-12 text-dark-muted">No ticket bookings logged yet.</td>
+                        <td colSpan="7" className="text-center py-12 text-dark-muted">No ticket bookings logged yet.</td>
                       </tr>
                     ) : (
                       bookings.map((booking) => (
@@ -750,15 +807,98 @@ const OrganizerDashboard = () => {
                             )}
                           </td>
                           <td className="px-6 py-4">
-                            <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-extrabold ${
-                              booking.status === 'confirmed' ? 'bg-emerald-500/10 text-emerald-400' :
-                              booking.status === 'cancelled' ? 'bg-red-500/10 text-red-400' :
-                              'bg-yellow-500/10 text-yellow-400'
-                            }`}>
-                              {booking.status}
+                            <div className="flex flex-col space-y-1">
+                              <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-extrabold w-fit ${
+                                booking.status === 'confirmed' ? 'bg-emerald-500/10 text-emerald-400' :
+                                booking.status === 'cancelled' ? 'bg-red-500/10 text-red-400' :
+                                'bg-yellow-500/10 text-yellow-400'
+                              }`}>
+                                {booking.status}
+                              </span>
+                              {booking.refund_requested && (
+                                <span className="px-2 py-0.5 rounded text-[8px] bg-amber-500/10 text-amber-400 border border-amber-500/15 font-bold w-fit mt-1 animate-pulse">
+                                  Refund Requested
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-xs text-dark-muted">{new Date(booking.created_at).toLocaleDateString()}</td>
+                          <td className="px-6 py-4 text-right text-xs">
+                            {booking.refund_requested ? (
+                              <button
+                                onClick={() => setRefundConfirmBookingId(booking.id)}
+                                className="bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/15 px-3 py-1.5 rounded-lg font-bold text-[10px] transition-colors"
+                              >
+                                Approve Refund
+                              </button>
+                            ) : (
+                              <span className="text-[10px] text-dark-muted font-semibold">—</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </motion.div>
+          )}
+
+          {activeTab === 'refunds' && (
+            <motion.div
+              key="refunds"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 15 }}
+              className="glass-panel rounded-2xl overflow-hidden animate-fadeIn"
+            >
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-white/5 bg-white/5 text-xs font-semibold text-dark-muted uppercase tracking-wider">
+                      <th className="px-6 py-4">Attendee</th>
+                      <th className="px-6 py-4">Event</th>
+                      <th className="px-6 py-4">Tickets</th>
+                      <th className="px-6 py-4">Amount to Refund</th>
+                      <th className="px-6 py-4">Status</th>
+                      <th className="px-6 py-4">Request Date</th>
+                      <th className="px-6 py-4 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="text-sm divide-y divide-white/5">
+                    {bookings.filter(b => b.refund_requested).length === 0 ? (
+                      <tr>
+                        <td colSpan="7" className="text-center py-12 text-dark-muted">No refund requests found.</td>
+                      </tr>
+                    ) : (
+                      bookings.filter(b => b.refund_requested).map((booking) => (
+                        <tr key={booking.id} className="hover:bg-white/5 transition-colors">
+                          <td className="px-6 py-4">
+                            <p className="font-bold text-dark-text">{booking.user_details.first_name} {booking.user_details.last_name}</p>
+                            <p className="text-xs text-dark-muted mt-0.5">{booking.user_details.email}</p>
+                          </td>
+                          <td className="px-6 py-4 font-semibold text-dark-text">{booking.event_details.title}</td>
+                          <td className="px-6 py-4 font-bold text-dark-text">
+                            {booking.tickets_count} <span className="text-[9px] text-emerald-400 font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 uppercase ml-2">{booking.ticket_category}</span>
+                          </td>
+                          <td className="px-6 py-4 font-bold text-red-400">
+                            ₹{(parseFloat(booking.total_price) * 0.5).toLocaleString('en-IN')}
+                            <span className="text-[9px] text-dark-muted block mt-0.5 font-normal">(50% of ₹{parseFloat(booking.total_price).toLocaleString('en-IN')})</span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className="px-2 py-0.5 rounded text-[8px] bg-amber-500/10 text-amber-400 border border-amber-500/15 font-bold w-fit mt-1 animate-pulse">
+                              Refund Requested
                             </span>
                           </td>
                           <td className="px-6 py-4 text-xs text-dark-muted">{new Date(booking.created_at).toLocaleDateString()}</td>
+                          <td className="px-6 py-4 text-right text-xs">
+                            <button
+                              onClick={() => setRefundConfirmBookingId(booking.id)}
+                              className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white shadow-md shadow-blue-950/20 px-4 py-2 rounded-xl font-bold text-[10px] transition-colors uppercase tracking-wider"
+                            >
+                              Approve Refund
+                            </button>
+                          </td>
                         </tr>
                       ))
                     )}
@@ -950,7 +1090,7 @@ const OrganizerDashboard = () => {
                 <h4 className="font-bold text-lg text-dark-text mb-2">Revenue Performance (Per Event)</h4>
                 <p className="text-xs text-dark-muted mb-8">Sales revenue breakdown across listed events</p>
                 
-                {events.length === 0 ? (
+                {myEvents.length === 0 ? (
                   <div className="text-center py-12 text-dark-muted">No data available to display chart.</div>
                 ) : (
                   /* Custom Premium SVG Dashboard Chart */
@@ -974,9 +1114,9 @@ const OrganizerDashboard = () => {
                         
                         {/* Calculate points */}
                         {(() => {
-                          const maxRevenue = Math.max(...events.map(e => e.tickets_sold * e.price), 1000);
-                          const widthStep = 800 / (events.length + 1);
-                          const points = events.map((e, index) => {
+                          const maxRevenue = Math.max(...myEvents.map(e => e.tickets_sold * e.price), 1000);
+                          const widthStep = 800 / (myEvents.length + 1);
+                          const points = myEvents.map((e, index) => {
                             const rev = e.tickets_sold * e.price;
                             const x = widthStep * (index + 1);
                             const y = 300 - (rev / maxRevenue * 240) - 20; // 240 max height bounds, padding 20
@@ -1028,7 +1168,7 @@ const OrganizerDashboard = () => {
                     
                     {/* X-axis Labels */}
                     <div className="flex justify-between w-full mt-4 px-10 text-xs text-dark-muted font-semibold truncate">
-                      {events.map((event, idx) => (
+                      {myEvents.map((event, idx) => (
                         <span key={event.id} className="text-[10px] truncate max-w-[80px]" title={event.title}>
                           {event.title}
                         </span>
@@ -1374,6 +1514,55 @@ const OrganizerDashboard = () => {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Custom Refund Confirmation Modal */}
+      <AnimatePresence>
+        {refundConfirmBookingId && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setRefundConfirmBookingId(null)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+            />
+
+            {/* Modal Box */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="glass-panel border border-white/10 w-full max-w-md p-6 rounded-2xl shadow-2xl relative z-10 space-y-4"
+            >
+              <div className="flex items-center space-x-3 text-amber-400">
+                <ShieldAlert className="w-6 h-6" />
+                <h4 className="font-extrabold text-base text-dark-text tracking-tight uppercase">Approve Refund Request</h4>
+              </div>
+              
+              <p className="text-xs text-dark-muted leading-relaxed">
+                Are you sure you want to approve this refund request? Approving will return <strong className="text-dark-text">50%</strong> of the ticket price back to the attendee and cancel their reservation permanently.
+              </p>
+
+              <div className="flex items-center justify-end space-x-3 pt-2">
+                <button
+                  onClick={() => setRefundConfirmBookingId(null)}
+                  className="px-4 py-2 border border-white/5 bg-white/5 text-dark-text hover:bg-white/10 rounded-xl text-xs font-bold transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={executeApproveRefund}
+                  className="px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-950/20 transition-all"
+                >
+                  Confirm Approve
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       {showPaymentModal && paymentVenue && (
         <VenuePaymentModal
           venue={paymentVenue}

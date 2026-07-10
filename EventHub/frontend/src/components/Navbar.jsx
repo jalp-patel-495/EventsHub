@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Menu, X, LogOut, User as UserIcon, Calendar, Building, ShieldAlert, ChevronDown, Bell, Check, CheckCheck, Sun, Moon, QrCode, LayoutDashboard } from 'lucide-react';
+import { Menu, X, LogOut, User as UserIcon, Calendar, Building, ShieldAlert, ChevronDown, Bell, Check, CheckCheck, Sun, Moon, QrCode, LayoutDashboard, Mail, Heart, Compass, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../api/api';
 
@@ -10,6 +10,19 @@ const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [toast, setToast] = useState({ show: false, title: '', message: '' });
@@ -122,11 +135,35 @@ const Navbar = () => {
   };
 
   const navLinks = isAuthenticated
-    ? [
-        { name: 'Explore', path: '/explore' },
-        { name: 'Live Feed', path: '/live-feed' },
-        { name: 'Contact', path: '/contact' },
-      ]
+    ? user?.role === 'plot_owner'
+      ? [
+          { name: 'Dashboard', path: '/venues/dashboard' },
+          { name: 'My Venues', path: '/venues/manage' },
+          { name: 'Rental Requests', path: '/venues/requests' },
+          { name: 'Refund Requests', path: '/venues/refunds' },
+          { name: 'Manage Services', path: '/venues/services' },
+          { name: 'Customer Reviews', path: '/venues/reviews' },
+          { name: 'Availability Calendar', path: '/venues/calendar' },
+        ]
+      : user?.role === 'organizer'
+        ? [
+            { name: 'Dashboard', path: '/organizer/events' },
+            { name: 'Ticket Sales', path: '/organizer/sales' },
+            { name: 'Refund Ticket Requests', path: '/organizer/refunds' },
+            { name: 'Venue Rentals', path: '/organizer/rentals' },
+            { name: 'Customer Reviews', path: '/organizer/reviews' },
+            { name: 'Revenue', path: '/organizer/analytics' },
+            { name: 'Ticket Scanner', path: '/organizer/scanner' },
+          ]
+        : user?.role === 'admin'
+          ? [
+              { name: 'Dashboard', path: '/admin/overview' },
+              { name: 'Revenue', path: '/admin/revenue' },
+              { name: 'Approvals', path: '/admin/approvals' },
+              { name: 'All Events', path: '/admin/events' },
+              { name: 'All Venues', path: '/admin/venues' },
+            ]
+          : []
     : [
         { name: 'Home', path: '/' },
         { name: 'Explore', path: '/explore' },
@@ -139,27 +176,33 @@ const Navbar = () => {
     if (!user) return [];
     switch (user.role) {
       case 'organizer':
-        return [
-          { name: 'My Events', path: '/organizer/events', icon: <Calendar className="w-4 h-4" /> },
-          { name: 'Ticket Scanner', path: '/organizer/scanner', icon: <QrCode className="w-4 h-4" /> },
-        ];
+        return [];
       case 'plot_owner':
-        return [
-          { name: 'My Venues', path: '/venues/manage', icon: <Building className="w-4 h-4" /> },
-        ];
+        return [];
       case 'admin':
-        return [
-          { name: 'Admin Portal', path: '/admin-dashboard', icon: <ShieldAlert className="w-4 h-4" /> },
-        ];
+        return [];
       default: // customer
         return [
-          { name: 'My Bookings', path: '/bookings', icon: <Calendar className="w-4 h-4" /> },
+          { name: 'Dashboard', path: '/bookings', icon: <LayoutDashboard className="w-4 h-4" /> },
+          { name: 'Explore', path: '/explore', icon: <Compass className="w-4 h-4" /> },
+          { name: 'Live Feed', path: '/live-feed', icon: <Zap className="w-4 h-4" /> },
+          { name: 'Venue Rentals', path: '/bookings?tab=venues', icon: <Building className="w-4 h-4" /> },
+          { name: 'My Bookings', path: '/bookings?tab=bookings', icon: <Calendar className="w-4 h-4" /> },
+          { name: 'Wishlist', path: '/bookings?tab=wishlist', icon: <Heart className="w-4 h-4" /> },
         ];
     }
   };
 
   const roleLinks = getRoleLinks();
-  const isActive = (path) => location.pathname === path;
+  const isActive = (path) => {
+    if (path === '/admin/overview' && (location.pathname === '/admin/overview' || location.pathname === '/admin-dashboard')) {
+      return true;
+    }
+    if (path.includes('?')) {
+      return (location.pathname + location.search) === path;
+    }
+    return location.pathname === path && !location.search;
+  };
 
   return (
     <>
@@ -190,11 +233,11 @@ const Navbar = () => {
       </AnimatePresence>
 
       <nav className="glass-nav sticky top-0 z-50 w-full">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full px-4 sm:px-6 lg:px-12">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <Link 
-              to={isAuthenticated ? (user?.role === 'admin' ? '/admin-dashboard' : user?.role === 'organizer' ? '/organizer/events' : user?.role === 'plot_owner' ? '/venues/manage' : '/bookings') : '/'} 
+              to={isAuthenticated ? (user?.role === 'admin' ? '/admin-dashboard' : user?.role === 'organizer' ? '/organizer/events' : user?.role === 'plot_owner' ? '/venues/dashboard' : '/bookings') : '/'} 
               className="flex items-center space-x-2"
             >
               <span className="font-extrabold text-xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-rose-500 via-pink-500 to-amber-500 font-sans">
@@ -326,7 +369,7 @@ const Navbar = () => {
                   </div>
 
                   {/* Profile Dropdown */}
-                  <div className="relative">
+                  <div className="relative" ref={dropdownRef}>
                     <button
                       onClick={() => {
                         setDropdownOpen(!dropdownOpen);
@@ -353,7 +396,6 @@ const Navbar = () => {
                     <AnimatePresence>
                       {dropdownOpen && (
                         <>
-                          <div className="fixed inset-0 z-10" onClick={() => setDropdownOpen(false)}></div>
                           <motion.div
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -369,8 +411,8 @@ const Navbar = () => {
                               </span>
                             </div>
                             <Link
-                              to={user?.role === 'admin' ? '/admin-dashboard' : user?.role === 'organizer' ? '/organizer/events' : user?.role === 'plot_owner' ? '/venues/manage' : '/bookings'}
-                              className="flex items-center space-x-2 px-4 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-900 transition-colors"
+                              to={user?.role === 'admin' ? '/admin-dashboard' : user?.role === 'organizer' ? '/organizer/events' : user?.role === 'plot_owner' ? '/venues/dashboard' : '/bookings'}
+                              className="flex items-center space-x-2 px-4 py-2 text-sm text-slate-300 hover:text-white hover:bg-blue-600 transition-colors"
                               onClick={() => setDropdownOpen(false)}
                             >
                               <LayoutDashboard className="w-4 h-4 text-brand-primary" />
@@ -378,11 +420,19 @@ const Navbar = () => {
                             </Link>
                             <Link
                               to="/profile"
-                              className="flex items-center space-x-2 px-4 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-900 transition-colors"
+                              className="flex items-center space-x-2 px-4 py-2 text-sm text-slate-300 hover:text-white hover:bg-blue-600 transition-colors"
                               onClick={() => setDropdownOpen(false)}
                             >
                               <UserIcon className="w-4 h-4 text-brand-primary" />
                               <span>My Profile</span>
+                            </Link>
+                            <Link
+                              to="/contact"
+                              className="flex items-center space-x-2 px-4 py-2 text-sm text-slate-300 hover:text-white hover:bg-blue-600 transition-colors"
+                              onClick={() => setDropdownOpen(false)}
+                            >
+                              <Mail className="w-4 h-4 text-brand-primary" />
+                              <span>Contact Us</span>
                             </Link>
                             <button
                               onClick={handleLogout}
@@ -491,6 +541,13 @@ const Navbar = () => {
                       onClick={() => setMobileMenuOpen(false)}
                     >
                       My Profile ({user.role})
+                    </Link>
+                    <Link
+                      to="/contact"
+                      className="block px-3 py-2 rounded-md text-base font-medium text-dark-muted hover:bg-white/5 hover:text-dark-text"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Contact Us
                     </Link>
                     <button
                       onClick={handleLogout}

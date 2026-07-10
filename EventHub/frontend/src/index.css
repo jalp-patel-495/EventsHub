@@ -19,17 +19,17 @@
 }
 
 :root.light {
-  --bg-color: #E2E8F0;
-  --text-color: #0F172A;
+  --bg-color: #FFFFFF;
+  --text-color: #000000;
   --card-color: #FFFFFF;
-  --border-color: #CBD5E1;
-  --muted-color: #475569;
-  --glass-nav-bg: rgba(226, 232, 240, 0.85);
-  --glass-panel-bg: rgba(255, 255, 255, 0.85);
-  --glass-card-bg: rgba(255, 255, 255, 0.7);
+  --border-color: #E2E8F0;
+  --muted-color: #4B5563;
+  --glass-nav-bg: rgba(255, 255, 255, 0.95);
+  --glass-panel-bg: rgba(255, 255, 255, 0.95);
+  --glass-card-bg: rgba(255, 255, 255, 0.9);
   --glass-input-bg: rgba(255, 255, 255, 0.95);
-  --glass-border: rgba(15, 23, 42, 0.08);
-  --glass-panel-border: rgba(15, 23, 42, 0.1);
+  --glass-border: rgba(0, 0, 0, 0.08);
+  --glass-panel-border: rgba(0, 0, 0, 0.1);
 }
 
 @layer base {
@@ -44,10 +44,7 @@
   }
   
   :root.light body {
-    background-image: 
-      radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.02) 0%, transparent 40%),
-      radial-gradient(circle at 90% 80%, rgba(16, 185, 129, 0.02) 0%, transparent 40%),
-      radial-gradient(circle at 50% 50%, rgba(139, 92, 246, 0.01) 0%, transparent 50%);
+    background-image: none !important;
   }
 }
 
@@ -64,7 +61,7 @@
   border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #10B981;
+  background: #3B82F6;
 }
 
 /* Glassmorphism Styles */
@@ -113,14 +110,14 @@
 
 /* Custom Text Gradient */
 .text-gradient-emerald {
-  @apply bg-clip-text text-transparent bg-gradient-to-r from-rose-500 via-pink-500 to-amber-500;
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-indigo-500 to-cyan-500;
 }
 :root:not(.light) .text-gradient-emerald {
-  @apply bg-clip-text text-transparent bg-gradient-to-r from-rose-400 via-pink-400 to-amber-400;
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-indigo-400 to-cyan-400;
 }
 
 .text-gradient-purple {
-  @apply bg-clip-text text-transparent bg-gradient-to-r from-purple-500 via-pink-500 to-rose-400;
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-500 via-indigo-500 to-cyan-400;
 }
 
 /* 3D Payment Card Flip Utilities */
@@ -171,9 +168,50 @@
 }
 
 .theme-footer {
-  background-color: var(--glass-nav-bg) !important;
-  border-top: 1px solid var(--glass-border) !important;
+  background-color: #000000 !important;
+  color: #FFFFFF !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
   transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Ensure footer text/headings/spans/links are white and stay white */
+.theme-footer .text-dark-text,
+.theme-footer h4,
+.theme-footer span,
+.theme-footer a,
+.theme-footer div {
+  color: #FFFFFF !important;
+}
+
+.theme-footer .text-dark-muted,
+.theme-footer p {
+  color: rgba(255, 255, 255, 0.65) !important;
+}
+
+.theme-footer a:hover {
+  color: #3B82F6 !important;
+}
+
+/* Overrides to prevent global light mode contrast styles from affecting the black footer */
+.theme-footer .text-white,
+.theme-footer .text-slate-100,
+.theme-footer .text-gray-100 {
+  color: #FFFFFF !important;
+}
+
+.theme-footer .border-slate-200,
+.theme-footer .border-slate-800\/60,
+.theme-footer .border-slate-800\/80 {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.theme-footer .bg-slate-100 {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+.theme-footer .bg-slate-100:hover {
+  background-color: #3B82F6 !important;
+  color: #FFFFFF !important;
 }
 
 .theme-drawer {
@@ -222,5 +260,84 @@
 :root.light .hover\:bg-white\/5:hover,
 :root.light .hover\:bg-slate-800:hover {
   background-color: rgba(0, 0, 0, 0.04) !important;
+}
+
+/* Global color overrides to force all pink, rose, emerald, teal, and red themes to blue */
+.bg-pink-500, .bg-pink-600, .bg-rose-500, .bg-rose-600, .bg-brand-primary,
+.bg-emerald-500, .bg-teal-500, .bg-red-500 {
+  background-color: #3B82F6 !important;
+}
+
+.text-pink-500, .text-pink-600, .text-pink-400, .text-rose-500, .text-rose-600, .text-rose-400, .text-brand-primary,
+.text-emerald-500, .text-emerald-400, .text-teal-500, .text-teal-400, .text-red-500, .text-red-400 {
+  color: #3B82F6 !important;
+}
+
+/* Light mode overrides to force all primary text highlights to solid black */
+:root.light .text-pink-500, :root.light .text-pink-600, :root.light .text-pink-400,
+:root.light .text-rose-500, :root.light .text-rose-600, :root.light .text-rose-400,
+:root.light .text-brand-primary, :root.light .text-blue-400, :root.light .text-blue-500, :root.light .text-blue-600,
+:root.light .text-emerald-500, :root.light .text-emerald-400,
+:root.light .text-teal-500, :root.light .text-teal-400,
+:root.light .text-red-500, :root.light .text-red-400 {
+  color: #000000 !important;
+}
+
+.border-pink-500, .border-rose-500, .border-brand-primary,
+.border-emerald-500, .border-teal-500, .border-red-500 {
+  border-color: #3B82F6 !important;
+}
+
+/* Semi-transparent backgrounds */
+.bg-pink-500\/10, .bg-pink-500\/15, .bg-pink-500\/20,
+.bg-rose-500\/10, .bg-rose-500\/15, .bg-rose-500\/20,
+.bg-brand-primary\/10, .bg-brand-primary\/15, .bg-brand-primary\/20,
+.bg-emerald-500\/10, .bg-emerald-500\/15, .bg-emerald-500\/20,
+.bg-teal-500\/10, .bg-teal-500\/15, .bg-teal-500\/20,
+.bg-red-500\/10, .bg-red-500\/15, .bg-red-500\/20 {
+  background-color: rgba(59, 130, 246, 0.12) !important;
+}
+
+.border-pink-500\/20, .border-pink-500\/15,
+.border-rose-500\/20, .border-rose-500\/15,
+.border-brand-primary\/20, .border-brand-primary\/15,
+.border-emerald-500\/20, .border-emerald-500\/15,
+.border-teal-500\/20, .border-teal-500\/15,
+.border-red-500\/20, .border-red-500\/15 {
+  border-color: rgba(59, 130, 246, 0.25) !important;
+}
+
+/* Button & Link Hover Overrides */
+.hover\:bg-rose-600:hover, .hover\:bg-pink-600:hover, .hover\:bg-brand-primary\/80:hover,
+.hover\:bg-emerald-600:hover, .hover\:bg-teal-600:hover, .hover\:bg-red-600:hover {
+  background-color: #2563EB !important;
+}
+
+.hover\:text-brand-primary:hover, .hover\:text-pink-500:hover, .hover\:text-rose-500:hover,
+.hover\:text-emerald-500:hover, .hover\:text-teal-500:hover, .hover\:text-red-500:hover {
+  color: #3B82F6 !important;
+}
+
+/* Gradients */
+.from-rose-500.via-pink-500.to-amber-500,
+.from-rose-400.via-pink-400.to-amber-400,
+.bg-gradient-to-r.from-rose-500.via-pink-500.to-amber-500 {
+  background-image: linear-gradient(to right, #3B82F6 0%, #2563EB 50%, #1D4ED8 100%) !important;
+  background-size: 100% !important;
+  opacity: 1 !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+}
+
+.from-purple-500.via-pink-500.to-rose-400 {
+  background-image: linear-gradient(to right, #8B5CF6, #3B82F6, #60A5FA) !important;
+}
+
+.bg-gradient-to-r.from-brand-primary.to-rose-600,
+.bg-gradient-to-r.from-brand-primary.to-rose-700,
+.bg-gradient-to-r.from-rose-500.to-rose-600,
+.bg-gradient-to-r.from-rose-500.to-rose-700,
+.bg-gradient-to-br.from-slate-900.via-slate-900.to-red-950\/15 {
+  background-image: linear-gradient(to right, #3B82F6, #1D4ED8) !important;
 }
 

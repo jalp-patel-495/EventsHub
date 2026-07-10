@@ -5,11 +5,9 @@ import { Mail, MapPin, Phone } from 'lucide-react';
 const Footer = () => {
   const location = useLocation();
 
-  // Hide the footer on dashboards and auth pages where layout should be clean and full-screen
+  // Hide the footer on auth pages, ticket scanner, and admin dashboard
   const hideFooterRoutes = [
-    '/organizer/events',
     '/organizer/scanner',
-    '/venues/manage',
     '/admin-dashboard',
     '/login',
     '/register',
@@ -18,15 +16,14 @@ const Footer = () => {
   ];
 
   const shouldHide = hideFooterRoutes.includes(location.pathname) ||
-                     location.pathname.startsWith('/organizer') ||
-                     location.pathname.startsWith('/venues');
+                     location.pathname.startsWith('/admin');
   if (shouldHide) {
     return null;
   }
 
   return (
     <footer className="theme-footer relative z-20 backdrop-blur-md pt-16 pb-8 mt-auto w-full border-t border-slate-200 dark:border-slate-800/80 transition-all duration-300">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="w-full px-4 sm:px-6 lg:px-12">
         
         {/* Main Grid Layout */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">

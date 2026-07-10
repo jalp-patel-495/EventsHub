@@ -189,7 +189,7 @@ const LiveEvents = () => {
   });
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div className="w-full max-w-none px-4 sm:px-6 lg:px-12 py-10">
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
         <div>
@@ -529,16 +529,16 @@ const LiveEvents = () => {
               className="relative w-full max-w-md rounded-3xl overflow-hidden shadow-2xl"
               style={{
                 background: 'linear-gradient(160deg, #12172a 0%, #0A0E1A 100%)',
-                border: '1px solid rgba(248,68,100,0.18)'
+                border: '1px solid rgba(59,130,246,0.18)'
               }}
             >
               {/* Top gradient accent bar */}
               <div className="absolute top-0 left-0 right-0 h-[2px]"
-                style={{ background: 'linear-gradient(90deg, transparent, #F84464, #fb7185, #F84464, transparent)' }} />
+                style={{ background: 'linear-gradient(90deg, transparent, #3B82F6, #60A5FA, #3B82F6, transparent)' }} />
 
               {/* Subtle glow behind modal */}
               <div className="absolute -top-20 left-1/2 -translate-x-1/2 w-60 h-40 rounded-full opacity-20 pointer-events-none"
-                style={{ background: 'radial-gradient(circle, #F84464 0%, transparent 70%)', filter: 'blur(30px)' }} />
+                style={{ background: 'radial-gradient(circle, #3B82F6 0%, transparent 70%)', filter: 'blur(30px)' }} />
 
               {/* Close button */}
               <button
@@ -565,7 +565,7 @@ const LiveEvents = () => {
                         <img src={freeTicketEvent.image} alt={freeTicketEvent.title} className="w-full h-full object-cover" />
                         <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(10,14,26,0.85) 0%, transparent 60%)' }} />
                         <span className="absolute bottom-3 left-3 text-white text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider"
-                          style={{ background: '#F84464', boxShadow: '0 4px 14px rgba(248,68,100,0.5)' }}>
+                          style={{ background: '#3B82F6', boxShadow: '0 4px 14px rgba(59,130,246,0.5)' }}>
                           🎟 FREE ENTRY
                         </span>
                       </div>
@@ -574,11 +574,11 @@ const LiveEvents = () => {
                     {/* Ticket icon + heading */}
                     <div className="flex items-center gap-3 mb-5">
                       <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
-                        style={{ background: 'rgba(248,68,100,0.12)', border: '1px solid rgba(248,68,100,0.25)' }}>
-                        <Ticket className="w-5 h-5" style={{ color: '#F84464' }} />
+                        style={{ background: 'rgba(59,130,246,0.12)', border: '1px solid rgba(59,130,246,0.25)' }}>
+                        <Ticket className="w-5 h-5" style={{ color: '#3B82F6' }} />
                       </div>
                       <div>
-                        <p className="text-[10px] font-bold uppercase tracking-widest mb-0.5" style={{ color: '#F84464' }}>Free Ticket</p>
+                        <p className="text-[10px] font-bold uppercase tracking-widest mb-0.5" style={{ color: '#3B82F6' }}>Free Ticket</p>
                         <h2 className="text-lg font-extrabold text-dark-text leading-tight line-clamp-2">{freeTicketEvent.title}</h2>
                       </div>
                     </div>
@@ -587,14 +587,14 @@ const LiveEvents = () => {
                     <div className="space-y-2.5 mb-5 rounded-2xl p-4"
                       style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>
                       <div className="flex items-center gap-2.5 text-sm">
-                        <Calendar className="w-4 h-4 flex-shrink-0" style={{ color: '#F84464' }} />
+                        <Calendar className="w-4 h-4 flex-shrink-0" style={{ color: '#3B82F6' }} />
                         <span className="text-dark-text font-medium">{freeTicketEvent.date}</span>
                         <span className="text-dark-muted">·</span>
-                        <Clock className="w-4 h-4 flex-shrink-0" style={{ color: '#F84464' }} />
+                        <Clock className="w-4 h-4 flex-shrink-0" style={{ color: '#3B82F6' }} />
                         <span className="text-dark-text font-medium">{freeTicketEvent.time?.slice(0,5)}</span>
                       </div>
                       <div className="flex items-start gap-2.5 text-sm">
-                        <MapPin className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: '#F84464' }} />
+                        <MapPin className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: '#3B82F6' }} />
                         <span className="text-dark-muted leading-snug line-clamp-2">{freeTicketEvent.location}</span>
                       </div>
                       {freeTicketEvent.venue_name && (
@@ -610,9 +610,9 @@ const LiveEvents = () => {
 
                     {/* User info row */}
                     <div className="flex items-center gap-3 p-3 rounded-xl mb-6"
-                      style={{ background: 'rgba(248,68,100,0.05)', border: '1px solid rgba(248,68,100,0.12)' }}>
+                      style={{ background: 'rgba(59,130,246,0.05)', border: '1px solid rgba(59,130,246,0.12)' }}>
                       <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm text-white flex-shrink-0"
-                        style={{ background: 'linear-gradient(135deg, #F84464, #fb7185)' }}>
+                        style={{ background: 'linear-gradient(135deg, #3B82F6, #60A5FA)' }}>
                         {user?.first_name?.[0]?.toUpperCase() || '?'}
                       </div>
                       <div className="text-xs min-w-0">
@@ -620,7 +620,7 @@ const LiveEvents = () => {
                         <p className="text-dark-muted truncate">{user?.email}</p>
                       </div>
                       <span className="ml-auto text-[10px] font-bold px-2 py-1 rounded-lg flex-shrink-0"
-                        style={{ background: 'rgba(248,68,100,0.12)', color: '#F84464', border: '1px solid rgba(248,68,100,0.2)' }}>
+                        style={{ background: 'rgba(59,130,246,0.12)', color: '#3B82F6', border: '1px solid rgba(59,130,246,0.2)' }}>
                         1 Ticket
                       </span>
                     </div>
@@ -632,14 +632,14 @@ const LiveEvents = () => {
                       className="w-full py-4 rounded-2xl font-extrabold text-sm tracking-wide text-white transition-all transform active:scale-95 disabled:opacity-60"
                       style={{
                         background: freeTicketLoading
-                          ? 'rgba(248,68,100,0.4)'
-                          : 'linear-gradient(135deg, #F84464 0%, #e11d48 100%)',
-                        boxShadow: freeTicketLoading ? 'none' : '0 8px 28px rgba(248,68,100,0.4)'
+                          ? 'rgba(59,130,246,0.4)'
+                          : 'linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%)',
+                        boxShadow: freeTicketLoading ? 'none' : '0 8px 28px rgba(59,130,246,0.4)'
                       }}
                     >
                       {freeTicketLoading ? (
                         <span className="flex items-center justify-center gap-2">
-                          <RefreshCw className="w-4 h-4 animate-spin" /> Claiming your ticket...
+                           <RefreshCw className="w-4 h-4 animate-spin" /> Claiming your ticket...
                         </span>
                       ) : (
                         <span className="flex items-center justify-center gap-2">
@@ -664,21 +664,21 @@ const LiveEvents = () => {
                       transition={{ type: 'spring', stiffness: 200, damping: 15, delay: 0.1 }}
                       className="w-24 h-24 rounded-full mx-auto mb-5 flex items-center justify-center relative"
                       style={{
-                        background: 'radial-gradient(circle, rgba(248,68,100,0.15) 0%, transparent 70%)',
-                        border: '2px solid rgba(248,68,100,0.35)'
+                        background: 'radial-gradient(circle, rgba(59,130,246,0.15) 0%, transparent 70%)',
+                        border: '2px solid rgba(59,130,246,0.35)'
                       }}
                     >
-                      <CheckCircle2 className="w-12 h-12" style={{ color: '#F84464' }} />
+                      <CheckCircle2 className="w-12 h-12" style={{ color: '#3B82F6' }} />
                       <motion.div
                         animate={{ scale: [1, 1.35, 1], opacity: [0.35, 0, 0.35] }}
                         transition={{ repeat: Infinity, duration: 2 }}
                         className="absolute inset-0 rounded-full"
-                        style={{ border: '2px solid rgba(248,68,100,0.25)' }}
+                        style={{ border: '2px solid rgba(59,130,246,0.25)' }}
                       />
                     </motion.div>
 
                     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-                      <p className="font-bold text-sm uppercase tracking-widest mb-2" style={{ color: '#F84464' }}>🎉 You're In!</p>
+                      <p className="font-bold text-sm uppercase tracking-widest mb-2" style={{ color: '#3B82F6' }}>🎉 You're In!</p>
                       <h2 className="text-2xl font-extrabold text-dark-text mb-2">Ticket Confirmed!</h2>
                       <p className="text-dark-muted text-sm mb-6">
                         Your free ticket for <span className="text-dark-text font-semibold">{freeTicketEvent.title}</span> has been booked.
@@ -693,20 +693,20 @@ const LiveEvents = () => {
                       className="relative mx-auto max-w-xs mb-6"
                     >
                       <div className="rounded-2xl p-4 text-left relative overflow-hidden"
-                        style={{ background: 'linear-gradient(135deg, #1e0a10 0%, #2d0f1a 100%)', border: '1px dashed rgba(248,68,100,0.35)' }}>
+                        style={{ background: 'linear-gradient(135deg, #090d16 0%, #111a2e 100%)', border: '1px dashed rgba(59,130,246,0.35)' }}>
                         {/* Notch cutouts */}
                         <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full" style={{ background: '#0A0E1A' }} />
                         <div className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full" style={{ background: '#0A0E1A' }} />
 
                         <div className="flex items-center justify-between mb-3">
-                          <span className="text-[9px] font-bold uppercase tracking-widest" style={{ color: '#F84464' }}>EventHub Live</span>
+                          <span className="text-[9px] font-bold uppercase tracking-widest" style={{ color: '#3B82F6' }}>EventHub Live</span>
                           <span className="text-[9px] font-mono px-2 py-0.5 rounded"
-                            style={{ background: 'rgba(248,68,100,0.12)', color: '#fb7185' }}>
+                            style={{ background: 'rgba(59,130,246,0.12)', color: '#60A5FA' }}>
                             #{freeTicketId ? String(freeTicketId).padStart(6, '0') : '000001'}
                           </span>
                         </div>
                         <p className="text-dark-text font-bold text-sm line-clamp-1 mb-3">{freeTicketEvent.title}</p>
-                        <div className="pt-3 space-y-1.5" style={{ borderTop: '1px solid rgba(248,68,100,0.15)' }}>
+                        <div className="pt-3 space-y-1.5" style={{ borderTop: '1px solid rgba(59,130,246,0.15)' }}>
                           <div className="flex justify-between text-[10px]">
                             <span className="text-dark-muted">Date</span>
                             <span className="text-dark-text font-semibold">{freeTicketEvent.date}</span>
@@ -717,7 +717,7 @@ const LiveEvents = () => {
                           </div>
                           <div className="flex justify-between text-[10px]">
                             <span className="text-dark-muted">Ticket</span>
-                            <span className="font-extrabold" style={{ color: '#F84464' }}>FREE × 1</span>
+                            <span className="font-extrabold" style={{ color: '#3B82F6' }}>FREE × 1</span>
                           </div>
                         </div>
                       </div>
@@ -725,17 +725,17 @@ const LiveEvents = () => {
 
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="space-y-3">
                       <p className="text-dark-muted text-xs">
-                        Check your <span className="font-semibold" style={{ color: '#F84464' }}>My Bookings</span> section for your ticket QR code.
+                        Check your <span className="font-semibold" style={{ color: '#3B82F6' }}>My Bookings</span> section for your ticket QR code.
                       </p>
                       <button
                         onClick={() => { setFreeTicketEvent(null); setFreeTicketConfirmed(false); }}
                         className="w-full py-3 rounded-2xl text-sm font-bold transition-all"
                         style={{
-                          color: '#F84464',
-                          border: '1px solid rgba(248,68,100,0.25)',
+                          color: '#3B82F6',
+                          border: '1px solid rgba(59,130,246,0.25)',
                           background: 'transparent'
                         }}
-                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(248,68,100,0.08)'}
+                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(59,130,246,0.08)'}
                         onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                       >
                         Done

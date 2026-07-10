@@ -19,7 +19,7 @@ from events.live_events import get_live_weather, get_live_ahmedabad_events
 class CustomPagination(PageNumberPagination):
     page_size = 6
     page_size_query_param = 'page_size'
-    max_page_size = 50
+    max_page_size = 1000
 
 class CategoryListView(generics.ListAPIView):
     queryset = Category.objects.all()
@@ -301,7 +301,7 @@ class BookingCancelView(APIView):
                 tickets_count=cancel_count,
                 total_price=cancelled_amount,
                 status='cancelled',
-                payment_status='refunded' if refund_req else booking.payment_status,
+                payment_status='paid' if refund_req else 'pending',
                 coupon=booking.coupon,
                 ticket_category=booking.ticket_category,
                 razorpay_order_id=booking.razorpay_order_id,
@@ -338,7 +338,6 @@ class BookingCancelView(APIView):
             # Full cancellation
             booking.status = 'cancelled'
             if booking.payment_status == 'paid':
-                booking.payment_status = 'refunded'
                 booking.refund_requested = True
             booking.save()
             
@@ -359,6 +358,39 @@ class BookingCancelView(APIView):
             )
             
             return Response({"message": "Booking cancelled successfully."}, status=status.HTTP_200_OK)
+
+class OrganizerRefundApproveView(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def post(self, request, booking_id):
+        from .models import Booking
+        from notifications.models import Notification
+        booking = get_object_or_404(Booking, pk=booking_id)
+        
+        # Verify that the event organizer is the requesting user
+        if booking.event.organizer != request.user:
+            return Response({"error": "Access denied. Only the event organizer can approve refunds."}, status=status.HTTP_403_FORBIDDEN)
+            
+        if booking.payment_status != 'paid' and not booking.refund_requested:
+            return Response({"error": "No refund request exists for this booking."}, status=status.HTTP_400_BAD_REQUEST)
+            
+        # Refund policy: 50% refund to customer
+        refund_amount = float(booking.total_price) * 0.50
+        
+        # Process database changes
+        booking.payment_status = 'refunded'
+        booking.status = 'cancelled'
+        booking.refund_requested = False
+        booking.save()
+        
+        # Notify customer
+        Notification.objects.create(
+            user=booking.user,
+            title="Ticket Refund Approved",
+            message=f"Your refund request for {booking.event.title} has been approved by the organizer. A 50% refund of ₹{refund_amount:.2f} is processed."
+        )
+        
+        return Response({"message": "Refund approved successfully.", "refund_amount": refund_amount}, status=status.HTTP_200_OK)
 
 class WishlistToggleView(APIView):
     permission_classes = (permissions.IsAuthenticated,)
