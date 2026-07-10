@@ -46,6 +46,7 @@ const AdminDashboard = () => {
   };
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   
   // Dashboard Data States
   const [summary, setSummary] = useState(null);
@@ -536,7 +537,7 @@ const AdminDashboard = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div className="w-full px-4 sm:px-6 lg:px-12 py-10">
       
       {/* Toast Alert Feedback */}
       <AnimatePresence>
@@ -566,60 +567,83 @@ const AdminDashboard = () => {
           </div>
           <h1 className="text-3xl font-extrabold text-white mt-1 tracking-tight">Admin Dashboard</h1>
         </div>
-        <button
-          onClick={loadTabContent}
-          className="flex items-center space-x-2 bg-white/5 hover:bg-white/10 text-dark-text border border-white/5 px-4 py-2.5 rounded-xl transition-all text-sm font-bold"
-        >
-          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          <span>Sync Panel Data</span>
-        </button>
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={loadTabContent}
+            className="flex items-center space-x-2 bg-white/5 hover:bg-white/10 text-dark-text border border-white/5 px-4 py-2.5 rounded-xl transition-all text-sm font-bold"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            <span>Sync Panel Data</span>
+          </button>
+        </div>
       </div>
 
       {/* Grid Tabs Navigation & Views */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
         
         {/* Navigation Panel */}
-        <div className="lg:col-span-1 flex flex-col space-y-2">
-          {[
-            { id: 'users', label: 'User Control', icon: Users },
-            { id: 'finance', label: 'Transactions & Refunds', icon: IndianRupee },
-            { id: 'complaints', label: 'Complaints Panel', icon: MessageSquare },
-            { id: 'broadcast', label: 'Broadcast Alerts', icon: Send }
-          ].map(tab => {
-            const Icon = tab.icon;
-            const hasBadge = tab.countKey && summary && (
-              (tab.countKey === 'approvals' && (summary.pending.organizers + summary.pending.plot_owners + summary.pending.events + summary.pending.venues) > 0)
-            );
-            const badgeCount = hasBadge && (
-              summary.pending.organizers + summary.pending.plot_owners + summary.pending.events + summary.pending.venues
-            );
-            
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center justify-between px-4 py-3 rounded-xl border text-sm font-bold transition-all ${
-                  activeTab === tab.id
-                    ? 'bg-red-500/10 border-red-500/20 text-red-400 shadow-md shadow-red-950/10'
-                    : 'bg-white/5 hover:bg-white/10 text-dark-muted hover:text-dark-text border-white/5'
-                }`}
+        {sidebarOpen && (
+          <div className="lg:col-span-1 flex flex-col space-y-2">
+            <div className="flex items-center justify-between px-2 py-1.5 mb-2 border-b border-white/5 pb-2">
+              <span className="text-[10px] font-bold text-dark-muted uppercase tracking-wider">Control Menu</span>
+              <button 
+                onClick={() => setSidebarOpen(false)}
+                className="text-dark-muted hover:text-red-400 p-1 hover:bg-white/5 rounded transition-all"
+                title="Close Sidebar"
               >
-                <div className="flex items-center space-x-2.5">
-                  <Icon className="w-4 h-4" />
-                  <span>{tab.label}</span>
-                </div>
-                {hasBadge && (
-                  <span className="bg-red-500/20 text-red-400 text-[10px] font-extrabold px-2 py-0.5 rounded-full border border-red-500/30">
-                    {badgeCount}
-                  </span>
-                )}
+                <X className="w-3.5 h-3.5" />
               </button>
-            );
-          })}
-        </div>
+            </div>
+            {[
+              { id: 'users', label: 'User Control', icon: Users },
+              { id: 'finance', label: 'Transactions & Refunds', icon: IndianRupee },
+              { id: 'complaints', label: 'Complaints Panel', icon: MessageSquare },
+              { id: 'broadcast', label: 'Broadcast Alerts', icon: Send }
+            ].map(tab => {
+              const Icon = tab.icon;
+              const hasBadge = tab.countKey && summary && (
+                (tab.countKey === 'approvals' && (summary.pending.organizers + summary.pending.plot_owners + summary.pending.events + summary.pending.venues) > 0)
+              );
+              const badgeCount = hasBadge && (
+                summary.pending.organizers + summary.pending.plot_owners + summary.pending.events + summary.pending.venues
+              );
+              
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center justify-between px-4 py-3 rounded-xl border text-sm font-bold transition-all ${
+                    activeTab === tab.id
+                      ? 'bg-red-500/10 border-red-500/20 text-red-400 shadow-md shadow-red-950/10'
+                      : 'bg-white/5 hover:bg-white/10 text-dark-muted hover:text-dark-text border-white/5'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2.5">
+                    <Icon className="w-4 h-4" />
+                    <span>{tab.label}</span>
+                  </div>
+                  {hasBadge && (
+                    <span className="bg-red-500/20 text-red-400 text-[10px] font-extrabold px-2 py-0.5 rounded-full border border-red-500/30">
+                      {badgeCount}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         {/* Viewport Panels */}
-        <div className="lg:col-span-4 min-h-[500px]">
+        <div className={`${sidebarOpen ? 'lg:col-span-4' : 'lg:col-span-5'} min-h-[500px]`}>
+          {!sidebarOpen && (
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="flex items-center space-x-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 px-3.5 py-2 rounded-xl text-xs font-bold mb-6 transition-all shadow-md shadow-red-950/10"
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span>Show Control Menu</span>
+            </button>
+          )}
           
           {loading ? (
             <div className="glass-panel border border-white/10 rounded-2xl p-16 flex flex-col items-center justify-center space-y-4">

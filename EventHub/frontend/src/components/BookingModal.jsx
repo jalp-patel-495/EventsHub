@@ -843,7 +843,7 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
                 <div>
                   <label className="block text-[10px] text-dark-muted uppercase font-bold mb-1">CVV</label>
                   <input
-                    type="password"
+                    type="text"
                     required
                     value={cardCvv}
                     onFocus={() => setIsCardFlipped(true)}
@@ -853,7 +853,7 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
                       setCardCvv(val);
                       setCardError('');
                     }}
-                    placeholder="***"
+                    placeholder="123"
                     maxLength="3"
                     className="glass-input w-full px-3 py-2.5 text-xs focus:ring-1 focus:ring-[#3B82F6]/30"
                   />

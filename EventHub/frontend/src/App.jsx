@@ -118,8 +118,24 @@ function App() {
                   </ProtectedRoute>
                 } 
               />
+              <Route 
+                path="/organizer/refunds" 
+                element={
+                  <ProtectedRoute allowedRoles={['organizer']}>
+                    <OrganizerDashboard />
+                  </ProtectedRoute>
+                } 
+              />
 
               {/* Protected Routes (Plot Owner) */}
+              <Route 
+                path="/venues/dashboard" 
+                element={
+                  <ProtectedRoute allowedRoles={['plot_owner']}>
+                    <PlotOwnerDashboard />
+                  </ProtectedRoute>
+                } 
+              />
               <Route 
                 path="/venues/manage" 
                 element={
@@ -129,7 +145,23 @@ function App() {
                 } 
               />
               <Route 
+                path="/venues/services" 
+                element={
+                  <ProtectedRoute allowedRoles={['plot_owner']}>
+                    <PlotOwnerDashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
                 path="/venues/requests" 
+                element={
+                  <ProtectedRoute allowedRoles={['plot_owner']}>
+                    <PlotOwnerDashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/venues/refunds" 
                 element={
                   <ProtectedRoute allowedRoles={['plot_owner']}>
                     <PlotOwnerDashboard />

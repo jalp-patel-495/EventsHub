@@ -382,7 +382,7 @@ const CustomerDashboard = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div className="w-full px-4 sm:px-6 lg:px-12 py-10">
       {(activeTab === 'dashboard' || activeTab === 'recommendations') && (
         <>
           {/* Dashboard Welcome */}
@@ -1355,13 +1355,14 @@ const CustomerDashboard = () => {
                       <div>
                         <label className="block text-[10px] font-semibold text-dark-muted uppercase tracking-wider mb-1">CVV</label>
                         <input
-                          type="password"
+                          type="text"
                           value={cvv}
                           onChange={(e) => {
                             const val = e.target.value.replace(/\D/g, '').slice(0, 3);
                             setCvv(val);
                           }}
                           placeholder="123"
+                          maxLength="3"
                           className="glass-input w-full px-4 py-2 rounded-xl text-sm bg-dark-bg border border-white/10"
                           required
                         />
