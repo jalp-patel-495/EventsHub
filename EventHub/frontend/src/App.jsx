@@ -26,6 +26,7 @@ import PaySimulate from './pages/PaySimulate';
 import About from './pages/About';
 import CateringExplore from './pages/CateringExplore';
 import CateringDetail from './pages/CateringDetail';
+import VenueExplore from './pages/VenueExplore';
 
 function App() {
   return (
@@ -48,6 +49,7 @@ function App() {
               <Route path="/pay-simulate" element={<PaySimulate />} />
               <Route path="/catering" element={<CateringExplore />} />
               <Route path="/catering/:id" element={<CateringDetail />} />
+              <Route path="/venues" element={<VenueExplore />} />
 
               {/* Protected Routes (General Authenticated) */}
               <Route 
