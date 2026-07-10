@@ -172,23 +172,56 @@ class VenueBookingActionView(APIView):
             if booking.status == 'cancelled':
                 return Response({"error": "Booking is already cancelled."}, status=status.HTTP_400_BAD_REQUEST)
                 
+            # If the booking is approved, flag it as cancel requested
+            if booking.status == 'approved':
+                booking.cancel_requested = True
+                booking.save()
+                
+                # Notify venue owner about the request
+                Notification.objects.create(
+                    user=booking.venue.owner,
+                    title="Venue Cancellation Request Received",
+                    message=f"{request.user.first_name} requested to cancel the booking for {booking.venue.name}."
+                )
+            else:
+                # If it wasn't approved yet (e.g. pending), cancel it immediately
+                booking.status = 'cancelled'
+                booking.save()
+                
+                Notification.objects.create(
+                    user=booking.venue.owner,
+                    title="Venue Booking Request Cancelled",
+                    message=f"The pending venue booking request for {booking.venue.name} was cancelled by the customer."
+                )
+                
+            return Response(VenueBookingSerializer(booking).data, status=status.HTTP_200_OK)
+
+        if action == 'approve_cancel':
+            if booking.venue.owner != request.user:
+                return Response({"error": "Access denied."}, status=status.HTTP_403_FORBIDDEN)
+                
+            if not booking.cancel_requested:
+                return Response({"error": "No cancellation request exists for this booking."}, status=status.HTTP_400_BAD_REQUEST)
+                
             booking.status = 'cancelled'
             if booking.payment_status == 'paid':
                 booking.payment_status = 'refunded'
+            booking.cancel_requested = False
             booking.save()
             
             # Notify owner & organizer
             refund_amount = float(booking.total_price) * 0.90
-            retained_amount = float(booking.total_price) * 0.10
+            owner_retained = float(booking.total_price) * 0.05
+            admin_retained = float(booking.total_price) * 0.05
             Notification.objects.create(
                 user=booking.venue.owner,
-                title="Venue Booking Cancelled",
-                message=f"The venue booking for {booking.venue.name} has been cancelled. 10% (₹{retained_amount:.2f}) retained as profit."
+                title="Venue Booking Cancellation Approved",
+                message=f"The cancellation request for {booking.venue.name} was approved. 5% (₹{owner_retained:.2f}) retained as owner profit."
             )
             Notification.objects.create(
                 user=booking.organizer,
-                title="Venue Booking Cancelled",
-                message=f"Your booking for {booking.venue.name} has been cancelled. A 90% refund of ₹{refund_amount:.2f} is processed."
+                title="Venue Booking Cancellation Approved",
+                message=f"Your booking cancellation for {booking.venue.name} has been approved. A 90% refund of ₹{refund_amount:.2f} has been processed."
             )
             
             return Response(VenueBookingSerializer(booking).data, status=status.HTTP_200_OK)

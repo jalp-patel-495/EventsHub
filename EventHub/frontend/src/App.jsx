@@ -79,6 +79,38 @@ function App() {
                 } 
               />
               <Route 
+                path="/organizer/sales" 
+                element={
+                  <ProtectedRoute allowedRoles={['organizer']}>
+                    <OrganizerDashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/organizer/rentals" 
+                element={
+                  <ProtectedRoute allowedRoles={['organizer']}>
+                    <OrganizerDashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/organizer/reviews" 
+                element={
+                  <ProtectedRoute allowedRoles={['organizer']}>
+                    <OrganizerDashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/organizer/analytics" 
+                element={
+                  <ProtectedRoute allowedRoles={['organizer']}>
+                    <OrganizerDashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
                 path="/organizer/scanner" 
                 element={
                   <ProtectedRoute allowedRoles={['organizer']}>
@@ -86,10 +118,66 @@ function App() {
                   </ProtectedRoute>
                 } 
               />
+              <Route 
+                path="/organizer/refunds" 
+                element={
+                  <ProtectedRoute allowedRoles={['organizer']}>
+                    <OrganizerDashboard />
+                  </ProtectedRoute>
+                } 
+              />
 
               {/* Protected Routes (Plot Owner) */}
               <Route 
+                path="/venues/dashboard" 
+                element={
+                  <ProtectedRoute allowedRoles={['plot_owner']}>
+                    <PlotOwnerDashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
                 path="/venues/manage" 
+                element={
+                  <ProtectedRoute allowedRoles={['plot_owner']}>
+                    <PlotOwnerDashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/venues/services" 
+                element={
+                  <ProtectedRoute allowedRoles={['plot_owner']}>
+                    <PlotOwnerDashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/venues/requests" 
+                element={
+                  <ProtectedRoute allowedRoles={['plot_owner']}>
+                    <PlotOwnerDashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/venues/refunds" 
+                element={
+                  <ProtectedRoute allowedRoles={['plot_owner']}>
+                    <PlotOwnerDashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/venues/reviews" 
+                element={
+                  <ProtectedRoute allowedRoles={['plot_owner']}>
+                    <PlotOwnerDashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/venues/calendar" 
                 element={
                   <ProtectedRoute allowedRoles={['plot_owner']}>
                     <PlotOwnerDashboard />
@@ -100,6 +188,78 @@ function App() {
               {/* Protected Routes (Admin) */}
               <Route 
                 path="/admin-dashboard" 
+                element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                } 
+               />
+              <Route 
+                path="/admin/overview" 
+                element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/revenue" 
+                element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/approvals" 
+                element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/events" 
+                element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/venues" 
+                element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/users" 
+                element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/finance" 
+                element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/complaints" 
+                element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/broadcast" 
                 element={
                   <ProtectedRoute allowedRoles={['admin']}>
                     <AdminDashboard />

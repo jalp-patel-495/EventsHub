@@ -369,8 +369,8 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
 
         {/* Brand Header */}
         <div className="flex items-center space-x-2 mb-6 border-b border-white/5 pb-3.5 w-full text-left">
-          <span className="text-[#F84464] font-black text-xl tracking-tight">Event</span>
-          <span className="bg-[#F84464] text-white text-[10px] font-black px-1.5 py-0.5 rounded uppercase tracking-tight">Hub</span>
+          <span className="text-[#3B82F6] font-black text-xl tracking-tight">Event</span>
+          <span className="bg-[#3B82F6] text-white text-[10px] font-black px-1.5 py-0.5 rounded uppercase tracking-tight">Hub</span>
           <span className="text-[9px] text-dark-muted font-bold ml-2 border-l border-white/10 pl-2 uppercase tracking-widest">Secure Checkout</span>
         </div>
 
@@ -382,7 +382,7 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ type: 'spring', stiffness: 260, damping: 20 }}
-                className="w-14 h-14 rounded-full bg-[#F84464]/10 text-[#F84464] flex items-center justify-center mb-3 border border-[#F84464]/20"
+                className="w-14 h-14 rounded-full bg-[#3B82F6]/10 text-[#3B82F6] flex items-center justify-center mb-3 border border-[#3B82F6]/20"
               >
                 <CheckCircle2 className="w-8 h-8" />
               </motion.div>
@@ -391,9 +391,9 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
             </div>
 
             {/* Visual Ticket */}
-            <div ref={ticketRef} className="w-full rounded-xl overflow-hidden border border-[#F84464]/20 shadow-xl">
+            <div ref={ticketRef} className="w-full rounded-xl overflow-hidden border border-[#3B82F6]/20 shadow-xl">
               {/* Ticket Top - Red Header */}
-              <div className="bg-[#F84464] px-5 py-4 text-white text-left flex justify-between items-start">
+              <div className="bg-[#3B82F6] px-5 py-4 text-white text-left flex justify-between items-start">
                 <div>
                   <div className="flex items-center space-x-1">
                     <span className="text-white text-[8px] font-extrabold bg-white/20 px-1.5 py-0.5 rounded tracking-wider uppercase">E-Ticket</span>
@@ -422,7 +422,7 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
                   </div>
                   <div>
                     <p className="text-[9px] text-slate-500 uppercase font-bold tracking-wider">Seat Category</p>
-                    <p className="text-xs font-semibold text-[#F84464] mt-0.5 uppercase tracking-wide">
+                    <p className="text-xs font-semibold text-[#3B82F6] mt-0.5 uppercase tracking-wide">
                       {selectedTier} Tier
                     </p>
                   </div>
@@ -438,7 +438,7 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
                     <p className="text-[8px] text-slate-500 uppercase font-bold tracking-widest">Booking ID</p>
                     <p className="text-xs font-mono font-bold text-slate-200 mt-0.5">{bookingId}</p>
                   </div>
-                  <div className="w-1.5 h-1.5 rounded-full bg-[#F84464] animate-pulse"></div>
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#3B82F6] animate-pulse"></div>
                 </div>
               </div>
 
@@ -477,7 +477,7 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
               </button>
               <button
                 onClick={onClose}
-                className="flex-1 bg-[#F84464] text-white font-bold py-3 rounded-xl hover:bg-[#df3250] transition-all text-xs uppercase tracking-wider"
+                className="flex-1 bg-[#3B82F6] text-white font-bold py-3 rounded-xl hover:bg-[#1D4ED8] transition-all text-xs uppercase tracking-wider"
               >
                 Done
               </button>
@@ -510,7 +510,7 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
                         onClick={() => setSelectedTier(tier.key)}
                         className={`p-3 rounded-xl border text-left transition-all ${
                           isSelected 
-                            ? 'bg-[#F84464]/15 border-[#F84464] shadow-md shadow-red-950/20' 
+                            ? 'bg-[#3B82F6]/15 border-[#3B82F6] shadow-md shadow-blue-950/20' 
                             : 'bg-white/5 border-white/5 hover:border-white/10'
                         }`}
                       >
@@ -519,7 +519,7 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
                             {tier.key}
                           </span>
                           {isSelected && (
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#F84464]" />
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#3B82F6]" />
                           )}
                         </div>
                         <p className="text-sm font-black text-dark-text mt-1">
@@ -594,7 +594,7 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
                           key={offer.code}
                           type="button"
                           onClick={() => applySuggestedCoupon(offer.code)}
-                          className="px-2.5 py-1 rounded bg-[#F84464]/10 hover:bg-[#F84464]/20 border border-[#F84464]/20 text-[9px] font-extrabold text-[#F84464] transition-all"
+                          className="px-2.5 py-1 rounded bg-[#3B82F6]/10 hover:bg-[#3B82F6]/20 border border-[#3B82F6]/20 text-[9px] font-extrabold text-[#3B82F6] transition-all"
                         >
                           {offer.code} ({offer.label})
                         </button>
@@ -631,14 +631,14 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
                   </div>
                 )}
                 {appliedCoupon && (
-                  <div className="flex justify-between text-[#F84464] font-bold">
+                  <div className="flex justify-between text-[#3B82F6] font-bold">
                     <span>Coupon Discount</span>
                     <span>-₹{discountAmount.toFixed(2)}</span>
                   </div>
                 )}
                 <div className="flex justify-between items-center text-sm font-bold border-t border-white/5 pt-2 mt-2">
                   <span className="text-dark-text">Grand Total Amount</span>
-                  <span className="text-[#F84464] text-lg">₹{finalPrice.toFixed(2)}</span>
+                  <span className="text-[#3B82F6] text-lg">₹{finalPrice.toFixed(2)}</span>
                 </div>
               </div>
 
@@ -646,7 +646,7 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
               <button
                 type="submit"
                 disabled={bookingLoading}
-                className="w-full bg-[#F84464] text-white font-bold py-3.5 rounded-xl hover:bg-[#df3250] transition-all transform hover:-translate-y-0.5 shadow-md shadow-red-950/20 disabled:opacity-50 text-xs uppercase tracking-wider"
+                className="w-full bg-[#3B82F6] text-white font-bold py-3.5 rounded-xl hover:bg-[#1D4ED8] transition-all transform hover:-translate-y-0.5 shadow-md shadow-blue-950/20 disabled:opacity-50 text-xs uppercase tracking-wider"
               >
                 {bookingLoading ? 'Processing Booking...' : event.price > 0 && !(appliedCoupon && appliedCoupon.discount_percent === 100) ? 'Proceed to Pay' : 'Confirm Free Booking'}
               </button>
@@ -654,7 +654,7 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
           </>
         ) : paymentStep === 'options' ? (
           <>
-            <div className="w-12 h-12 rounded-xl bg-white/5 text-[#F84464] flex items-center justify-center mb-4 border border-white/10">
+            <div className="w-12 h-12 rounded-xl bg-white/5 text-[#3B82F6] flex items-center justify-center mb-4 border border-white/10">
               <Lock className="w-6 h-6 animate-pulse" />
             </div>
             <h3 className="text-lg font-bold text-dark-text">Select Payment Option</h3>
@@ -669,14 +669,14 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
                   setQrTimer(180); 
                   setPaymentToken(`pay_tok_${uuid()}`);
                 }}
-                className="w-full p-3.5 rounded-xl bg-white/5 border border-white/5 hover:border-[#F84464]/30 flex items-center justify-between text-left group transition-all"
+                className="w-full p-3.5 rounded-xl bg-white/5 border border-white/5 hover:border-[#3B82F6]/30 flex items-center justify-between text-left group transition-all"
               >
                 <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-[#F84464]/10 rounded-lg text-[#F84464]">
+                  <div className="p-2 bg-[#3B82F6]/10 rounded-lg text-[#3B82F6]">
                     <Smartphone className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="text-xs font-semibold text-dark-text group-hover:text-[#F84464] transition-colors">GPay / PhonePe / UPI</p>
+                    <p className="text-xs font-semibold text-dark-text group-hover:text-[#3B82F6] transition-colors">GPay / PhonePe / UPI</p>
                     <p className="text-[9px] text-dark-muted mt-0.5">Pay instantly using mobile applications</p>
                   </div>
                 </div>
@@ -686,14 +686,14 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
               {/* Cards */}
               <button
                 onClick={() => { setSelectedMethod('card'); setPaymentStep('card-details'); }}
-                className="w-full p-3.5 rounded-xl bg-white/5 border border-white/5 hover:border-[#F84464]/30 flex items-center justify-between text-left group transition-all"
+                className="w-full p-3.5 rounded-xl bg-white/5 border border-white/5 hover:border-[#3B82F6]/30 flex items-center justify-between text-left group transition-all"
               >
                 <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-[#F84464]/10 rounded-lg text-[#F84464]">
+                  <div className="p-2 bg-[#3B82F6]/10 rounded-lg text-[#3B82F6]">
                     <CreditCard className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="text-xs font-semibold text-dark-text group-hover:text-[#F84464] transition-colors">Credit / Debit Card</p>
+                    <p className="text-xs font-semibold text-dark-text group-hover:text-[#3B82F6] transition-colors">Credit / Debit Card</p>
                     <p className="text-[9px] text-dark-muted mt-0.5">Support Visa, MasterCard, RuPay, Amex</p>
                   </div>
                 </div>
@@ -703,14 +703,14 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
               {/* NetBanking */}
               <button
                 onClick={() => { setSelectedMethod('netbanking'); setPaymentStep('netbanking-details'); }}
-                className="w-full p-3.5 rounded-xl bg-white/5 border border-white/5 hover:border-[#F84464]/30 flex items-center justify-between text-left group transition-all"
+                className="w-full p-3.5 rounded-xl bg-white/5 border border-white/5 hover:border-[#3B82F6]/30 flex items-center justify-between text-left group transition-all"
               >
                 <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-[#F84464]/10 rounded-lg text-[#F84464]">
+                  <div className="p-2 bg-[#3B82F6]/10 rounded-lg text-[#3B82F6]">
                     <Landmark className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="text-xs font-semibold text-dark-text group-hover:text-[#F84464] transition-colors">Net Banking</p>
+                    <p className="text-xs font-semibold text-dark-text group-hover:text-[#3B82F6] transition-colors">Net Banking</p>
                     <p className="text-[9px] text-dark-muted mt-0.5">Secure direct bank account transfer</p>
                   </div>
                 </div>
@@ -732,12 +732,12 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
               <div className={`flip-card w-72 h-40 ${isCardFlipped ? 'flipped' : ''}`}>
                 <div className="flip-card-inner">
                   {/* Front */}
-                  <div className="flip-card-front bg-gradient-to-br from-slate-900 via-slate-800 to-[#F84464]/20 border border-white/10 p-5 text-left flex flex-col justify-between shadow-lg">
+                  <div className="flip-card-front bg-gradient-to-br from-slate-900 via-slate-800 to-[#3B82F6]/20 border border-white/10 p-5 text-left flex flex-col justify-between shadow-lg">
                     <div className="flex justify-between items-start">
                       <div className="w-10 h-7 rounded bg-yellow-500/20 border border-yellow-500/40 flex items-center justify-center">
                         <div className="w-6 h-4 border border-yellow-500/30 rounded-sm"></div>
                       </div>
-                      <span className="text-[9px] font-black tracking-widest text-[#F84464] uppercase">Secure Card</span>
+                      <span className="text-[9px] font-black tracking-widest text-[#3B82F6] uppercase">Secure Card</span>
                     </div>
                     <div className="space-y-1.5">
                       <p className="text-sm font-bold tracking-widest text-slate-100 font-mono">
@@ -802,7 +802,7 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
                   }}
                   placeholder="4111 2222 3333 4444"
                   maxLength="19"
-                  className="glass-input w-full px-3 py-2.5 text-xs focus:ring-1 focus:ring-[#F84464]/30"
+                  className="glass-input w-full px-3 py-2.5 text-xs focus:ring-1 focus:ring-[#3B82F6]/30"
                 />
               </div>
               <div>
@@ -817,7 +817,7 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
                     setCardError('');
                   }}
                   placeholder="Amit Patel"
-                  className="glass-input w-full px-3 py-2.5 text-xs focus:ring-1 focus:ring-[#F84464]/30"
+                  className="glass-input w-full px-3 py-2.5 text-xs focus:ring-1 focus:ring-[#3B82F6]/30"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -837,13 +837,13 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
                     }}
                     placeholder="MM/YY"
                     maxLength="5"
-                    className="glass-input w-full px-3 py-2.5 text-xs focus:ring-1 focus:ring-[#F84464]/30"
+                    className="glass-input w-full px-3 py-2.5 text-xs focus:ring-1 focus:ring-[#3B82F6]/30"
                   />
                 </div>
                 <div>
                   <label className="block text-[10px] text-dark-muted uppercase font-bold mb-1">CVV</label>
                   <input
-                    type="password"
+                    type="text"
                     required
                     value={cardCvv}
                     onFocus={() => setIsCardFlipped(true)}
@@ -853,9 +853,9 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
                       setCardCvv(val);
                       setCardError('');
                     }}
-                    placeholder="***"
+                    placeholder="123"
                     maxLength="3"
-                    className="glass-input w-full px-3 py-2.5 text-xs focus:ring-1 focus:ring-[#F84464]/30"
+                    className="glass-input w-full px-3 py-2.5 text-xs focus:ring-1 focus:ring-[#3B82F6]/30"
                   />
                 </div>
               </div>
@@ -870,7 +870,7 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
                 </button>
                 <button
                   type="submit"
-                  className="flex-grow bg-[#F84464] text-white py-3 rounded-xl text-xs font-bold uppercase tracking-wider"
+                  className="flex-grow bg-[#3B82F6] text-white py-3 rounded-xl text-xs font-bold uppercase tracking-wider"
                 >
                   Pay ₹{finalPrice.toFixed(2)}
                 </button>
@@ -890,9 +890,9 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
                 <div className="flex items-center gap-1.5 mb-3 relative">
                   {qrTimer > 0 ? (
                     <>
-                      <span className="w-2.5 h-2.5 rounded-full bg-[#F84464] animate-ping"></span>
-                      <span className="w-2 h-2 rounded-full bg-[#F84464] absolute left-0.5 top-0.5"></span>
-                      <span className="text-[11px] font-bold text-[#F84464] uppercase tracking-wider ml-1">QR Code Active</span>
+                      <span className="w-2.5 h-2.5 rounded-full bg-[#3B82F6] animate-ping"></span>
+                      <span className="w-2 h-2 rounded-full bg-[#3B82F6] absolute left-0.5 top-0.5"></span>
+                      <span className="text-[11px] font-bold text-[#3B82F6] uppercase tracking-wider ml-1">QR Code Active</span>
                     </>
                   ) : (
                     <>
@@ -907,9 +907,9 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
                   {qrTimer > 0 ? (
                     <>
                       {/* Scanner animation bar */}
-                      <div className="absolute inset-x-0 top-0 h-0.5 bg-[#F84464] shadow-md shadow-[#F84464]/50 animate-pulse" style={{
+                      <div className="absolute inset-x-0 top-0 h-0.5 bg-[#3B82F6] shadow-md shadow-[#3B82F6]/50 animate-pulse" style={{
                         animation: 'scan 2s linear infinite',
-                        backgroundImage: 'linear-gradient(to bottom, #f84464, #f84464)'
+                        backgroundImage: 'linear-gradient(to bottom, #3b82f6, #3b82f6)'
                       }}></div>
                       <img 
                         src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(qrUrl)}`}
@@ -930,7 +930,7 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
                 {qrTimer > 0 ? (
                   <div className="text-center mt-3 space-y-1">
                     <p className="text-[11px] font-mono text-dark-text bg-white/5 px-3 py-1 rounded-full border border-white/5">
-                      Time Remaining: <span className="font-bold text-[#F84464]">{formatTime(qrTimer)}</span>
+                      Time Remaining: <span className="font-bold text-[#3B82F6]">{formatTime(qrTimer)}</span>
                     </p>
                     <p className="text-[8px] text-dark-muted">Amount: ₹{finalPrice.toFixed(2)}</p>
                     <div className="pt-1">
@@ -938,7 +938,7 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
                         href={qrUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-[10px] text-[#F84464] hover:underline font-bold"
+                        className="text-[10px] text-[#3B82F6] hover:underline font-bold"
                       >
                         Testing locally? Open Simulator
                       </a>
@@ -948,7 +948,7 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
                   <button
                     type="button"
                     onClick={() => { setQrTimer(180); setPaymentToken(`pay_tok_${uuid()}`); }}
-                    className="mt-3 px-4 py-1.5 bg-[#F84464]/10 border border-[#F84464]/20 hover:bg-[#F84464]/20 text-[#F84464] rounded-full text-[10px] font-bold uppercase tracking-wider transition-all"
+                    className="mt-3 px-4 py-1.5 bg-[#3B82F6]/10 border border-[#3B82F6]/20 hover:bg-[#3B82F6]/20 text-[#3B82F6] rounded-full text-[10px] font-bold uppercase tracking-wider transition-all"
                   >
                     Regenerate QR Code
                   </button>
@@ -987,7 +987,7 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
                   <button
                     type="submit"
                     disabled={qrTimer === 0}
-                    className="flex-grow bg-[#F84464] text-white py-3 rounded-xl text-xs font-bold uppercase tracking-wider disabled:opacity-50"
+                    className="flex-grow bg-[#3B82F6] text-white py-3 rounded-xl text-xs font-bold uppercase tracking-wider disabled:opacity-50"
                   >
                     Pay ₹{finalPrice.toFixed(2)}
                   </button>
@@ -1026,7 +1026,7 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
                 </button>
                 <button
                   type="submit"
-                  className="flex-grow bg-[#F84464] text-white py-3 rounded-xl text-xs font-bold uppercase tracking-wider"
+                  className="flex-grow bg-[#3B82F6] text-white py-3 rounded-xl text-xs font-bold uppercase tracking-wider"
                 >
                   Proceed
                 </button>
@@ -1035,7 +1035,7 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
           </div>
         ) : paymentStep === 'processing' ? (
           <div className="py-8 flex flex-col items-center justify-center space-y-4">
-            <div className="w-12 h-12 border-4 border-[#F84464]/20 border-t-[#F84464] rounded-full animate-spin"></div>
+            <div className="w-12 h-12 border-4 border-[#3B82F6]/20 border-t-[#3B82F6] rounded-full animate-spin"></div>
             <p className="text-xs font-semibold text-dark-text">{processingMsg}</p>
             <p className="text-[10px] text-dark-muted">Please do not refresh the page or click back.</p>
           </div>
@@ -1044,7 +1044,7 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
         {/* Footnotes */}
         {paymentStep !== 'processing' && !bookingSuccess && (
           <div className="mt-6 flex items-center justify-center space-x-1.5 text-[10px] text-dark-muted">
-            <ShieldCheck className="w-3.5 h-3.5 text-[#F84464]" />
+            <ShieldCheck className="w-3.5 h-3.5 text-[#3B82F6]" />
             <span>256-bit secured connection</span>
           </div>
         )}

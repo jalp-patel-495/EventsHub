@@ -144,7 +144,7 @@ const EventExplore = () => {
   const totalPages = Math.ceil(totalCount / 6) || 1;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div className="w-full max-w-none px-4 sm:px-6 lg:px-12 py-10">
       {/* Search & Filter Bar */}
       <form onSubmit={handleSearchSubmit} className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-10">
         {/* Keyword Search */}
