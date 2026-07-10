@@ -391,7 +391,9 @@ const CustomerDashboard = () => {
   };
 
   const unreadNotificationsCount = notifications.filter(n => !n.is_read).length;
-  const totalRefundedAmount = bookings.filter(b => b.status === 'refunded').reduce((sum, b) => sum + (parseFloat(b.total_price) * 0.5), 0);
+  const ticketRefunds = bookings.filter(b => b.payment_status === 'refunded').reduce((sum, b) => sum + (parseFloat(b.total_price) * 0.5), 0);
+  const venueRefunds = venueBookings.filter(vb => vb.payment_status === 'refunded').reduce((sum, vb) => sum + (parseFloat(vb.total_price) * 0.9), 0);
+  const totalRefundedAmount = ticketRefunds + venueRefunds;
   const totalVenuesBooked = venueBookings.filter(vb => vb.status === 'approved').length;
 
   if (loading) {
