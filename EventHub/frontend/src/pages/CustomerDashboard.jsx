@@ -221,6 +221,19 @@ const CustomerDashboard = () => {
     }
   }, [location.search]);
 
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const bookVenueId = params.get('book');
+    if (bookVenueId && venues.length > 0) {
+      const venueToBook = venues.find(v => String(v.id) === String(bookVenueId));
+      if (venueToBook) {
+        setRentModal({ show: true, venue: venueToBook });
+        // Clear parameters to avoid reopening on reload
+        window.history.replaceState({}, document.title, '/bookings?tab=venues');
+      }
+    }
+  }, [location.search, venues]);
+
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
