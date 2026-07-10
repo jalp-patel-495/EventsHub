@@ -2,10 +2,25 @@ import React from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { User, Calendar, MapPin, Sparkles, ArrowRight } from 'lucide-react';
+import { User, Calendar, MapPin, Sparkles, ArrowRight, Music, Code, Rocket, Briefcase, Utensils, Dumbbell, GraduationCap, Building2, Gamepad2, Palette, Handshake, Heart } from 'lucide-react';
 import About from './About';
 import ThreeDEventBackground from '../components/ThreeDEventBackground';
 import ThreeDPageScrollTicket from '../components/ThreeDPageScrollTicket';
+
+const categoriesData = [
+  { name: 'Music', icon: Music, color: 'text-cyan-400', bg: 'bg-cyan-500/10' },
+  { name: 'Tech', icon: Code, color: 'text-blue-400', bg: 'bg-blue-500/10' },
+  { name: 'Startup', icon: Rocket, color: 'text-purple-400', bg: 'bg-purple-500/10' },
+  { name: 'Business', icon: Briefcase, color: 'text-teal-400', bg: 'bg-teal-500/10' },
+  { name: 'Food', icon: Utensils, color: 'text-rose-400', bg: 'bg-rose-500/10' },
+  { name: 'Sports', icon: Dumbbell, color: 'text-indigo-400', bg: 'bg-indigo-500/10' },
+  { name: 'Education', icon: GraduationCap, color: 'text-sky-400', bg: 'bg-sky-500/10' },
+  { name: 'Cultural', icon: Building2, color: 'text-violet-400', bg: 'bg-violet-500/10' },
+  { name: 'Gaming', icon: Gamepad2, color: 'text-blue-400', bg: 'bg-blue-500/10' },
+  { name: 'Art', icon: Palette, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
+  { name: 'Workshop', icon: Handshake, color: 'text-indigo-400', bg: 'bg-indigo-500/10' },
+  { name: 'Charity', icon: Heart, color: 'text-pink-400', bg: 'bg-pink-500/10' }
+];
 
 const LandingPage = () => {
   const { isAuthenticated, user } = useAuth();
@@ -191,9 +206,52 @@ const LandingPage = () => {
         </motion.div>
       </section>
 
-      {/* About Section */}
+      {/* About Section - Tailored Portal */}
       <section className="relative z-10 w-full border-t border-white/5">
-        <About />
+        <About showTabsOnly={true} />
+      </section>
+
+      {/* Featured Categories Section */}
+      <section className="relative z-10 w-full max-w-none px-4 sm:px-6 lg:px-12 py-16 border-t border-white/5">
+        <div className="text-center max-w-3xl mx-auto mb-12">
+          <span className="text-xs uppercase font-extrabold tracking-widest text-cyan-400">
+            Featured Categories
+          </span>
+          <h2 className="text-3xl sm:text-5xl font-black mt-2 text-dark-text tracking-tight leading-none font-sans">
+            Every Ahmedabad moment, curated by AI
+          </h2>
+          <p className="text-dark-muted mt-4 text-sm sm:text-base font-light max-w-2xl mx-auto leading-relaxed">
+            From campus hackathons to riverfront concerts, discover categories that match your mood, location, budget, and social circle.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 w-full">
+          {categoriesData.map((cat, idx) => {
+            const Icon = cat.icon;
+            return (
+              <Link
+                key={idx}
+                to="/explore"
+                className="glass-card glass-card-hover rounded-2xl p-6 flex flex-col items-start gap-4 transition-all duration-300 relative group overflow-hidden border border-white/5"
+              >
+                {/* subtle hover background glow */}
+                <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+
+                <div className={`p-3 rounded-xl ${cat.bg} ${cat.color} flex items-center justify-center border border-white/5 transition-transform group-hover:scale-110 duration-300`}>
+                  <Icon className="w-6 h-6" />
+                </div>
+                <span className="text-lg font-bold text-dark-text group-hover:text-cyan-400 transition-colors">
+                  {cat.name}
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* About Section - Stats & Vision */}
+      <section className="relative z-10 w-full border-t border-white/5">
+        <About showStatsAndVisionOnly={true} />
       </section>
     </div>
   );
