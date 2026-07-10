@@ -242,6 +242,10 @@ const VenuePaymentModal = ({ venue, startDate, endDate, onClose, onPaymentSucces
         setCardError('Cardholder Name must be at least 3 characters.');
         return;
       }
+      if (!/^[a-zA-Z\s]+$/.test(cardHolder.trim())) {
+        setCardError('Cardholder name must contain only letters and spaces.');
+        return;
+      }
       if (!/^\d{2}\/\d{2}$/.test(cardExpiry)) {
         setCardError('Expiry Date must be in MM/YY format.');
         return;

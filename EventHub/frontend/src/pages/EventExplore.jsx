@@ -26,6 +26,7 @@ const EventExplore = () => {
   const [endDate, setEndDate] = useState('');
   const [page, setPage] = useState(1);
   const [showFilters, setShowFilters] = useState(false); // filters hidden by default
+  const itemsPerPage = showFilters ? 8 : 12;
 
   // Booking Modal State
   const [bookingEvent, setBookingEvent] = useState(null);
@@ -39,7 +40,7 @@ const EventExplore = () => {
 
   useEffect(() => {
     fetchEvents();
-  }, [category, minPrice, maxPrice, startDate, endDate, page]);
+  }, [category, minPrice, maxPrice, startDate, endDate, page, itemsPerPage]);
 
   useEffect(() => {
     const queryParams = new URLSearchParams(window.location.search);
@@ -79,7 +80,7 @@ const EventExplore = () => {
   const fetchEvents = async () => {
     setLoading(true);
     try {
-      let url = `events/listings/?page=${page}`;
+      let url = `events/listings/?page=${page}&page_size=${itemsPerPage}`;
       if (search) url += `&search=${search}`;
       if (category) url += `&category=${category}`;
       if (minPrice) url += `&min_price=${minPrice}`;
@@ -140,8 +141,13 @@ const EventExplore = () => {
     setBookingEvent(event);
   };
 
+  const handleToggleFilters = () => {
+    setShowFilters(!showFilters);
+    setPage(1);
+  };
+
   // Pagination bounds
-  const totalPages = Math.ceil(totalCount / 6) || 1;
+  const totalPages = Math.ceil(totalCount / itemsPerPage) || 1;
 
   return (
     <div className="w-full max-w-none px-4 sm:px-6 lg:px-12 py-10">
@@ -179,7 +185,7 @@ const EventExplore = () => {
         <div className="flex space-x-2">
           <button
             type="button"
-            onClick={() => setShowFilters(!showFilters)}
+            onClick={handleToggleFilters}
             className={`flex items-center justify-center space-x-2 px-4 py-3 rounded-xl border transition-all text-sm font-semibold focus:outline-none ${
               showFilters 
                 ? 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border-emerald-500/30' 

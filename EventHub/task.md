@@ -1,0 +1,4 @@
+- [ ] Modify `About.jsx` to support section splitting props
+- [ ] Modify `LandingPage.jsx` to reorder Category and About sections
+- [ ] Verify the layout on the home page (About tabs followed by Categories, followed by Stats/Vision)
+- [ ] Create walkthrough documentation
