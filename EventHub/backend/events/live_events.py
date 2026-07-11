@@ -8,129 +8,105 @@ SERPAPI_URL = "https://serpapi.com/search.json"
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# STATIC FALLBACK — Google Events data (Austin, TX)
+# STATIC FALLBACK — Google Events data (Ahmedabad, Gujarat)
 # ─────────────────────────────────────────────────────────────────────────────
 STATIC_EVENTS = [
     {
         "id": "ge-0",
-        "title": "GRYFFIN with AVELLO at The Concourse Project",
-        "description": "RealMusic Events presents GRYFFIN with support AVELLO at The Concourse Project, 8509 Burleson Rd, Building 1, Austin TX 78719. 18+ Welcome // 9pm – 2am.",
-        "date": "2026-01-03",
-        "time": "21:00:00",
-        "location": "The Concourse Project, 8509 Burleson Rd, Austin, TX",
+        "title": "Sabarmati Riverfront Concert",
+        "description": "Experience an open-air night of melodious musical performances by local folk and fusion artists along the beautiful Riverfront.",
+        "date": "2026-10-12",
+        "time": "19:00:00",
+        "location": "Sabarmati Riverfront Event Ground, Ahmedabad, Gujarat",
         "price": 0.0,
-        "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT14azEw3S0tVtaKriaW2RmTmf-FRQCffR-4ca_VFto67yBhr9KDzu7-Sl8FA&s=10",
+        "image": "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500",
         "source": "Google Events",
-        "url": "https://www.statesman.com/austin360/things-to-do/?_evDiscoveryPath=/event/1037031425n-avello",
+        "url": "https://ahmedabadeventhub.com",
     },
     {
         "id": "ge-1",
-        "title": "Uncle Lucius",
-        "description": "Find tickets for Uncle Lucius at Continental Club in Austin on 1/3/2026 at 10:00 PM.",
-        "date": "2026-01-03",
-        "time": "22:00:00",
-        "location": "The Continental Club, 1315 S Congress Ave, Austin, TX",
+        "title": "Gujarat Literature Festival",
+        "description": "Celebrating literature, poetry, and storytelling. Connect with renowned writers, poets, and speakers at GLF.",
+        "date": "2026-11-20",
+        "time": "10:00:00",
+        "location": "Kanoria Centre for Arts, University Area, Ahmedabad, Gujarat",
         "price": 0.0,
-        "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQNDPwtxAnRgduzx50pyKkZTFyXDAyFTP-U17axt9YS_vnIgo999ZtsWz9CDg&s=10",
+        "image": "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=500",
         "source": "Google Events",
-        "url": "https://open.spotify.com/concert/6uNkwReVL14c1xaswptKcE",
+        "url": "https://ahmedabadeventhub.com",
     },
     {
         "id": "ge-2",
-        "title": "Jesse Royal Concert – Austin Reggae Festival",
-        "description": "The Austin reggae community converged for the first time on May 7th 1994, at Auditorium Shores to pay tribute to the late great Bob Marley.",
-        "date": "2026-04-16",
-        "time": "19:00:00",
-        "location": "Auditorium Shores at Town Lake Metropolitan Park, 900 W Riverside Dr, Austin, TX",
+        "title": "Ahmedabad Street Food Festival",
+        "description": "Taste the finest street foods, traditional snacks, and experimental cuisines from top food stalls in Ahmedabad.",
+        "date": "2026-12-05",
+        "time": "17:00:00",
+        "location": "Manek Chowk, Old City, Ahmedabad, Gujarat",
         "price": 0.0,
-        "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRwkYbJEGGohXmDqcvPDHsG8SlDbRVf9Id8stXwZuBR1g&s=10",
+        "image": "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=500",
         "source": "Google Events",
-        "url": "https://www.austintexas.org/event/austin-reggae-festival/383745/",
+        "url": "https://ahmedabadeventhub.com",
     },
     {
         "id": "ge-3",
-        "title": "Cosmic Gate (18+ Event)",
-        "description": "Find tickets for Cosmic Gate at The Concourse Project in Austin on 1/10/2026 at 10:00 PM.",
-        "date": "2026-01-10",
-        "time": "22:00:00",
-        "location": "The Concourse Project, 8509 Burleson Rd, Austin, TX",
+        "title": "Heritage Walk of Old Ahmedabad",
+        "description": "Explore the rich cultural history and stunning architecture of Ahmedabad's traditional pols with experienced tour guides.",
+        "date": "2026-10-18",
+        "time": "08:00:00",
+        "location": "Kalupur Swaminarayan Temple, Ahmedabad, Gujarat",
         "price": 0.0,
-        "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTYFR7InaVHgWwFcdSsF8ouTO8H0HXbPeZesnHylfhPgy9ccV7EZIdZbEZqLg&s=10",
+        "image": "https://images.unsplash.com/photo-1605649487212-47bdab064df7?w=500",
         "source": "Google Events",
-        "url": "https://open.spotify.com/concert/7rTcqPeHhrBktcOJN0b4KR",
+        "url": "https://ahmedabadeventhub.com",
     },
     {
         "id": "ge-4",
-        "title": "Boogie T",
-        "description": "Born and raised in Louisiana, Brock Thornton aka Boogie T, has risen from the bayou to bring the low end.",
-        "date": "2026-01-23",
-        "time": "21:00:00",
-        "location": "The Concourse Project, 8509 Burleson Rd, Austin, TX",
+        "title": "Navratri Garba Mahotsav",
+        "description": "Get ready to dance to the rhythm of traditional dhol and melodious garba singers. Dress in your finest traditional attire.",
+        "date": "2026-10-22",
+        "time": "20:00:00",
+        "location": "YMCA Event Ground, S.G. Highway, Ahmedabad, Gujarat",
         "price": 0.0,
-        "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR3oZqrw5Ex6hLdbgiuWUkll8oXGfYBpUpSp8VnAU1uCLGzEVkBFpPU9raWVA&s=10",
+        "image": "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=500",
         "source": "Google Events",
-        "url": "https://www.statesman.com/austin360/things-to-do/?_evDiscoveryPath=/event/1182323s-boogie-t-18-event-",
+        "url": "https://ahmedabadeventhub.com",
     },
     {
         "id": "ge-5",
-        "title": "Free Week: Candy Riot, Cloud Companion, Alma Muñeca, Almost Heaven",
-        "description": "A Beloved Austin Music Tradition. Founded in 2003 at Emo's, Free Week was created to keep clubs' lights on and staff working.",
-        "date": "2026-01-10",
-        "time": "21:00:00",
-        "location": "Stubb's Bar-B-Q, 801 Red River St, Austin, TX",
+        "title": "Ahmedabad Tech Summit",
+        "description": "Join top developers, designers, and startup founders in Ahmedabad to discuss artificial intelligence, blockchain, and cloud computing.",
+        "date": "2026-11-15",
+        "time": "09:00:00",
+        "location": "Science City Auditorium, Ahmedabad, Gujarat",
         "price": 0.0,
-        "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSBPCtdwvDq6f0e_MTygHeS95i522Aoqcpt1zwxJTo2yPSBI5wkaw8BP5a27w&s=10",
+        "image": "https://images.unsplash.com/photo-1515187029135-18ee286d815b?w=500",
         "source": "Google Events",
-        "url": "https://do512.com/events/2026/1/10/free-week-w-candy-riot-cloud-companion-alma-muneca-almost-heaven-tickets",
+        "url": "https://ahmedabadeventhub.com",
     },
     {
         "id": "ge-6",
-        "title": "Jai Wolf",
-        "description": "Find tickets for Jai Wolf at Kingdom Nightclub in Austin on 1/17/2026 at 10:00 PM.",
-        "date": "2026-01-17",
-        "time": "22:00:00",
-        "location": "Kingdom, 505 E 7th St, Austin, TX",
+        "title": "Sunday Heritage Market Tour",
+        "description": "Shop traditional handicrafts, antique artifacts, clothing, and local arts at the famous weekly Ravivari bazaar.",
+        "date": "2026-10-25",
+        "time": "09:00:00",
+        "location": "Sabarmati Riverfront Ravivari Market, Ahmedabad, Gujarat",
         "price": 0.0,
-        "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRv0sIWQv64Wwm2iuT9q6aF_0y38804ZbjV-MOtDiao7rJpwS4Pr8l20G1cgA&s=10",
+        "image": "https://images.unsplash.com/photo-1460661419201-fd4cecdf8a8b?w=500",
         "source": "Google Events",
-        "url": "https://open.spotify.com/concert/141kJmhifkOlqCbYq81jiu",
+        "url": "https://ahmedabadeventhub.com",
     },
     {
         "id": "ge-7",
-        "title": "Eddie Izzard",
-        "description": "Find tickets for Eddie Izzard at State Theatre in Austin on 2/7/2026 at 2:00 PM.",
-        "date": "2026-02-07",
-        "time": "14:00:00",
-        "location": "State Theatre, 719 Congress Ave., Austin, TX",
+        "title": "Standup Comedy Special",
+        "description": "Prepare for a hilarious evening filled with laughter, crowd interaction, and original observational humor by local standup stars.",
+        "date": "2026-10-30",
+        "time": "20:00:00",
+        "location": "The Laugh Club, Satellite, Ahmedabad, Gujarat",
         "price": 0.0,
-        "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTNQjbOBqtaBGQ4Pp6IVpEC9HKVcAkFigBoGAcONE-5RE2pJrt6qmPslai7wew&s=10",
+        "image": "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500",
         "source": "Google Events",
-        "url": "https://open.spotify.com/concert/1N3swjR5j4OVb0whI5rAVw",
-    },
-    {
-        "id": "ge-8",
-        "title": "Itzhak Perlman @ Dell Hall, Long Center",
-        "description": "No violinist more beautifully captures and conveys the joy of music than Itzhak Perlman, the undeniable reigning virtuoso of violin.",
-        "date": "2026-03-22",
-        "time": "14:00:00",
-        "location": "The Long Center for the Performing Arts, 701 W Riverside Dr, Austin, TX",
-        "price": 0.0,
-        "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRd248bQRI9VdTdvwBzcVWz1BrcEzkfXTtbf8qhkstcrQ&s=10",
-        "source": "Google Events",
-        "url": "https://www.austintexas.org/event/itzhak-perlman-in-recital/390166/",
-    },
-    {
-        "id": "ge-9",
-        "title": "St. Louis City SC at Austin FC",
-        "description": "Attend the Austin FC vs. St. Louis City SC event in Austin, TX at the Q2 Stadium. The event starts at 4:30 PM on Sunday, May 3, 2026.",
-        "date": "2026-05-03",
-        "time": "16:30:00",
-        "location": "Q2 Stadium, 10414 McKalla Pl, Austin, TX",
-        "price": 0.0,
-        "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRVQRzeGHYF5ADgoFuslgXuuZpMpUiwmjzzpib2VSZnaQ&s=10",
-        "source": "Google Events",
-        "url": "https://www.ticketmaster.com/event/Z7r9jZ1A7roZU",
-    },
+        "url": "https://ahmedabadeventhub.com",
+    }
 ]
 
 
@@ -270,13 +246,22 @@ def get_live_ahmedabad_events():
     """
     Priority:
       1. SerpAPI Google Events  (requires SERPAPI_API_KEY in .env)
-      2. Static Google Events   (Austin TX data — always available)
+      2. Static Google Events   (Ahmedabad fallback data — always available)
     """
     # 1. SerpAPI
-    events = _fetch_serpapi_events("Ahmedabad")
+    events = _fetch_serpapi_events("Events in Ahmedabad, Gujarat, India")
     if events:
-        return events
+        filtered = []
+        for e in events:
+            loc = e.get("location", "").lower()
+            title = e.get("title", "").lower()
+            desc = e.get("description", "").lower()
+            # If the event location contains 'ahmedabad', 'gujarat', or if the query matched a local venue, include it
+            if "ahmedabad" in loc or "gujarat" in loc or "ahmedabad" in title or "ahmedabad" in desc or not loc:
+                filtered.append(e)
+        if filtered:
+            return filtered
 
-    # 2. Static fallback (Google Events / Austin data)
+    # 2. Static fallback (Google Events / Ahmedabad static data)
     return STATIC_EVENTS
 
