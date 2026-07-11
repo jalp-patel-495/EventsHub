@@ -81,7 +81,7 @@ def send_registration_otp(email, code):
         message=plain_message,
         from_email=settings.DEFAULT_FROM_EMAIL,
         recipient_list=[email],
-        fail_silently=True,
+        fail_silently=False,
     )
 
 def send_password_reset_email(user):
