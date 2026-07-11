@@ -55,13 +55,18 @@ def setup_users():
 def setup_categories():
     print("Setting up event categories...")
     categories_data = [
-        {"name": "Music & Concerts", "slug": "music-concerts"},
-        {"name": "Sports & Fitness", "slug": "sports-fitness"},
-        {"name": "Food & Drinks", "slug": "food-drinks"},
-        {"name": "Tech & Conferences", "slug": "tech-conferences"},
-        {"name": "Art & Theater", "slug": "art-theater"},
-        {"name": "Festivals & Garba", "slug": "festivals-garba"},
-        {"name": "Comedy Shows", "slug": "comedy-shows"},
+        {"name": "Music", "slug": "music"},
+        {"name": "Tech", "slug": "tech"},
+        {"name": "Startup", "slug": "startup"},
+        {"name": "Business", "slug": "business"},
+        {"name": "Food", "slug": "food"},
+        {"name": "Sports", "slug": "sports"},
+        {"name": "Education", "slug": "education"},
+        {"name": "Cultural", "slug": "cultural"},
+        {"name": "Gaming", "slug": "gaming"},
+        {"name": "Art", "slug": "art"},
+        {"name": "Workshop", "slug": "workshop"},
+        {"name": "Charity", "slug": "charity"},
     ]
     
     categories = {}
@@ -154,7 +159,7 @@ def generate_events(organizer, categories, venues):
     
     # Event data mapping per category
     data_map = {
-        "Music & Concerts": {
+        "Music": {
             "images": [
                 "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500",
                 "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=500",
@@ -173,26 +178,59 @@ def generate_events(organizer, categories, venues):
             "prices": [399.00, 599.00, 999.00, 1499.00, 2499.00],
             "capacity": [500, 1000, 2000, 5000]
         },
-        "Sports & Fitness": {
+        "Tech": {
             "images": [
-                "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=500",
-                "https://images.unsplash.com/photo-1517649763962-0c623066013b?w=500",
-                "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=500",
-                "https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?w=500",
-                "https://images.unsplash.com/photo-1552667466-07fdd0a48104?w=500",
+                "https://images.unsplash.com/photo-1515187029135-18ee286d815b?w=500",
+                "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=500",
+                "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=500",
+                "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=500",
+                "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=500",
             ],
             "titles": [
-                "Ahmedabad Half Marathon", "Night Cricket Championship", "Cyclothon 2026", 
-                "Yoga & Mindfulness Workshop", "CrossFit Open Challenge", "Badminton League", 
-                "Futsal Cup Tournament", "Powerlifting Championship", "Zumba Dance Marathon", 
-                "Self Defense Camp", "Skating Championship", "Table Tennis Open", 
-                "Chess Grandmasters Meet", "Swimming Relay Gala", "Aerobics Fitness Festival"
+                "Gujarat Tech Summit 2026", "AI & Robotics Seminar", "Web Development Boot Camp", 
+                "Cloud Computing Workshop", "Cybersecurity Bootcamp", 
+                "Blockchain and Web3 Meetup", "UX/UI Design Conference", "Data Science Conference", 
+                "Product Management Summit", "Digital Marketing Expo", "DevOps & SRE Meet", 
+                "Mobile App Dev Forum", "IoT & Smart Devices Exhibition", "Tech Career Fair",
+                "Ahmedabad Developers Assembly"
             ],
-            "desc": "Bring your energy and athletic spirit to the arena. Challenge your limits, keep fit, and compete with the best athletes in the city. Goodies and certificates for all participants!",
-            "prices": [0.00, 199.00, 299.00, 499.00],
-            "capacity": [100, 200, 500, 1000]
+            "desc": "Join industry experts, top developers, and tech visionaries to explore emerging trends and hands-on developer workshops. Perfect for networking and career growth.",
+            "prices": [0.00, 499.00, 999.00, 1999.00],
+            "capacity": [100, 250, 400, 1000]
         },
-        "Food & Drinks": {
+        "Startup": {
+            "images": [
+                "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=500",
+                "https://images.unsplash.com/photo-1515187029135-18ee286d815b?w=500",
+                "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=500",
+            ],
+            "titles": [
+                "Unicorn Startup Pitch", "Founders Meetup Ahmedabad", "Angel Investing Masterclass", 
+                "SaaS Bootstrapping Workshop", "Techstars Info Session", "Incubator Demo Day", 
+                "Startup Ahmedabad Hackathon", "Product Hunt Launch Party", "Co-Founder Matching Night",
+                "Venture Capital Roundtable"
+            ],
+            "desc": "Connect with top startup founders, angel investors, and venture capitalists. Pitch your ideas, find co-founders, and secure funding for your dream project.",
+            "prices": [0.00, 299.00, 499.00, 999.00],
+            "capacity": [100, 200, 300, 500]
+        },
+        "Business": {
+            "images": [
+                "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=500",
+                "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=500",
+                "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=500",
+            ],
+            "titles": [
+                "Global Business Expo", "Networking Breakfast Meetup", "Real Estate Investment Seminar", 
+                "Digital Marketing Strategy Summit", "Leadership Summit 2026", "E-commerce Growth Summit", 
+                "Women in Business Meetup", "Ahmedabad Trade Fair", "Business Planning Masterclass",
+                "Sales Transformation Seminar"
+            ],
+            "desc": "Empower your business strategies and build valuable partnerships. Learn about marketing automation, scaling business operations, and leadership values.",
+            "prices": [499.00, 999.00, 1999.00, 2999.00],
+            "capacity": [150, 300, 500, 1000]
+        },
+        "Food": {
             "images": [
                 "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=500",
                 "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=500",
@@ -211,45 +249,42 @@ def generate_events(organizer, categories, venues):
             "prices": [299.00, 499.00, 799.00, 1299.00],
             "capacity": [150, 300, 500, 800]
         },
-        "Tech & Conferences": {
+        "Sports": {
             "images": [
-                "https://images.unsplash.com/photo-1515187029135-18ee286d815b?w=500",
-                "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=500",
-                "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=500",
-                "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=500",
-                "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=500",
+                "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=500",
+                "https://images.unsplash.com/photo-1517649763962-0c623066013b?w=500",
+                "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=500",
+                "https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?w=500",
+                "https://images.unsplash.com/photo-1552667466-07fdd0a48104?w=500",
             ],
             "titles": [
-                "Gujarat Tech Summit 2026", "AI & Robotics Seminar", "Web Development Boot Camp", 
-                "Startup Pitch Fest", "Cloud Computing Workshop", "Cybersecurity Bootcamp", 
-                "Blockchain and Web3 Meetup", "UX/UI Design Conference", "Data Science Conference", 
-                "Product Management Summit", "Digital Marketing Expo", "DevOps & SRE Meet", 
-                "Mobile App Dev Forum", "IoT & Smart Devices Exhibition", "Tech Career Fair"
+                "Ahmedabad Half Marathon", "Night Cricket Championship", "Cyclothon 2026", 
+                "Yoga & Mindfulness Workshop", "CrossFit Open Challenge", "Badminton League", 
+                "Futsal Cup Tournament", "Powerlifting Championship", "Zumba Dance Marathon", 
+                "Self Defense Camp", "Skating Championship", "Table Tennis Open", 
+                "Chess Grandmasters Meet", "Swimming Relay Gala", "Aerobics Fitness Festival"
             ],
-            "desc": "Join industry experts, top developers, and tech visionaries to explore emerging trends and hands-on developer workshops. Perfect for networking and career growth.",
-            "prices": [0.00, 499.00, 999.00, 1999.00],
-            "capacity": [100, 250, 400, 1000]
+            "desc": "Bring your energy and athletic spirit to the arena. Challenge your limits, keep fit, and compete with the best athletes in the city. Goodies and certificates for all participants!",
+            "prices": [0.00, 199.00, 299.00, 499.00],
+            "capacity": [100, 200, 500, 1000]
         },
-        "Art & Theater": {
+        "Education": {
             "images": [
-                "https://images.unsplash.com/photo-1460661419201-fd4cecdf8a8b?w=500",
-                "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=500",
-                "https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?w=500",
-                "https://images.unsplash.com/photo-1457369804613-52c61a468e7d?w=500",
-                "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=500",
+                "https://images.unsplash.com/photo-1427504494785-3a9ca7044f45?w=500",
+                "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=500",
+                "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=500",
             ],
             "titles": [
-                "Acrylic Canvas Workshop", "Classical Drama Performance", "Pottery & Clay Art Session", 
-                "Photography Exhibition", "Poetry Slam Evening", "Modern Art Showcase", 
-                "Street Play Festival", "Calligraphy & Ink Workshop", "Handicraft & Origami Workshop", 
-                "Sufi Dance & Sufism Art", "Puppet Theater Show", "Musical Drama Play", 
-                "Solo Monologue Evening", "Graffiti Art Exhibition", "Abstract Art Gallery"
+                "Study Abroad Seminar", "Mathematics Bootcamp", "Creative Writing Seminar", 
+                "IELTS Preparation Masterclass", "Career Counseling Fair", "Public Speaking Workshop", 
+                "Vedic Maths for Kids", "Coding for Teens Workshop", "Financial Literacy Seminar",
+                "Higher Education Expo"
             ],
-            "desc": "Unleash your creativity and immerse yourself in beautiful artistic expressions, live theatre acts, and dynamic art creation classes. All materials will be provided on-site.",
-            "prices": [199.00, 399.00, 599.00, 899.00],
-            "capacity": [50, 100, 150, 300]
+            "desc": "Unlock academic opportunities and master new skills. Learn from renowned academicians, counselors, and industry mentors. Open for students and professionals.",
+            "prices": [0.00, 149.00, 249.00, 499.00],
+            "capacity": [100, 150, 300, 600]
         },
-        "Festivals & Garba": {
+        "Cultural": {
             "images": [
                 "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=500",
                 "https://images.unsplash.com/photo-1566737236500-c8ac43014a67?w=500",
@@ -268,24 +303,72 @@ def generate_events(organizer, categories, venues):
             "prices": [200.00, 350.00, 500.00, 800.00],
             "capacity": [1000, 2000, 3000, 5000]
         },
-        "Comedy Shows": {
+        "Gaming": {
             "images": [
-                "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500",
-                "https://images.unsplash.com/photo-1527224857830-43a7acc85260?w=500",
-                "https://images.unsplash.com/photo-1485579149621-3123dd979885?w=500",
-                "https://images.unsplash.com/photo-1543584756-8f40a802e14f?w=500",
-                "https://images.unsplash.com/photo-1560169897-fc0cdbdfa4d5?w=500",
+                "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=500",
+                "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=500",
+                "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=500",
             ],
             "titles": [
-                "Standup Comedy Open Mic", "Best of Ahmedabad Standup", "Clean Family Comedy Show", 
-                "Improv Comedy Night", "Sarcasm Unlimited Show", "Gujarati Standup Comedy", 
-                "Relatable College Jokes", "Corporate Comedy Evening", "Laughter Club Special", 
-                "Late Night Standup Hour", "Political Satire Special", "Double Trouble Improv", 
-                "Silent Comedy Show", "Comedy Face-off Tour", "Storytelling & Comedy Combo"
+                "Valorant Lan Tournament", "FIFA Console Arena", "Mobile Legends Championship", 
+                "Minecraft Build Challenge", "Board Games Meetup", "Cosplay & Pop Culture Fest", 
+                "Retro Arcade Exhibition", "BGMI Ahmedabad Cup", "PUBG Mobile Showdown",
+                "Virtual Reality Experience Day"
             ],
-            "desc": "Prepare for a night of non-stop laughter and humor as top national and local stand-up comedians perform their best observational jokes and hilarious crowd work.",
-            "prices": [199.00, 299.00, 399.00, 499.00, 799.00],
-            "capacity": [80, 150, 250, 500]
+            "desc": "Gear up, assemble your squad, and battle it out in the ultimate gaming showdown. Amazing gaming gear, cash prizes, and merchandise await the winners!",
+            "prices": [99.00, 199.00, 299.00, 499.00],
+            "capacity": [50, 100, 200, 400]
+        },
+        "Art": {
+            "images": [
+                "https://images.unsplash.com/photo-1460661419201-fd4cecdf8a8b?w=500",
+                "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=500",
+                "https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?w=500",
+                "https://images.unsplash.com/photo-1457369804613-52c61a468e7d?w=500",
+                "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=500",
+            ],
+            "titles": [
+                "Acrylic Canvas Workshop", "Classical Drama Performance", "Pottery & Clay Art Session", 
+                "Photography Exhibition", "Poetry Slam Evening", "Modern Art Showcase", 
+                "Street Play Festival", "Calligraphy & Ink Workshop", "Handicraft & Origami Workshop", 
+                "Sufi Dance & Sufism Art", "Puppet Theater Show", "Musical Drama Play", 
+                "Solo Monologue Evening", "Graffiti Art Exhibition", "Abstract Art Gallery"
+            ],
+            "desc": "Unleash your creativity and immerse yourself in beautiful artistic expressions, live theatre acts, and dynamic art creation classes. All materials will be provided on-site.",
+            "prices": [199.00, 399.00, 599.00, 899.00],
+            "capacity": [50, 100, 150, 300]
+        },
+        "Workshop": {
+            "images": [
+                "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=500",
+                "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=500",
+                "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=500",
+            ],
+            "titles": [
+                "Public Speaking Masterclass", "Financial Planning Workshop", "Creative Photography Class", 
+                "UI/UX Figma Bootcamp", "Handmade Soap Crafting", "Pottery & Clay Workshop", 
+                "Baking & Cake Decorating", "Content Creation Guide", "Aromatherapy Candle Making",
+                "Acting & Theatre Workshop"
+            ],
+            "desc": "Get hands-on experience and build professional skills. Led by subject matter experts, these workshops provide direct practical learning and certificates.",
+            "prices": [299.00, 499.00, 999.00, 1499.00],
+            "capacity": [30, 50, 100, 150]
+        },
+        "Charity": {
+            "images": [
+                "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=500",
+                "https://images.unsplash.com/photo-1518391846015-55a9cc003b25?w=500",
+                "https://images.unsplash.com/photo-1532629345422-7515f3d16bb6?w=500",
+            ],
+            "titles": [
+                "NGO Blood Donation Drive", "Charity Run for Education", "Feeding Ahmedabad Drive", 
+                "Plant a Tree Campaign", "Animal Rescue Charity Gala", "Book Donation Camp", 
+                "Winter Blanket Distribution", "Old Age Home Voluntary Meet", "Disaster Relief Fundraiser",
+                "Cleanliness Drive Riverfront"
+            ],
+            "desc": "Support a noble cause and make a real difference in the community. Register as a volunteer or contribute to the fundraiser. All proceeds go directly to recognized NGOs.",
+            "prices": [0.00, 100.00, 250.00, 500.00],
+            "capacity": [100, 200, 500, 1000]
         }
     }
     
