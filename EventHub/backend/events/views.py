@@ -111,7 +111,7 @@ class EventViewSet(viewsets.ModelViewSet):
 
     def destroy(self, request, *args, **kwargs):
         event = self.get_object()
-        if event.organizer != request.user:
+        if event.organizer != request.user and request.user.role != 'admin':
             return Response({"error": "You do not own this event."}, status=status.HTTP_403_FORBIDDEN)
         return super().destroy(request, *args, **kwargs)
 
