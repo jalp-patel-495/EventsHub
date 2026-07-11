@@ -4,7 +4,7 @@ import api from '../api/api';
 import { useAuth } from '../context/AuthContext';
 import BookingModal from '../components/BookingModal';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CloudSun, Navigation, Search, MapPin, Tag, RefreshCw, Calendar, Clock, Send, MessageSquare, User as UserIcon, Sparkles, ExternalLink, CheckCircle2, Ticket, X, PartyPopper } from 'lucide-react';
+import { CloudSun, Navigation, Search, MapPin, Tag, RefreshCw, Calendar, Clock, Send, MessageSquare, User as UserIcon, Sparkles, ExternalLink, CheckCircle2, Ticket, X, PartyPopper, Lock } from 'lucide-react';
 
 const LiveEvents = () => {
   const { isAuthenticated, user } = useAuth();
@@ -19,6 +19,7 @@ const LiveEvents = () => {
   const [freeTicketLoading, setFreeTicketLoading] = useState(false);
   const [freeTicketConfirmed, setFreeTicketConfirmed] = useState(false);
   const [freeTicketId, setFreeTicketId] = useState(null);
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
 
   // Chat States
   const [chatMessages, setChatMessages] = useState([]);
@@ -114,8 +115,7 @@ const LiveEvents = () => {
 
   const handleBuyTickets = async (evt) => {
     if (!isAuthenticated) {
-      alert("Please log in to get tickets.");
-      navigate('/login');
+      setShowLoginPrompt(true);
       return;
     }
 
@@ -733,6 +733,73 @@ const LiveEvents = () => {
                   </motion.div>
                 )}
               </AnimatePresence>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      {/* ── LOGIN PROMPT MODAL ── */}
+      <AnimatePresence>
+        {showLoginPrompt && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            style={{ background: 'rgba(0,0,0,0.80)', backdropFilter: 'blur(14px)' }}
+            onClick={() => setShowLoginPrompt(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.88, y: 40 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.88, y: 40 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 26 }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative w-full max-w-md rounded-3xl p-8 overflow-hidden shadow-2xl"
+              style={{
+                background: 'linear-gradient(160deg, #12172a 0%, #0A0E1A 100%)',
+                border: '1px solid rgba(59,130,246,0.18)'
+              }}
+            >
+              {/* Top gradient accent bar */}
+              <div className="absolute top-0 left-0 right-0 h-[2px]"
+                style={{ background: 'linear-gradient(90deg, transparent, #3B82F6, #60A5FA, #3B82F6, transparent)' }} />
+
+              {/* Close button */}
+              <button
+                onClick={() => setShowLoginPrompt(false)}
+                className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-all"
+                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}
+              >
+                <X className="w-4 h-4 text-dark-muted" />
+              </button>
+
+              <div className="flex flex-col items-center text-center mt-4">
+                <div className="p-4 bg-emerald-500/10 text-emerald-400 rounded-full border border-emerald-500/20 mb-5">
+                  <Lock className="w-7 h-7" />
+                </div>
+                <h3 className="text-xl font-bold text-dark-text">Login Required</h3>
+                <p className="text-sm text-dark-muted mt-2.5 leading-relaxed max-w-xs">
+                  Please log in to your account to book tickets for live events.
+                </p>
+
+                <div className="flex flex-col gap-3 w-full mt-8">
+                  <button
+                    onClick={() => {
+                      setShowLoginPrompt(false);
+                      navigate('/login');
+                    }}
+                    className="w-full bg-brand-primary hover:bg-emerald-600 text-white py-3.5 rounded-2xl text-sm font-bold transition-all shadow-lg shadow-emerald-950/20"
+                  >
+                    Go to Login
+                  </button>
+                  <button
+                    onClick={() => setShowLoginPrompt(false)}
+                    className="w-full py-3.5 rounded-2xl text-sm font-bold border border-white/5 text-dark-muted hover:text-white hover:bg-white/5 transition-all"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
             </motion.div>
           </motion.div>
         )}
