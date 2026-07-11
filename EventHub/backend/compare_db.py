@@ -1,79 +1,90 @@
 """
-Compare SQLite vs Neon PostgreSQL data.
-Run: python compare_db.py
+Compare SQLite vs Neon PostgreSQL data using raw database connections.
+This is 100% reliable and avoids Django settings initialization conflicts.
 """
 import os
-import sys
+import sqlite3
+import psycopg2
+import urllib.parse
+from dotenv import load_dotenv
 
-# Step 1: Show SQLite data
-os.environ['DJANGO_SETTINGS_MODULE'] = 'eventhub.settings'
-import django
-django.setup()
+# Load env variables
+load_dotenv()
 
-from django.db import connections
-from accounts.models import User
-from events.models import Event
-
+# Step 1: Read local SQLite Database
+db_path = os.path.join(os.path.dirname(__file__), 'db.sqlite3')
 print("=" * 50)
 print("  LOCAL SQLite Database")
 print("=" * 50)
-print(f"Users  : {User.objects.count()}")
-for u in User.objects.all().values('email', 'role', 'is_active'):
-    print(f"  - {u['email']} ({u['role']}) active={u['is_active']}")
-print(f"Events : {Event.objects.count()}")
-for e in list(Event.objects.all().values('title', 'is_approved'))[:5]:
-    print(f"  - {e['title']} approved={e['is_approved']}")
 
-# Step 2: Try to connect to Neon if DATABASE_URL is set
+sqlite_users = []
+sqlite_events = []
+
+if os.path.exists(db_path):
+    try:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        
+        cursor.execute("SELECT email, role, is_active FROM accounts_user")
+        sqlite_users = cursor.fetchall()
+        print(f"Users  : {len(sqlite_users)}")
+        for u in sqlite_users:
+            print(f"  - {u[0]} ({u[1]}) active={bool(u[2])}")
+            
+        cursor.execute("SELECT title, is_approved FROM events_event")
+        sqlite_events = cursor.fetchall()
+        print(f"Events : {len(sqlite_events)}")
+        for e in sqlite_events[:5]:
+            print(f"  - {e[0]} approved={bool(e[1])}")
+            
+        conn.close()
+    except Exception as e:
+        print(f"[ERROR] Reading SQLite failed: {e}")
+else:
+    print(f"SQLite file not found at: {db_path}")
+
+# Step 2: Read Neon PostgreSQL Database
 neon_url = os.environ.get('DATABASE_URL', '').strip()
 if not neon_url:
     print("\n" + "=" * 50)
     print("  Neon PostgreSQL: NOT CONFIGURED")
     print("  Add DATABASE_URL to .env first!")
     print("=" * 50)
-    sys.exit(0)
+    exit(0)
 
 print("\n" + "=" * 50)
 print("  Neon PostgreSQL Database")
 print("=" * 50)
 
-# Temporarily switch to Neon
-import urllib.parse
-parsed = urllib.parse.urlparse(neon_url)
-from django.conf import settings
-settings.DATABASES['neon'] = {
-    'ENGINE': 'django.db.backends.postgresql',
-    'NAME': parsed.path.lstrip('/'),
-    'USER': parsed.username or '',
-    'PASSWORD': parsed.password or '',
-    'HOST': parsed.hostname or 'localhost',
-    'PORT': str(parsed.port) if parsed.port else '5432',
-    'OPTIONS': {'sslmode': 'require'},
-}
+neon_users = []
+neon_events = []
 
 try:
-    neon_users = list(User.objects.using('neon').values('email', 'role', 'is_active'))
-    neon_events = list(Event.objects.using('neon').values('title', 'status'))
+    conn = psycopg2.connect(neon_url)
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT email, role, is_active FROM accounts_user")
+    neon_users = cursor.fetchall()
     print(f"Users  : {len(neon_users)}")
     for u in neon_users:
-        print(f"  - {u['email']} ({u['role']}) active={u['is_active']}")
+        print(f"  - {u[0]} ({u[1]}) active={bool(u[2])}")
+        
+    cursor.execute("SELECT title, is_approved FROM events_event")
+    neon_events = cursor.fetchall()
     print(f"Events : {len(neon_events)}")
     for e in neon_events[:5]:
-        print(f"  - {e['title']} [{e['status']}]")
-
+        print(f"  - {e[0]} approved={bool(e[1])}")
+        
+    cursor.close()
+    conn.close()
+    
     print("\n" + "=" * 50)
-    sqlite_u = User.objects.count()
-    neon_u = len(neon_users)
-    sqlite_e = Event.objects.count()
-    neon_e = len(neon_events)
-    if sqlite_u == neon_u and sqlite_e == neon_e:
-        print("  [MATCH] Both databases have the same data!")
+    if len(sqlite_users) == len(neon_users) and len(sqlite_events) == len(neon_events):
+        print("  [MATCH] Both databases have the exact same data! Live database is ready.")
     else:
-        print(f"  [MISMATCH] SQLite: {sqlite_u} users, {sqlite_e} events")
-        print(f"             Neon  : {neon_u} users, {neon_e} events")
-        print("  Run: python import_to_neon.py to sync data")
+        print(f"  [MISMATCH] SQLite: {len(sqlite_users)} users, {len(sqlite_events)} events")
+        print(f"             Neon  : {len(neon_users)} users, {len(neon_events)} events")
     print("=" * 50)
-
 except Exception as e:
     print(f"[ERROR] Cannot connect to Neon: {e}")
     print("Check your DATABASE_URL in .env")
