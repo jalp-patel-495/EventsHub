@@ -18,7 +18,7 @@ STATIC_EVENTS = [
         "date": "2026-10-12",
         "time": "19:00:00",
         "location": "Sabarmati Riverfront Event Ground, Ahmedabad, Gujarat",
-        "price": 0.0,
+        "price": 299.0,
         "image": "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500",
         "source": "Google Events",
         "url": "https://ahmedabadeventhub.com",
@@ -42,7 +42,7 @@ STATIC_EVENTS = [
         "date": "2026-12-05",
         "time": "17:00:00",
         "location": "Manek Chowk, Old City, Ahmedabad, Gujarat",
-        "price": 0.0,
+        "price": 150.0,
         "image": "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=500",
         "source": "Google Events",
         "url": "https://ahmedabadeventhub.com",
@@ -54,7 +54,7 @@ STATIC_EVENTS = [
         "date": "2026-10-18",
         "time": "08:00:00",
         "location": "Kalupur Swaminarayan Temple, Ahmedabad, Gujarat",
-        "price": 0.0,
+        "price": 200.0,
         "image": "https://images.unsplash.com/photo-1605649487212-47bdab064df7?w=500",
         "source": "Google Events",
         "url": "https://ahmedabadeventhub.com",
@@ -66,7 +66,7 @@ STATIC_EVENTS = [
         "date": "2026-10-22",
         "time": "20:00:00",
         "location": "YMCA Event Ground, S.G. Highway, Ahmedabad, Gujarat",
-        "price": 0.0,
+        "price": 499.0,
         "image": "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=500",
         "source": "Google Events",
         "url": "https://ahmedabadeventhub.com",
@@ -78,7 +78,7 @@ STATIC_EVENTS = [
         "date": "2026-11-15",
         "time": "09:00:00",
         "location": "Science City Auditorium, Ahmedabad, Gujarat",
-        "price": 0.0,
+        "price": 799.0,
         "image": "https://images.unsplash.com/photo-1515187029135-18ee286d815b?w=500",
         "source": "Google Events",
         "url": "https://ahmedabadeventhub.com",
@@ -102,7 +102,7 @@ STATIC_EVENTS = [
         "date": "2026-10-30",
         "time": "20:00:00",
         "location": "The Laugh Club, Satellite, Ahmedabad, Gujarat",
-        "price": 0.0,
+        "price": 350.0,
         "image": "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500",
         "source": "Google Events",
         "url": "https://ahmedabadeventhub.com",
@@ -162,6 +162,9 @@ def _normalise_serpapi(raw_events: list) -> list:
 
         image = e.get("image") or e.get("thumbnail") or ""
 
+        # Assign a random ticket price for live search results to look realistic (or Free randomly)
+        price = random.choice([0.0, 199.0, 299.0, 399.0, 499.0, 799.0])
+
         events.append({
             "id":          f"ge-{idx}",
             "title":       e.get("title", "Untitled"),
@@ -169,7 +172,7 @@ def _normalise_serpapi(raw_events: list) -> list:
             "date":        date_s,
             "time":        time_s,
             "location":    location,
-            "price":       0.0,
+            "price":       price,
             "image":       image,
             "source":      "Google Events",
             "url":         url,
