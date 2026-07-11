@@ -40,11 +40,13 @@ class RegisterOTPView(APIView):
         EmailOTP.objects.filter(email=email).delete()  # clear old
         EmailOTP.objects.create(email=email, code=otp_code)
 
-        try:
-            send_registration_otp(email, otp_code)
-        except Exception as e:
-            print(f"SMTP error: {e}")
-            # OTP is still saved — email may be unavailable in this environment
+        import threading
+        email_thread = threading.Thread(
+            target=send_registration_otp,
+            args=(email, otp_code),
+            daemon=True
+        )
+        email_thread.start()
         return Response({"message": "OTP verification code has been sent to your email inbox!"}, status=status.HTTP_200_OK)
 
 class ResendOTPView(APIView):
@@ -63,11 +65,13 @@ class ResendOTPView(APIView):
         EmailOTP.objects.filter(email=email).delete()  # clear old OTP
         EmailOTP.objects.create(email=email, code=otp_code)
 
-        try:
-            send_registration_otp(email, otp_code)
-        except Exception as e:
-            print(f"SMTP error on resend: {e}")
-            # OTP still saved; email may be unavailable in this environment
+        import threading
+        email_thread = threading.Thread(
+            target=send_registration_otp,
+            args=(email, otp_code),
+            daemon=True
+        )
+        email_thread.start()
         return Response({"message": "A new OTP verification code has been sent to your email inbox!"}, status=status.HTTP_200_OK)
 
 class RegisterView(generics.CreateAPIView):
@@ -187,7 +191,13 @@ class ForgotPasswordView(APIView):
         
         try:
             user = User.objects.get(email=email)
-            send_password_reset_email(user)
+            import threading
+            email_thread = threading.Thread(
+                target=send_password_reset_email,
+                args=(user,),
+                daemon=True
+            )
+            email_thread.start()
         except User.DoesNotExist:
             # Return 200 for security to prevent email enumeration
             pass
