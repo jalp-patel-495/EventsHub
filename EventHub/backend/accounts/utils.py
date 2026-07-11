@@ -65,39 +65,24 @@ def get_html_email_template(title, heading, description, content_html, button_te
     return html
 
 def send_registration_otp(email, code):
-    subject = "Verify your email - Ahmedabad Event Hub"
-    
-    if settings.EMAIL_BACKEND == 'django.core.mail.backends.console.EmailBackend':
-        print("\n" + "="*60)
-        print(f"📧  [CONSOLE EMAIL] To: {email}")
-        print(f"🔑  Subject: {subject}")
-        print(f"🔢  Verification Code: {code}")
-        print("="*60 + "\n")
-        return
-
-    heading = "Verify Your Email Address"
-    description = "Thank you for registering at Ahmedabad Event Hub! To complete your registration and activate your account, please verify your email using the 6-digit verification code below."
-    
-    content_html = f'''
-    <div style="background-color: #1f2937; border: 1px solid #374151; border-radius: 12px; padding: 25px; text-align: center; margin: 20px 0;">
-        <span style="display: block; font-size: 12px; font-weight: 600; color: #9ca3af; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 10px; font-family: sans-serif;">Verification Code</span>
-        <span style="font-family: 'Courier New', Courier, monospace; font-size: 38px; font-weight: 800; color: #f43f5e; letter-spacing: 8px; text-shadow: 0 0 10px rgba(244, 63, 94, 0.2);">{code}</span>
-        <span style="display: block; font-size: 13px; color: #9ca3af; margin-top: 10px; font-family: sans-serif;">This code is valid for 10 minutes.</span>
-    </div>
-    '''
-    
-    plain_message = f"Thank you for registering at Ahmedabad Event Hub.\n\nYour 6-digit email verification OTP code is: {code}\n\nThis code is valid for 10 minutes. Please enter this code on the registration page to complete your registration."
-    
-    html_message = get_html_email_template(subject, heading, description, content_html)
-    
-    email_msg = EmailMultiAlternatives(
-        subject,
-        plain_message,
-        settings.DEFAULT_FROM_EMAIL,
-        [email]
+    subject = f"Your EventHub OTP: {code}"
+    plain_message = (
+        f"Hello,\n\n"
+        f"Your email verification OTP for Ahmedabad Event Hub is:\n\n"
+        f"    {code}\n\n"
+        f"This code is valid for 10 minutes.\n"
+        f"Enter this code on the registration page to complete your sign-up.\n\n"
+        f"If you did not request this, please ignore this email.\n\n"
+        f"- Ahmedabad Event Hub Team"
     )
-    email_msg.attach_alternative(html_message, "text/html")
-    email_msg.send(fail_silently=False)
+    from django.core.mail import send_mail
+    send_mail(
+        subject=subject,
+        message=plain_message,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[email],
+        fail_silently=False,
+    )
 
 def send_password_reset_email(user):
     token = default_token_generator.make_token(user)
@@ -114,15 +99,6 @@ def send_password_reset_email(user):
     EmailOTP.objects.create(email=user.email, code=otp_code)
     
     subject = "Reset your password - Ahmedabad Event Hub"
-
-    if settings.EMAIL_BACKEND == 'django.core.mail.backends.console.EmailBackend':
-        print("\n" + "="*60)
-        print(f"📧  [CONSOLE EMAIL] To: {user.email}")
-        print(f"🔑  Subject: {subject}")
-        print(f"🔢  Reset Code: {otp_code}")
-        print(f"🔗  Reset Link: {reset_url}")
-        print("="*60 + "\n")
-        return
     heading = "Reset Your Password"
     description = f"Hello {user.first_name or 'User'},\n\nWe received a request to reset the password for your account. You can reset your password immediately using the 6-digit recovery code below, or by clicking the button."
     
@@ -156,15 +132,6 @@ def send_password_reset_email(user):
 
 def send_booking_confirmation_email(booking):
     subject = f"Booking Confirmed: {booking.event.title} - Ahmedabad Event Hub"
-    
-    if settings.EMAIL_BACKEND == 'django.core.mail.backends.console.EmailBackend':
-        print("\n" + "="*60)
-        print(f"📧  [CONSOLE EMAIL] To: {booking.user.email}")
-        print(f"🔑  Subject: {subject}")
-        print(f"🎟️   Ticket Code: {booking.qr_code_hash}")
-        print(f"💰  Total Paid: ₹{booking.total_price}")
-        print("="*60 + "\n")
-        return
     heading = "Your Ticket Booking is Confirmed!"
     description = f"Hi {booking.user.first_name or 'there'},\n\nPack your bags! Your ticket purchase for the upcoming event is successfully completed and confirmed. Your booking details and check-in ticket code are listed below."
     
@@ -244,15 +211,6 @@ def send_login_notification_email(user, request):
     login_time = timezone.now().strftime('%B %d, %Y at %I:%M %p UTC')
     
     subject = "Security Alert: New Login Detected - Ahmedabad Event Hub"
-
-    if settings.EMAIL_BACKEND == 'django.core.mail.backends.console.EmailBackend':
-        print("\n" + "="*60)
-        print(f"📧  [CONSOLE EMAIL] To: {user.email}")
-        print(f"🔑  Subject: {subject}")
-        print(f"🕒  Time: {login_time}")
-        print(f"🌐  IP Address: {ip}")
-        print("="*60 + "\n")
-        return
     heading = "New Account Login Alert"
     description = f"Hi {user.first_name or 'User'},\n\nWe detected a new login to your Ahmedabad Event Hub account. Please check the details below to verify it was you."
     
