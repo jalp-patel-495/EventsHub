@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Menu, X, LogOut, User as UserIcon, Calendar, Building, ShieldAlert, ChevronDown, Bell, Check, CheckCheck, Sun, Moon, QrCode, LayoutDashboard, Mail, Heart, Compass, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import api from '../api/api';
+import api, { BACKEND_URL, WS_URL } from '../api/api';
 
 const Navbar = () => {
   const { user, isAuthenticated, logout } = useAuth();
@@ -70,9 +70,7 @@ const Navbar = () => {
     const token = localStorage.getItem('accessToken');
     if (!token) return;
 
-    const wsProto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    // Match Django development server port (8000)
-    const wsUrl = `${wsProto}//127.0.0.1:8000/ws/notifications/?token=${token}`;
+    const wsUrl = `${WS_URL}/ws/notifications/?token=${token}`;
     const ws = new WebSocket(wsUrl);
 
     ws.onmessage = (event) => {
@@ -380,7 +378,7 @@ const Navbar = () => {
                     >
                       {user.avatar ? (
                         <img
-                          src={user.avatar.startsWith('http') ? user.avatar : `http://127.0.0.1:8000${user.avatar}`}
+                          src={user.avatar.startsWith('http') ? user.avatar : `${BACKEND_URL}${user.avatar}`}
                           alt="Avatar"
                           className="w-6 h-6 rounded-full object-cover"
                         />

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { motion } from 'framer-motion';
 import { User, Phone, Mail, Calendar, Upload, Save, CheckCircle2, Shield, MessageSquare, CornerDownRight } from 'lucide-react';
-import api from '../api/api';
+import api, { BACKEND_URL } from '../api/api';
 
 const Profile = () => {
   const { user, updateProfile } = useAuth();
@@ -182,7 +182,7 @@ const Profile = () => {
           <div className="relative group cursor-pointer" onClick={triggerFileInput}>
             {avatarPreview || user?.avatar ? (
               <img
-                src={avatarPreview || (user?.avatar?.startsWith('http') ? user.avatar : `http://127.0.0.1:8000${user?.avatar}`)}
+                src={avatarPreview || (user?.avatar?.startsWith('http') ? user.avatar : `${BACKEND_URL}${user?.avatar}`)}
                 alt="Avatar"
                 className="w-32 h-32 rounded-full object-cover border-2 border-white/10 group-hover:opacity-75 transition-opacity"
               />

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import api from '../api/api';
+import api, { BACKEND_URL } from '../api/api';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Calendar, MapPin, Filter, Star, Heart, X, Ticket, ChevronLeft, ChevronRight, CheckCircle2, ArrowLeft, Smartphone, CreditCard, Lock, ShieldCheck, Download, QrCode } from 'lucide-react';
@@ -298,7 +298,7 @@ const EventExplore = () => {
                       {/* Image Banner */}
                       {event.image ? (
                         <img
-                          src={event.image.startsWith('http') ? event.image : `http://127.0.0.1:8000${event.image}`}
+                          src={event.image.startsWith('http') ? event.image : `${BACKEND_URL}${event.image}`}
                           alt={event.title}
                           className="w-full h-48 object-cover"
                         />
