@@ -333,6 +333,7 @@
   background-image: linear-gradient(to right, #8B5CF6, #3B82F6, #60A5FA) !important;
 }
 
+
 .bg-gradient-to-r.from-brand-primary.to-rose-600,
 .bg-gradient-to-r.from-brand-primary.to-rose-700,
 .bg-gradient-to-r.from-rose-500.to-rose-600,
@@ -340,4 +341,16 @@
 .bg-gradient-to-br.from-slate-900.via-slate-900.to-red-950\/15 {
   background-image: linear-gradient(to right, #3B82F6, #1D4ED8) !important;
 }
+
+/* Style select options to match theme background and text colors */
+select option {
+  background-color: #0A0E1A !important;
+  color: #F8FAFC !important;
+}
+
+:root.light select option {
+  background-color: #FFFFFF !important;
+  color: #000000 !important;
+}
+
 

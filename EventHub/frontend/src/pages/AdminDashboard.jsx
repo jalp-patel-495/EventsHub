@@ -89,6 +89,14 @@ const AdminDashboard = () => {
   // Refund Modal State
   const [refundModal, setRefundModal] = useState({ show: false, booking: null });
 
+  // Styled Confirm Modal State
+  const [confirmModal, setConfirmModal] = useState({
+    show: false,
+    title: '',
+    message: '',
+    onConfirm: null
+  });
+
   const fetchSummary = async () => {
     try {
       const res = await api.get('admin/summary/');
@@ -297,19 +305,25 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleEventDelete = async (eventId) => {
-    if (!window.confirm("Are you sure you want to delete this event?")) return;
-    setActionLoading(`delete-event-${eventId}`);
-    try {
-      await api.delete(`events/listings/${eventId}/`);
-      showFeedback("Event deleted successfully.");
-      fetchAllEvents();
-      fetchSummary();
-    } catch (err) {
-      showFeedback("Failed to delete event.", "error");
-    } finally {
-      setActionLoading(null);
-    }
+  const handleEventDelete = (eventId) => {
+    setConfirmModal({
+      show: true,
+      title: 'Delete Event',
+      message: 'Are you sure you want to permanently delete this event? This action cannot be undone.',
+      onConfirm: async () => {
+        setActionLoading(`delete-event-${eventId}`);
+        try {
+          await api.delete(`events/listings/${eventId}/`);
+          showFeedback("Event deleted successfully.");
+          fetchAllEvents();
+          fetchSummary();
+        } catch (err) {
+          showFeedback("Failed to delete event.", "error");
+        } finally {
+          setActionLoading(null);
+        }
+      }
+    });
   };
 
   const handleVenueApproval = async (venueId, decision) => {
@@ -327,19 +341,25 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleVenueDelete = async (venueId) => {
-    if (!window.confirm("Are you sure you want to delete this venue?")) return;
-    setActionLoading(`delete-venue-${venueId}`);
-    try {
-      await api.delete(`venues/listings/${venueId}/`);
-      showFeedback("Venue deleted successfully.");
-      fetchAllVenues();
-      fetchSummary();
-    } catch (err) {
-      showFeedback("Failed to delete venue.", "error");
-    } finally {
-      setActionLoading(null);
-    }
+  const handleVenueDelete = (venueId) => {
+    setConfirmModal({
+      show: true,
+      title: 'Delete Venue',
+      message: 'Are you sure you want to permanently delete this venue? This action cannot be undone.',
+      onConfirm: async () => {
+        setActionLoading(`delete-venue-${venueId}`);
+        try {
+          await api.delete(`venues/listings/${venueId}/`);
+          showFeedback("Venue deleted successfully.");
+          fetchAllVenues();
+          fetchSummary();
+        } catch (err) {
+          showFeedback("Failed to delete venue.", "error");
+        } finally {
+          setActionLoading(null);
+        }
+      }
+    });
   };
 
 
@@ -381,18 +401,24 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleComplaintDelete = async (complaintId) => {
-    if (!window.confirm("Are you sure you want to delete this complaint?")) return;
-    setActionLoading(`delete-complaint-${complaintId}`);
-    try {
-      await api.delete(`admin/complaints/${complaintId}/`);
-      showFeedback("Complaint deleted successfully.");
-      fetchComplaints();
-    } catch (err) {
-      showFeedback("Failed to delete complaint.", "error");
-    } finally {
-      setActionLoading(null);
-    }
+  const handleComplaintDelete = (complaintId) => {
+    setConfirmModal({
+      show: true,
+      title: 'Delete Complaint',
+      message: 'Are you sure you want to permanently delete this complaint ticket? This action cannot be undone.',
+      onConfirm: async () => {
+        setActionLoading(`delete-complaint-${complaintId}`);
+        try {
+          await api.delete(`admin/complaints/${complaintId}/`);
+          showFeedback("Complaint deleted successfully.");
+          fetchComplaints();
+        } catch (err) {
+          showFeedback("Failed to delete complaint.", "error");
+        } finally {
+          setActionLoading(null);
+        }
+      }
+    });
   };
 
   const handleSendReply = async (e) => {
@@ -1771,6 +1797,55 @@ const AdminDashboard = () => {
                     <span>{actionLoading === `refund-${refundModal.booking.id}` ? 'Processing...' : 'Confirm & Issue Refund'}</span>
                   </button>
                 </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Styled Confirm Delete Modal */}
+      <AnimatePresence>
+        {confirmModal.show && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 15 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 15 }}
+              className="glass-panel w-full max-w-md rounded-2xl p-6 shadow-xl border border-white/10"
+            >
+              <div className="flex items-start space-x-3.5 mb-5">
+                <div className="p-2.5 bg-red-500/15 text-red-400 rounded-xl border border-red-500/20">
+                  <AlertCircle className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-dark-text">{confirmModal.title}</h3>
+                  <p className="text-sm text-dark-muted mt-2 leading-relaxed">{confirmModal.message}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end space-x-3 pt-4 border-t border-white/5">
+                <button
+                  type="button"
+                  onClick={() => setConfirmModal({ show: false, title: '', message: '', onConfirm: null })}
+                  className="px-4 py-2.5 rounded-xl border border-white/5 text-dark-muted hover:text-white hover:bg-white/5 transition-all text-xs font-bold"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={async () => {
+                    const callback = confirmModal.onConfirm;
+                    setConfirmModal({ show: false, title: '', message: '', onConfirm: null });
+                    if (callback) await callback();
+                  }}
+                  className="bg-red-500 hover:bg-red-600 text-white font-bold py-2.5 px-5 rounded-xl transition-all shadow-md shadow-red-950/20 text-xs uppercase tracking-wider"
+                >
+                  Confirm Delete
+                </button>
               </div>
             </motion.div>
           </motion.div>
