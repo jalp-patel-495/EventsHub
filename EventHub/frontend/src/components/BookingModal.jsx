@@ -26,7 +26,7 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
   const ticketRef = useRef(null);
 
   // Payment Selection Custom States
-  const [paymentStep, setPaymentStep] = useState('setup'); // setup, options, card, upi, netbanking, processing
+  const [paymentStep, setPaymentStep] = useState(event.price > 0 ? 'options' : 'setup'); // setup, options, card, upi, netbanking, processing
   const [selectedMethod, setSelectedMethod] = useState(''); // card, upi, netbanking
   const [cardNumber, setCardNumber] = useState('');
   const [cardHolder, setCardHolder] = useState('');
