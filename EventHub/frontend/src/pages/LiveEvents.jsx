@@ -368,22 +368,11 @@ const LiveEvents = () => {
                         <span>Directions</span>
                       </a>
                       <div className="flex items-center gap-2">
-                        {event.url && (
-                          <a
-                            href={event.url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="flex items-center space-x-1 text-[10px] font-bold text-blue-400 hover:text-blue-300 border border-blue-500/20 hover:border-blue-500/40 px-2.5 py-1.5 rounded-lg transition-all"
-                          >
-                            <ExternalLink className="w-3 h-3" />
-                            <span>View</span>
-                          </a>
-                        )}
                         <button
                           onClick={() => handleBuyTickets(event)}
                           className="bg-brand-primary hover:bg-emerald-600 text-white text-[10px] font-extrabold px-3 py-1.5 rounded-lg shadow-sm transition-all transform hover:-translate-y-0.5"
                         >
-                          {event.price === 0 ? 'Get Free Ticket' : `Buy Tickets`}
+                          Book Ticket
                         </button>
                       </div>
                     </div>
