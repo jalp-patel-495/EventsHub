@@ -152,9 +152,15 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                 serializer = self.get_serializer(data=request.data)
                 serializer.is_valid()
                 user = serializer.user
-                
+
                 from .utils import send_login_notification_email
-                send_login_notification_email(user, request)
+                import threading
+                email_thread = threading.Thread(
+                    target=send_login_notification_email,
+                    args=(user, request),
+                    daemon=True
+                )
+                email_thread.start()
             except Exception as e:
                 print(f"Error triggering login notification email: {e}")
         return response
