@@ -1,6 +1,13 @@
 {
-  "buildCommand": "cd EventHub/frontend && npm install && npm run build",
-  "outputDirectory": "EventHub/frontend/dist",
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "EventHub/frontend/dist"
+      }
+    }
+  ],
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ]
