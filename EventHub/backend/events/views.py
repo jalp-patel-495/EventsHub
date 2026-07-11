@@ -672,7 +672,7 @@ class LiveEventsFeedView(APIView):
             time=time,
             location=location,
             price=price,
-            total_tickets=500,
+            tickets_total=500,
             tickets_sold=0,
             category=live_category,
             organizer=organizer,
