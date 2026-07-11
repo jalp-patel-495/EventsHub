@@ -65,7 +65,7 @@ class VenueViewSet(viewsets.ModelViewSet):
 
     def destroy(self, request, *args, **kwargs):
         venue = self.get_object()
-        if venue.owner != request.user:
+        if venue.owner != request.user and request.user.role != 'admin':
             return Response({"error": "You do not own this venue listing."}, status=status.HTTP_403_FORBIDDEN)
         return super().destroy(request, *args, **kwargs)
 
