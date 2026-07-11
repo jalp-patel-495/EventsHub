@@ -40,6 +40,12 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
   const [qrTimer, setQrTimer] = useState(180);
   const [paymentToken, setPaymentToken] = useState('');
 
+  // Netbanking State Variables
+  const [netbankUser, setNetbankUser] = useState('');
+  const [netbankAccount, setNetbankAccount] = useState('');
+  const [netbankIfsc, setNetbankIfsc] = useState('');
+  const [netbankError, setNetbankError] = useState('');
+
   // UPI QR Code countdown timer
   React.useEffect(() => {
     let interval = null;
@@ -162,6 +168,32 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
   const handleSecurePaymentSubmit = async (e) => {
     e.preventDefault();
     setCardError('');
+    setNetbankError('');
+    
+    if (selectedMethod === 'netbanking') {
+      if (netbankUser.trim().length < 3) {
+        setNetbankError('User Name must be at least 3 characters.');
+        return;
+      }
+      if (!/^[a-zA-Z\s]+$/.test(netbankUser.trim())) {
+        setNetbankError('User Name must contain only letters.');
+        return;
+      }
+      const cleanedAcc = netbankAccount.replace(/\s/g, '');
+      if (!/^\d+$/.test(cleanedAcc)) {
+        setNetbankError('Account Number must contain only numbers.');
+        return;
+      }
+      if (cleanedAcc.length < 9 || cleanedAcc.length > 18) {
+        setNetbankError('Account Number must be between 9 and 18 digits.');
+        return;
+      }
+      const cleanedIfsc = netbankIfsc.trim().toUpperCase();
+      if (cleanedIfsc.length !== 11 || !/^[A-Z0-9]{11}$/.test(cleanedIfsc)) {
+        setNetbankError('IFSC Code must be exactly 11 alphanumeric characters.');
+        return;
+      }
+    }
     
     if (selectedMethod === 'card') {
       const cleanedCardNumber = cardNumber.replace(/\s/g, '');
@@ -1002,7 +1034,15 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
         })() : paymentStep === 'netbanking-details' ? (
           <div className="w-full">
             <h3 className="text-lg font-bold text-dark-text mb-4 text-left">Choose your Bank</h3>
-            <form onSubmit={handleSecurePaymentSubmit} className="space-y-4 text-left">
+            <form 
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (selectedBank) {
+                  setPaymentStep('netbanking-credentials');
+                }
+              }} 
+              className="space-y-4 text-left"
+            >
               <div>
                 <label className="block text-[10px] text-dark-muted uppercase font-bold mb-1">Select Bank</label>
                 <select
@@ -1033,6 +1073,69 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
                   className="flex-grow bg-[#3B82F6] text-white py-3 rounded-xl text-xs font-bold uppercase tracking-wider"
                 >
                   Proceed
+                </button>
+              </div>
+            </form>
+          </div>
+        ) : paymentStep === 'netbanking-credentials' ? (
+          <div className="w-full">
+            <h3 className="text-lg font-bold text-dark-text mb-4 text-left">Net Banking Details</h3>
+            <form onSubmit={handleSecurePaymentSubmit} className="space-y-4 text-left">
+              {netbankError && (
+                <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-[11px] font-semibold leading-relaxed">
+                  {netbankError}
+                </div>
+              )}
+              
+              <div>
+                <label className="block text-[10px] text-dark-muted uppercase font-bold mb-1">User Name</label>
+                <input
+                  type="text"
+                  required
+                  value={netbankUser}
+                  onChange={(e) => setNetbankUser(e.target.value)}
+                  placeholder="Enter User Name"
+                  className="glass-input w-full px-3 py-2.5 text-xs bg-dark-bg text-dark-text"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] text-dark-muted uppercase font-bold mb-1">Account Number</label>
+                <input
+                  type="text"
+                  required
+                  value={netbankAccount}
+                  onChange={(e) => setNetbankAccount(e.target.value)}
+                  placeholder="Enter Account Number"
+                  className="glass-input w-full px-3 py-2.5 text-xs bg-dark-bg text-dark-text"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] text-dark-muted uppercase font-bold mb-1">IFSC Code</label>
+                <input
+                  type="text"
+                  required
+                  value={netbankIfsc}
+                  onChange={(e) => setNetbankIfsc(e.target.value)}
+                  placeholder="e.g. SBIN0001234"
+                  className="glass-input w-full px-3 py-2.5 text-xs bg-dark-bg text-dark-text uppercase"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setPaymentStep('netbanking-details')}
+                  className="flex-1 bg-white/5 border border-white/10 text-dark-text py-3 rounded-xl text-xs font-semibold"
+                >
+                  Back
+                </button>
+                <button
+                  type="submit"
+                  className="flex-grow bg-[#3B82F6] text-white py-3 rounded-xl text-xs font-bold uppercase tracking-wider"
+                >
+                  Pay ₹{finalPrice.toFixed(2)}
                 </button>
               </div>
             </form>
