@@ -212,14 +212,12 @@ const About = ({ showTabsOnly = false, showStatsAndVisionOnly = false }) => {
                     Join as {activeTab === 'customers' ? 'Customer' : activeTab === 'organizers' ? 'Organizer' : 'Plot Owner'}
                     <ArrowRight className="w-4 h-4" />
                   </Link>
-                  {activeTab === 'customers' && (
-                    <Link 
-                      to="/explore" 
-                      className="px-6 py-2.5 rounded-xl font-bold text-sm glass-card hover:bg-white/5 text-dark-text transition-all duration-300"
-                    >
-                      Browse Events
-                    </Link>
-                  )}
+                  <Link 
+                    to="/explore" 
+                    className="px-6 py-2.5 rounded-xl font-bold text-sm glass-card hover:bg-white/5 text-dark-text transition-all duration-300"
+                  >
+                    Browse Events
+                  </Link>
                 </div>
               </div>
             </motion.div>

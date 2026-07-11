@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from django.utils.http import urlsafe_base64_decode
 from django.utils.encoding import force_str
 from django.contrib.auth.tokens import default_token_generator
+from django.conf import settings
 from rest_framework import generics, status, permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -17,7 +18,6 @@ from .serializers import (
     ResetPasswordSerializer
 )
 from .utils import send_registration_otp, send_password_reset_email
-from django.conf import settings
 from .models import EmailOTP
 from django.utils import timezone
 import re
@@ -45,16 +45,30 @@ class RegisterOTPView(APIView):
             return Response({"message": "OTP verification code has been sent to your Gmail inbox successfully!"}, status=status.HTTP_200_OK)
         except Exception as e:
             print(f"SMTP error: {e}")
-            if settings.DEBUG:
-                print("\n" + "="*60)
-                print(f"📧  [LOCAL DEV FALLBACK] SMTP failed. OTP code is: {otp_code}")
-                print(f"To register: {email}")
-                print("="*60 + "\n")
-                return Response({
-                    "message": "Failed to send email via SMTP, but OTP code has been printed to the server terminal console! (Local Dev Fallback)",
-                    "debug_otp": otp_code
-                }, status=status.HTTP_200_OK)
             return Response({"error": "Failed to send email. Please check your SMTP settings in .env file."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class ResendOTPView(APIView):
+    permission_classes = (permissions.AllowAny,)
+
+    def post(self, request):
+        email = request.data.get('email', '').strip()
+        if not email:
+            return Response({"error": "Email address is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Block resend if user is already fully registered
+        if User.objects.filter(email=email, is_active=True).exists():
+            return Response({"error": "This email is already registered. Please login instead."}, status=status.HTTP_400_BAD_REQUEST)
+
+        otp_code = str(random.randint(100000, 999999))
+        EmailOTP.objects.filter(email=email).delete()  # clear old OTP
+        EmailOTP.objects.create(email=email, code=otp_code)
+
+        try:
+            send_registration_otp(email, otp_code)
+            return Response({"message": "A new OTP verification code has been sent to your Gmail inbox!"}, status=status.HTTP_200_OK)
+        except Exception as e:
+            print(f"SMTP error on resend: {e}")
+            return Response({"error": "Failed to resend OTP. Please try again later."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()

@@ -12,12 +12,45 @@ User = get_user_model()
 # List of users to ensure exist
 users_to_create = [
     {
-        'email': 'ahmedabadeventhub@gmail.com',
+        'email': 'admin@example.com',
         'first_name': 'System',
         'last_name': 'Admin',
         'role': 'admin',
         'is_staff': True,
         'is_superuser': True,
+        'is_approved': True,
+        'is_active': True,
+        'password': 'Password123!'
+    },
+    {
+        'email': 'organizer@example.com',
+        'first_name': 'Event',
+        'last_name': 'Organizer',
+        'role': 'organizer',
+        'is_staff': False,
+        'is_superuser': False,
+        'is_approved': True,
+        'is_active': True,
+        'password': 'Password123!'
+    },
+    {
+        'email': 'customer@example.com',
+        'first_name': 'John',
+        'last_name': 'Customer',
+        'role': 'customer',
+        'is_staff': False,
+        'is_superuser': False,
+        'is_approved': True,
+        'is_active': True,
+        'password': 'Password123!'
+    },
+    {
+        'email': 'owner@example.com',
+        'first_name': 'Venue',
+        'last_name': 'Owner',
+        'role': 'plot_owner',
+        'is_staff': False,
+        'is_superuser': False,
         'is_approved': True,
         'is_active': True,
         'password': 'Password123!'
@@ -50,7 +83,7 @@ for u_data in users_to_create:
 # Double check if other admin accounts (like admin@eventhub.com) exist and update them as well
 other_admins = User.objects.filter(role='admin') | User.objects.filter(is_superuser=True)
 for admin_user in other_admins:
-    if admin_user.email != 'ahmedabadeventhub@gmail.com':
+    if admin_user.email != 'admin@example.com':
         admin_user.is_active = True
         admin_user.is_approved = True
         admin_user.is_staff = True
