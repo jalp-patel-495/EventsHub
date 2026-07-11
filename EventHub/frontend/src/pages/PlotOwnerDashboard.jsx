@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import api from '../api/api';
+import api, { BACKEND_URL } from '../api/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Home, Trash2, Edit2, Plus, Sparkles, Building, CheckCircle, XCircle, IndianRupee, Calendar, Upload, X, ShieldAlert, BadgeCheck, MapPin, UtensilsCrossed, Music2, Palette, Star, ClipboardList, LayoutDashboard, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -899,7 +899,7 @@ const PlotOwnerDashboard = () => {
                   <div key={venue.id} className="glass-card rounded-2xl overflow-hidden flex flex-col">
                     {venue.image ? (
                       <img
-                        src={venue.image.startsWith('http') ? venue.image : `http://127.0.0.1:8000${venue.image}`}
+                        src={venue.image.startsWith('http') ? venue.image : `${BACKEND_URL}${venue.image}`}
                         alt={venue.name}
                         className="w-full h-48 object-cover"
                       />
@@ -2242,7 +2242,7 @@ const PlotOwnerDashboard = () => {
                     <div className="flex items-center space-x-4">
                       {imagePreview && (
                         <img 
-                          src={imagePreview.startsWith('blob:') ? imagePreview : `http://127.0.0.1:8000${imagePreview}`} 
+                          src={imagePreview.startsWith('blob:') ? imagePreview : `${BACKEND_URL}${imagePreview}`} 
                           alt="Preview" 
                           className="w-16 h-16 rounded-xl object-cover border border-white/5" 
                         />

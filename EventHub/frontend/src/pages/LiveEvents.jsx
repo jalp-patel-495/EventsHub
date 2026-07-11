@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../api/api';
+import api, { WS_URL } from '../api/api';
 import { useAuth } from '../context/AuthContext';
 import BookingModal from '../components/BookingModal';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -64,10 +64,9 @@ const LiveEvents = () => {
 
     // 2. Open WebSocket connection
     const token = localStorage.getItem('accessToken');
-    const wsProto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = token 
-      ? `${wsProto}//127.0.0.1:8000/ws/chat/global/?token=${token}`
-      : `${wsProto}//127.0.0.1:8000/ws/chat/global/`;
+      ? `${WS_URL}/ws/chat/global/?token=${token}`
+      : `${WS_URL}/ws/chat/global/`;
 
     const ws = new WebSocket(wsUrl);
     socketRef.current = ws;

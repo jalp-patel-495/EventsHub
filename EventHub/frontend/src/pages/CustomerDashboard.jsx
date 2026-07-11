@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import api from '../api/api';
+import api, { BACKEND_URL } from '../api/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar, Heart, Bell, Trash2, ShieldAlert, CheckCircle, Ticket, XCircle, Download, Sparkles, MapPin, Building, Star, X, Coins } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -595,7 +595,7 @@ const CustomerDashboard = () => {
                     <div className="flex items-center space-x-4">
                       {booking.event_details.image ? (
                         <img
-                          src={booking.event_details.image.startsWith('http') ? booking.event_details.image : `http://127.0.0.1:8000${booking.event_details.image}`}
+                          src={booking.event_details.image.startsWith('http') ? booking.event_details.image : `${BACKEND_URL}${booking.event_details.image}`}
                           alt={booking.event_details.title}
                           className="w-16 h-16 rounded-xl object-cover"
                         />
@@ -725,7 +725,7 @@ const CustomerDashboard = () => {
                   <div key={item.id} className="glass-card rounded-2xl overflow-hidden flex flex-col">
                     {item.event_details.image && (
                       <img
-                        src={item.event_details.image.startsWith('http') ? item.event_details.image : `http://127.0.0.1:8000${item.event_details.image}`}
+                        src={item.event_details.image.startsWith('http') ? item.event_details.image : `${BACKEND_URL}${item.event_details.image}`}
                         alt={item.event_details.title}
                         className="w-full h-48 object-cover"
                       />
@@ -841,7 +841,7 @@ const CustomerDashboard = () => {
                           {/* Image */}
                           {venue.image ? (
                             <img
-                              src={venue.image.startsWith('http') ? venue.image : `http://127.0.0.1:8000${venue.image}`}
+                              src={venue.image.startsWith('http') ? venue.image : `${BACKEND_URL}${venue.image}`}
                               alt={venue.name}
                               className="w-full h-40 object-cover"
                             />

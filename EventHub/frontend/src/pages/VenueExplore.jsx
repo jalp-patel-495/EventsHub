@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import api from '../api/api';
+import api, { BACKEND_URL } from '../api/api';
 import { motion } from 'framer-motion';
 import { Building, Star, MapPin, Search, ArrowRight } from 'lucide-react';
 
@@ -93,7 +93,7 @@ const VenueExplore = () => {
                 {/* Image */}
                 {venue.image ? (
                   <img
-                    src={venue.image.startsWith('http') ? venue.image : `http://127.0.0.1:8000${venue.image}`}
+                    src={venue.image.startsWith('http') ? venue.image : `${BACKEND_URL}${venue.image}`}
                     alt={venue.name}
                     className="w-full h-48 object-cover"
                   />

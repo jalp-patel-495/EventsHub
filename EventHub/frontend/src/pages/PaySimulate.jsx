@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import axios from 'axios';
+import api from '../api/api';
 import { motion } from 'framer-motion';
 import { ShieldCheck, CheckCircle2, Lock, Landmark, AlertCircle } from 'lucide-react';
 
@@ -18,12 +18,7 @@ const PaySimulate = () => {
     setStatus('loading');
     try {
       // Make call to backend to approve payment
-      let apiBase = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api/';
-      if (!apiBase.endsWith('/')) {
-        apiBase += '/';
-      }
-      
-      await axios.post(`${apiBase}venues/bookings/approve-payment/`, { token });
+      await api.post('venues/bookings/approve-payment/', { token });
       setStatus('success');
     } catch (err) {
       console.error(err);

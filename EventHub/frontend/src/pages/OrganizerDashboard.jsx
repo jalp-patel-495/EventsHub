@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import api from '../api/api';
+import api, { BACKEND_URL } from '../api/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar, Trash2, Edit2, Plus, Sparkles, TrendingUp, Users, IndianRupee, Star, FileText, Upload, X, ShieldAlert, MapPin, Building, CheckCircle, XCircle, LayoutDashboard, Ticket } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -699,7 +699,7 @@ const OrganizerDashboard = () => {
                   <div key={event.id} className="glass-card rounded-2xl overflow-hidden flex flex-col">
                     {event.image ? (
                       <img
-                        src={event.image.startsWith('http') ? event.image : `http://127.0.0.1:8000${event.image}`}
+                        src={event.image.startsWith('http') ? event.image : `${BACKEND_URL}${event.image}`}
                         alt={event.title}
                         className="w-full h-48 object-cover"
                       />
@@ -1478,7 +1478,7 @@ const OrganizerDashboard = () => {
                     <div className="flex items-center space-x-4">
                       {imagePreview && (
                         <img 
-                          src={imagePreview.startsWith('blob:') ? imagePreview : `http://127.0.0.1:8000${imagePreview}`} 
+                          src={imagePreview.startsWith('blob:') ? imagePreview : `${BACKEND_URL}${imagePreview}`} 
                           alt="Preview" 
                           className="w-16 h-16 rounded-xl object-cover border border-white/5" 
                         />
