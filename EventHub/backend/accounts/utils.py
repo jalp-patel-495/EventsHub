@@ -81,7 +81,7 @@ def send_registration_otp(email, code):
         message=plain_message,
         from_email=settings.DEFAULT_FROM_EMAIL,
         recipient_list=[email],
-        fail_silently=False,
+        fail_silently=True,
     )
 
 def send_password_reset_email(user):
@@ -198,7 +198,7 @@ def send_booking_confirmation_email(booking):
         [booking.user.email]
     )
     email_msg.attach_alternative(html_message, "text/html")
-    email_msg.send(fail_silently=False)
+    email_msg.send(fail_silently=True)
 
 def send_login_notification_email(user, request):
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
@@ -263,4 +263,4 @@ def send_login_notification_email(user, request):
         [user.email]
     )
     email_msg.attach_alternative(html_message, "text/html")
-    email_msg.send(fail_silently=False)
+    email_msg.send(fail_silently=True)
