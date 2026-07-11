@@ -1,4 +1,5 @@
 import os
+import urllib.parse
 from pathlib import Path
 from datetime import timedelta
 from dotenv import load_dotenv
@@ -96,26 +97,50 @@ if REDIS_URL:
         },
     }
 
-# Database configuration (support SQLite fallback for developer quickstart)
-DB_ENGINE = os.environ.get('DB_ENGINE', 'sqlite')
-if DB_ENGINE == 'sqlite':
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
-        }
+# Database configuration
+# Priority 1: DATABASE_URL (Neon PostgreSQL connection string for production)
+# Priority 2: DB_ENGINE=postgresql with individual DB_* vars
+# Priority 3: SQLite for local development
+DATABASE_URL = os.environ.get('DATABASE_URL', '')
+
+def parse_db_url(url):
+    """Parse a postgres:// or postgresql:// DATABASE_URL into Django DATABASES dict."""
+    parsed = urllib.parse.urlparse(url)
+    return {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": parsed.path.lstrip("/"),
+        "USER": parsed.username or "",
+        "PASSWORD": parsed.password or "",
+        "HOST": parsed.hostname or "localhost",
+        "PORT": str(parsed.port) if parsed.port else "5432",
+        "OPTIONS": {
+            "sslmode": "require",  # Neon requires SSL
+        },
     }
+
+if DATABASE_URL:
+    # Production: Neon PostgreSQL via connection string
+    DATABASES = {"default": parse_db_url(DATABASE_URL)}
 else:
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.postgresql",
-            "NAME": os.environ.get("DB_NAME", "eventhub"),
-            "USER": os.environ.get("DB_USER", "postgres"),
-            "PASSWORD": os.environ.get("DB_PASSWORD", "postgres"),
-            "HOST": os.environ.get("DB_HOST", "localhost"),
-            "PORT": os.environ.get("DB_PORT", "5432"),
+    DB_ENGINE = os.environ.get('DB_ENGINE', 'sqlite')
+    if DB_ENGINE == 'sqlite':
+        DATABASES = {
+            "default": {
+                "ENGINE": "django.db.backends.sqlite3",
+                "NAME": BASE_DIR / "db.sqlite3",
+            }
         }
-    }
+    else:
+        DATABASES = {
+            "default": {
+                "ENGINE": "django.db.backends.postgresql",
+                "NAME": os.environ.get("DB_NAME", "eventhub"),
+                "USER": os.environ.get("DB_USER", "postgres"),
+                "PASSWORD": os.environ.get("DB_PASSWORD", "postgres"),
+                "HOST": os.environ.get("DB_HOST", "localhost"),
+                "PORT": os.environ.get("DB_PORT", "5432"),
+            }
+        }
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
