@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt",
     "rest_framework_simplejwt.token_blacklist",
     "channels",
+    "anymail",
     
     # Local applications
     "accounts",
@@ -210,6 +211,7 @@ MEDIA_ROOT = BASE_DIR / "media"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Email Configuration
+EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND')
 EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
 EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
@@ -217,23 +219,33 @@ EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
 EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@ahmedabadeventhub.com')
 
-_has_smtp_creds = (
-    EMAIL_HOST_USER
-    and 'your-email' not in EMAIL_HOST_USER
-    and EMAIL_HOST_PASSWORD
-    and 'your-app-password' not in EMAIL_HOST_PASSWORD
-)
+# Anymail Configuration (Supporting Resend, Brevo, SendGrid, Mailgun, Postmark)
+ANYMAIL = {
+    "RESEND_API_KEY": os.environ.get("RESEND_API_KEY"),
+    "BREVO_API_KEY": os.environ.get("BREVO_API_KEY"),
+    "SENDGRID_API_KEY": os.environ.get("SENDGRID_API_KEY"),
+    "MAILGUN_API_KEY": os.environ.get("MAILGUN_API_KEY"),
+    "POSTMARK_TOKEN": os.environ.get("POSTMARK_TOKEN"),
+}
 
-if _has_smtp_creds:
-    # Real Gmail SMTP — works in both local and production
-    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-    DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
-elif DEBUG:
-    # Local dev without credentials → print to console
-    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-else:
-    # Production without credentials → dummy backend (won't crash the server)
-    EMAIL_BACKEND = 'django.core.mail.backends.dummy.EmailBackend'
+if not EMAIL_BACKEND:
+    _has_smtp_creds = (
+        EMAIL_HOST_USER
+        and 'your-email' not in EMAIL_HOST_USER
+        and EMAIL_HOST_PASSWORD
+        and 'your-app-password' not in EMAIL_HOST_PASSWORD
+    )
+
+    if _has_smtp_creds:
+        # Real Gmail SMTP — works in both local and production
+        EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+        DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+    elif DEBUG:
+        # Local dev without credentials → print to console
+        EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+    else:
+        # Production without credentials → dummy backend (won't crash the server)
+        EMAIL_BACKEND = 'django.core.mail.backends.dummy.EmailBackend'
 
 # Frontend Configuration
 FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:5173')
