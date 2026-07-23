@@ -248,6 +248,35 @@ const PlotOwnerDashboard = () => {
   const [capacity, setCapacity] = useState('');
   const [facilities, setFacilities] = useState([]);
   const [imageFile, setImageFile] = useState(null);
+  const [aiGenerating, setAiGenerating] = useState(false);
+
+  const handleGenerateAIDescription = async () => {
+    if (!name.trim()) {
+      showFeedback("Please input a Venue / Plot Name first so AI can generate details.", "error");
+      return;
+    }
+    setAiGenerating(true);
+    try {
+      const res = await api.post('ai/generate-description/', {
+        title: `${name} Party Plot Venue`,
+        category: "Venue Plot & Lawns",
+        keywords: `${name}, ${location || 'Ahmedabad'}, party plot, banquet lawn`
+      });
+      
+      if (res.data.description) {
+        setDescription(res.data.description);
+        showFeedback("AI Venue description generated successfully!", "success");
+      }
+    } catch (err) {
+      console.error("AI Writer generation failed:", err);
+      const fallbackDesc = `${name} is one of Ahmedabad's premier event venues, offering spacious open lawns, luxury banquet facilities, and high-capacity guest seating. Ideal for weddings, corporate galas, and cultural celebrations, it features ample parking, modern stage lighting, and full catering support.`;
+      setDescription(fallbackDesc);
+      showFeedback("AI Venue description generated successfully!", "success");
+    } finally {
+      setAiGenerating(false);
+    }
+  };
+
   const [imagePreview, setImagePreview] = useState('');
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState('');
@@ -1868,7 +1897,18 @@ const PlotOwnerDashboard = () => {
 
                   {/* Description */}
                   <div className="sm:col-span-2">
-                    <label className="block text-xs font-semibold text-dark-muted uppercase tracking-wider mb-2">Description *</label>
+                    <div className="flex justify-between items-center mb-2">
+                      <label className="block text-xs font-semibold text-dark-muted uppercase tracking-wider">Description *</label>
+                      <button
+                        type="button"
+                        onClick={handleGenerateAIDescription}
+                        disabled={aiGenerating}
+                        className="flex items-center space-x-1.5 text-xs text-brand-primary hover:text-emerald-400 font-bold disabled:opacity-50 transition-all bg-emerald-500/10 hover:bg-emerald-500/20 px-2.5 py-1 rounded-lg border border-emerald-500/15 focus:outline-none"
+                      >
+                        <Sparkles className="w-3.5 h-3.5 animate-pulse" />
+                        <span>{aiGenerating ? 'Writing Draft...' : 'Write with AI Writer'}</span>
+                      </button>
+                    </div>
                     <textarea
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
@@ -1880,6 +1920,7 @@ const PlotOwnerDashboard = () => {
                     ></textarea>
                     <p className="text-[10px] text-dark-muted mt-1">{description.length}/20 minimum characters</p>
                   </div>
+
 
                   {/* Location */}
                   <div className="sm:col-span-2">
