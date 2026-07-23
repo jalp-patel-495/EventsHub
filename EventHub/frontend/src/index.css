@@ -369,3 +369,39 @@ select option {
 :root.light ::-webkit-calendar-picker-indicator {
   filter: none;
 }
+
+/* Google Places Autocomplete Overrides - Remove top border line */
+.pac-container {
+  background-color: #0A0E1A !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-top: none !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.8) !important;
+  border-radius: 0 0 12px 12px !important;
+  font-family: inherit !important;
+  margin-top: 4px !important;
+  z-index: 99999 !important;
+}
+
+.pac-item {
+  color: #F8FAFC !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.05) !important;
+  padding: 8px 12px !important;
+  cursor: pointer !important;
+}
+
+.pac-item:hover, .pac-item-selected {
+  background-color: rgba(59, 130, 246, 0.15) !important;
+}
+
+.pac-item-query {
+  color: #3B82F6 !important;
+}
+
+.pac-matched {
+  color: #60A5FA !important;
+}
+
+.pac-icon {
+  filter: invert(1) !important;
+}
+
