@@ -742,7 +742,7 @@ const AdminDashboard = () => {
                           </div>
                         </div>
                         <h2 className="text-2xl font-extrabold text-white mt-3">₹{summary.finance.revenue.toLocaleString()}</h2>
-                        <p className="text-[10px] text-emerald-400 font-semibold mt-1 flex items-center">
+                        <p className="text-[10px] text-white font-semibold mt-1 flex items-center">
                           <span>Verified Razorpay receipts</span>
                         </p>
                       </div>
@@ -827,7 +827,7 @@ const AdminDashboard = () => {
                         <h2 className="text-2xl font-extrabold text-white mt-3">
                           {summary.pending.organizers + summary.pending.plot_owners + summary.pending.events + summary.pending.venues}
                         </h2>
-                        <p className="text-[10px] text-red-400 font-semibold mt-1">Approvals required in system</p>
+                        <p className="text-[10px] text-white font-semibold mt-1">Approvals required in system</p>
                       </div>
 
                       <div className="glass-panel border border-white/10 rounded-2xl p-5 shadow-lg border-emerald-500/15 bg-emerald-950/5">
@@ -840,7 +840,7 @@ const AdminDashboard = () => {
                         <h2 className="text-2xl font-extrabold text-white mt-3">
                           {summary.finance.total_live_tickets_sold || 0}
                         </h2>
-                        <p className="text-[10px] text-emerald-400 font-semibold mt-1 flex items-center">
+                        <p className="text-[10px] text-white font-semibold mt-1 flex items-center">
                           <span>Live feed bookings count</span>
                         </p>
                       </div>
@@ -855,8 +855,9 @@ const AdminDashboard = () => {
                         <h2 className="text-2xl font-extrabold text-white mt-3">
                           ₹{(summary.finance.total_live_revenue || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                         </h2>
-                        <p className="text-[10px] text-blue-400 font-semibold mt-1">Total live feed sales value</p>
+                        <p className="text-[10px] text-white font-semibold mt-1">Total live feed sales value</p>
                       </div>
+
 
                     </div>
 
