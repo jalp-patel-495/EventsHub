@@ -56,6 +56,13 @@ try:
 except ImportError:
     pass
 
+try:
+    import anymail
+except ImportError:
+    if "anymail" in INSTALLED_APPS:
+        INSTALLED_APPS.remove("anymail")
+
+
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",  # Placed high in the middleware chain
