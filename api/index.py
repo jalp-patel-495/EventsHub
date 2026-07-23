@@ -3,11 +3,19 @@ import sys
 import traceback
 from pathlib import Path
 
-# Add backend directory to python sys.path
-BASE_DIR = Path(__file__).resolve().parent.parent
-BACKEND_DIR = BASE_DIR / "EventHub" / "backend"
-if str(BACKEND_DIR) not in sys.path:
-    sys.path.insert(0, str(BACKEND_DIR))
+CURRENT_DIR = Path(__file__).resolve().parent
+ROOT_DIR = CURRENT_DIR.parent
+
+possible_paths = [
+    ROOT_DIR / "EventHub" / "backend",
+    ROOT_DIR / "backend",
+    ROOT_DIR,
+    CURRENT_DIR,
+]
+
+for p in possible_paths:
+    if p.exists() and str(p) not in sys.path:
+        sys.path.insert(0, str(p))
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "eventhub.settings")
 
@@ -18,7 +26,12 @@ try:
     from eventhub.wsgi import application
     app = application
 except Exception as e:
-    init_error = traceback.format_exc()
+    dir_contents = []
+    try:
+        dir_contents = os.listdir(ROOT_DIR)
+    except Exception:
+        pass
+    init_error = f"EXCEPTION: {type(e).__name__}: {str(e)}\n\nSYS.PATH:\n{sys.path}\n\nROOT_DIR ({ROOT_DIR}) CONTENTS:\n{dir_contents}\n\nFULL TRACEBACK:\n{traceback.format_exc()}"
 
 def handler(environ, start_response):
     if init_error:
