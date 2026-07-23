@@ -439,11 +439,12 @@ const Navbar = () => {
                             </Link>
                             <button
                               onClick={handleLogout}
-                              className="w-full flex items-center space-x-2 px-4 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors text-left"
+                              className="w-full flex items-center space-x-2 px-4 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-white/10 transition-colors text-left"
                             >
                               <LogOut className="w-4 h-4" />
                               <span>Sign Out</span>
                             </button>
+
                           </motion.div>
                         </>
                       )}
