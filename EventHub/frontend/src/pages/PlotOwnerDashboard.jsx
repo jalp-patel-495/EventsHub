@@ -793,15 +793,14 @@ const PlotOwnerDashboard = () => {
             {activeTab === 'services' && 'Configure and customize catering, DJ, and decoration services for your plots'}
           </p>
         </div>
-        {activeTab === 'venues' && (
-          <button
-            onClick={handleOpenCreateModal}
-            className="flex items-center space-x-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-medium px-5 py-2.5 rounded-xl hover:from-emerald-600 hover:to-teal-600 shadow-md shadow-emerald-950/20 transition-all transform hover:-translate-y-0.5"
-          >
-            <Plus className="w-5 h-5" />
-            <span>Add New Venue</span>
-          </button>
-        )}
+        <button
+          onClick={handleOpenCreateModal}
+          className="flex items-center space-x-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-medium px-5 py-2.5 rounded-xl hover:from-emerald-600 hover:to-teal-600 shadow-md shadow-emerald-950/20 transition-all transform hover:-translate-y-0.5 flex-shrink-0"
+        >
+          <Plus className="w-5 h-5" />
+          <span>Add New Venue</span>
+        </button>
+
       </div>
 
       {/* Panels */}
