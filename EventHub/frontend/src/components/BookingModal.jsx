@@ -26,7 +26,7 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
   const ticketRef = useRef(null);
 
   // Payment Selection Custom States
-  const [paymentStep, setPaymentStep] = useState(event.price > 0 ? 'options' : 'setup'); // setup, options, card, upi, netbanking, processing
+  const [paymentStep, setPaymentStep] = useState('setup'); // setup, options, card, upi, netbanking, processing
   const [selectedMethod, setSelectedMethod] = useState(''); // card, upi, netbanking
   const [cardNumber, setCardNumber] = useState('');
   const [cardHolder, setCardHolder] = useState('');
@@ -689,14 +689,28 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
             </form>
           </>
         ) : paymentStep === 'options' ? (
-          <>
-            <div className="w-12 h-12 rounded-xl bg-white/5 text-[#3B82F6] flex items-center justify-center mb-4 border border-white/10">
+          <div className="w-full">
+            <div className="w-12 h-12 rounded-xl bg-white/5 text-[#3B82F6] flex items-center justify-center mb-4 border border-white/10 mx-auto">
               <Lock className="w-6 h-6 animate-pulse" />
             </div>
             <h3 className="text-lg font-bold text-dark-text">Select Payment Option</h3>
-            <p className="text-xs text-dark-muted mt-1">Select your preferred payment method</p>
+            <p className="text-xs text-dark-muted mt-1 mb-4">Select your preferred payment method</p>
 
-            <div className="w-full mt-6 space-y-3">
+            {/* Purchase Summary */}
+            <div className="w-full bg-white/5 border border-white/5 rounded-xl p-3.5 mb-5 flex justify-between items-center text-xs text-left">
+              <div>
+                <p className="font-extrabold text-white line-clamp-1">{event.title}</p>
+                <p className="text-[10px] text-[#3B82F6] mt-0.5 font-bold uppercase tracking-wider">
+                  {ticketsCount} ticket(s) • {selectedTier} Category
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-[9px] text-dark-muted uppercase font-bold tracking-wider">Payable Amount</p>
+                <p className="text-sm font-black text-emerald-400 mt-0.5">₹{finalPrice.toFixed(2)}</p>
+              </div>
+            </div>
+
+            <div className="w-full space-y-3">
               {/* UPI */}
               <button
                 onClick={() => { 
@@ -760,9 +774,23 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
             >
               Back to Ticket Info
             </button>
-          </>
+          </div>
         ) : paymentStep === 'card-details' ? (
           <div className="w-full">
+            {/* Purchase Summary */}
+            <div className="w-full bg-white/5 border border-white/5 rounded-xl p-3.5 mb-5 flex justify-between items-center text-xs text-left">
+              <div>
+                <p className="font-extrabold text-white line-clamp-1">{event.title}</p>
+                <p className="text-[10px] text-[#3B82F6] mt-0.5 font-bold uppercase tracking-wider">
+                  {ticketsCount} ticket(s) • {selectedTier} Category
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-[9px] text-dark-muted uppercase font-bold tracking-wider">Payable Amount</p>
+                <p className="text-sm font-black text-emerald-400 mt-0.5">₹{finalPrice.toFixed(2)}</p>
+              </div>
+            </div>
+
             {/* Visual Flip Card container */}
             <div className="w-full flex justify-center mb-6">
               <div className={`flip-card w-72 h-40 ${isCardFlipped ? 'flipped' : ''}`}>
@@ -920,6 +948,20 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
               {/* Combined QR Scanner & VPA input panel */}
               <h3 className="text-sm font-bold text-dark-text mb-4 text-left border-b border-white/5 pb-2">Scan & Pay or Enter UPI ID</h3>
               
+              {/* Purchase Summary */}
+              <div className="w-full bg-white/5 border border-white/5 rounded-xl p-3.5 mb-5 flex justify-between items-center text-xs text-left">
+                <div>
+                  <p className="font-extrabold text-white line-clamp-1">{event.title}</p>
+                  <p className="text-[10px] text-[#3B82F6] mt-0.5 font-bold uppercase tracking-wider">
+                    {ticketsCount} ticket(s) • {selectedTier} Category
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[9px] text-dark-muted uppercase font-bold tracking-wider">Payable Amount</p>
+                  <p className="text-sm font-black text-emerald-400 mt-0.5">₹{finalPrice.toFixed(2)}</p>
+                </div>
+              </div>
+              
               {/* 1. QR code scanner visual */}
               <div className="w-full flex flex-col items-center mb-5 bg-white/[0.01] border border-white/5 py-5 px-4 rounded-xl relative overflow-hidden">
                 {/* Pulsing Active / Expired Badge */}
@@ -1033,7 +1075,20 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
           );
         })() : paymentStep === 'netbanking-details' ? (
           <div className="w-full">
-            <h3 className="text-lg font-bold text-dark-text mb-4 text-left">Choose your Bank</h3>
+            <h3 className="text-lg font-bold text-dark-text mb-4 text-left border-b border-white/5 pb-2">Choose your Bank</h3>
+            {/* Purchase Summary */}
+            <div className="w-full bg-white/5 border border-white/5 rounded-xl p-3.5 mb-5 flex justify-between items-center text-xs text-left">
+              <div>
+                <p className="font-extrabold text-white line-clamp-1">{event.title}</p>
+                <p className="text-[10px] text-[#3B82F6] mt-0.5 font-bold uppercase tracking-wider">
+                  {ticketsCount} ticket(s) • {selectedTier} Category
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-[9px] text-dark-muted uppercase font-bold tracking-wider">Payable Amount</p>
+                <p className="text-sm font-black text-emerald-400 mt-0.5">₹{finalPrice.toFixed(2)}</p>
+              </div>
+            </div>
             <form 
               onSubmit={(e) => {
                 e.preventDefault();
@@ -1079,7 +1134,20 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
           </div>
         ) : paymentStep === 'netbanking-credentials' ? (
           <div className="w-full">
-            <h3 className="text-lg font-bold text-dark-text mb-4 text-left">Net Banking Details</h3>
+            <h3 className="text-lg font-bold text-dark-text mb-4 text-left border-b border-white/5 pb-2">Net Banking Details</h3>
+            {/* Purchase Summary */}
+            <div className="w-full bg-white/5 border border-white/5 rounded-xl p-3.5 mb-5 flex justify-between items-center text-xs text-left">
+              <div>
+                <p className="font-extrabold text-white line-clamp-1">{event.title}</p>
+                <p className="text-[10px] text-[#3B82F6] mt-0.5 font-bold uppercase tracking-wider">
+                  {ticketsCount} ticket(s) • {selectedTier} Category
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-[9px] text-dark-muted uppercase font-bold tracking-wider">Payable Amount</p>
+                <p className="text-sm font-black text-emerald-400 mt-0.5">₹{finalPrice.toFixed(2)}</p>
+              </div>
+            </div>
             <form onSubmit={handleSecurePaymentSubmit} className="space-y-4 text-left">
               {netbankError && (
                 <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-[11px] font-semibold leading-relaxed">

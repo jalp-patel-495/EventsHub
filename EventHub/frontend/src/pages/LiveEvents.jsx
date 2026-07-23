@@ -23,6 +23,7 @@ const LiveEvents = () => {
 
   // Chat States
   const [chatMessages, setChatMessages] = useState([]);
+  const [recentSales, setRecentSales] = useState([]);
   const [chatInput, setChatInput] = useState('');
   const [guestName, setGuestName] = useState(() => `Guest_${Math.floor(1000 + Math.random() * 9000)}`);
   const [showChat, setShowChat] = useState(false); // Hidden by default, show on click
@@ -32,12 +33,14 @@ const LiveEvents = () => {
   const fetchLiveData = async () => {
     setLoading(true);
     try {
-      const [eventsRes, weatherRes] = await Promise.all([
+      const [eventsRes, weatherRes, recentSalesRes] = await Promise.all([
         api.get('events/live/'),
-        api.get('events/live/weather/')
+        api.get('events/live/weather/'),
+        api.get('events/live/recent-sales/')
       ]);
       setEvents(eventsRes.data);
       setWeather(weatherRes.data);
+      setRecentSales(recentSalesRes.data.slice(0, 5));
     } catch (err) {
       console.error("Failed to load live data:", err);
     } finally {
@@ -88,6 +91,48 @@ const LiveEvents = () => {
       ws.close();
     };
   }, [isAuthenticated]);
+
+  // Connect to Live Ticket Sales WebSocket feed
+  useEffect(() => {
+    const wsUrl = `${WS_URL}/ws/live-tickets/`;
+    const ws = new WebSocket(wsUrl);
+
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        setRecentSales(prev => {
+          if (prev.some(sale => sale.booking_id === data.booking_id)) {
+            return prev;
+          }
+          return [data, ...prev].slice(0, 5); // Keep latest 5
+        });
+        
+        // Dynamically increment tickets_sold for matching event in UI list in real-time!
+        setEvents(prevEvents => 
+          prevEvents.map(evt => {
+            if (evt.title === data.event_title) {
+              return { 
+                ...evt, 
+                tickets_sold: (evt.tickets_sold || 0) + data.tickets_count,
+                id: evt.id || data.event_id
+              };
+            }
+            return evt;
+          })
+        );
+      } catch (err) {
+        console.error("Error parsing ticket sales websocket message:", err);
+      }
+    };
+
+    ws.onerror = (e) => {
+      console.error("Live tickets WebSocket error:", e);
+    };
+
+    return () => {
+      ws.close();
+    };
+  }, []);
 
   // Scroll to bottom of chat
   useEffect(() => {
@@ -218,6 +263,42 @@ const LiveEvents = () => {
         </div>
       </div>
 
+      {/* Live Ticket Purchase Ticker */}
+      {recentSales.length > 0 && (
+        <div className="w-full bg-[#10B981]/5 border border-[#10B981]/15 rounded-2xl p-4 mb-8 relative overflow-hidden backdrop-blur-md shadow-lg shadow-emerald-950/10">
+          <div className="absolute top-0 left-0 bottom-0 bg-gradient-to-r from-emerald-500/5 to-transparent w-16 pointer-events-none"></div>
+          <div className="absolute top-0 right-0 bottom-0 bg-gradient-to-l from-emerald-500/5 to-transparent w-16 pointer-events-none"></div>
+          <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 overflow-hidden">
+            <div className="flex items-center space-x-2 flex-shrink-0">
+              <span className="flex h-2.5 w-2.5 relative">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+              </span>
+              <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">
+                Live Ticket Feed
+              </span>
+            </div>
+            <div className="flex items-center space-x-8 overflow-x-auto no-scrollbar scroll-smooth w-full py-0.5">
+              <AnimatePresence>
+                {recentSales.map((sale, index) => (
+                  <motion.div
+                    key={sale.booking_id + '-' + index}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="inline-flex items-center space-x-2 text-xs font-bold text-gray-200 whitespace-nowrap"
+                  >
+                    <span className="text-emerald-400">⚡</span>
+                    <span className="text-white">{sale.buyer_name}</span>
+                    <span className="text-dark-muted font-medium">bought {sale.tickets_count} ticket(s) for</span>
+                    <span className="text-emerald-300 underline underline-offset-2">{sale.event_title}</span>
+                    <span className="text-[10px] text-dark-muted font-mono font-medium">({new Date(sale.timestamp || Date.now()).toLocaleTimeString()})</span>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Split Responsive Grid Layout */}
       <div className={showChat ? "grid grid-cols-1 lg:grid-cols-3 gap-8" : "grid grid-cols-1 gap-8"}>
@@ -336,6 +417,14 @@ const LiveEvents = () => {
                             <span>{event.venue_rating}</span>
                           </span>
                         )}
+                      </div>
+                    )}
+
+                    {/* Tickets Sold Info */}
+                    {event.tickets_sold !== undefined && event.tickets_sold > 0 && (
+                      <div className="flex items-center space-x-1.5 mt-2.5 text-xs text-emerald-400 font-extrabold bg-emerald-500/10 px-2.5 py-1.5 rounded-lg w-fit border border-emerald-500/15">
+                        <Ticket className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
+                        <span>{event.tickets_sold} ticket(s) bought</span>
                       </div>
                     )}
 

@@ -240,6 +240,13 @@ class BookingCreateListView(APIView):
                 message=f"{request.user.first_name} booked {tickets_count} tickets for {event.title}."
             )
 
+            # Live Feed broadcast
+            try:
+                from events.utils import broadcast_ticket_purchase
+                broadcast_ticket_purchase(booking)
+            except Exception as e:
+                print(f"Failed to broadcast free booking: {e}")
+
             return Response({
                 "booking": BookingSerializer(booking).data,
                 "free": True
@@ -500,6 +507,13 @@ class BookingVerifyPaymentView(APIView):
             message=f"{booking.user.first_name} completed payment for {booking.tickets_count} tickets to {booking.event.title}."
         )
 
+        # Live Feed broadcast
+        try:
+            from events.utils import broadcast_ticket_purchase
+            broadcast_ticket_purchase(booking)
+        except Exception as e:
+            print(f"Failed to broadcast paid booking: {e}")
+
         return Response(BookingSerializer(booking).data, status=status.HTTP_200_OK)
 
 class LiveEventsFeedView(APIView):
@@ -507,6 +521,18 @@ class LiveEventsFeedView(APIView):
 
     def get(self, request):
         events = get_live_ahmedabad_events()
+        try:
+            from events.models import Event
+            db_events = {e.title: e for e in Event.objects.filter(title__in=[item.get("title") for item in events if item.get("title")])}
+            for item in events:
+                title = item.get("title")
+                if title and title in db_events:
+                    db_event = db_events[title]
+                    item["id"] = db_event.id
+                    item["tickets_sold"] = db_event.tickets_sold
+                    item["tickets_total"] = db_event.tickets_total
+        except Exception as e:
+            print(f"Error lookup live event stats: {e}")
         return Response(events, status=status.HTTP_200_OK)
 
     def post(self, request):
@@ -632,6 +658,18 @@ class LiveEventsFeedView(APIView):
 
     def get(self, request):
         events = get_live_ahmedabad_events()
+        try:
+            from events.models import Event
+            db_events = {e.title: e for e in Event.objects.filter(title__in=[item.get("title") for item in events if item.get("title")])}
+            for item in events:
+                title = item.get("title")
+                if title and title in db_events:
+                    db_event = db_events[title]
+                    item["id"] = db_event.id
+                    item["tickets_sold"] = db_event.tickets_sold
+                    item["tickets_total"] = db_event.tickets_total
+        except Exception as e:
+            print(f"Error lookup live event stats: {e}")
         return Response(events, status=status.HTTP_200_OK)
 
     def post(self, request):
@@ -707,3 +745,31 @@ class UserContactQueryListView(generics.ListAPIView):
 
     def get_queryset(self):
         return ContactQuery.objects.filter(user=self.request.user).order_by('-created_at')
+
+
+class LiveEventsRecentSalesView(APIView):
+    permission_classes = (permissions.AllowAny,)
+
+    def get(self, request):
+        from events.models import Booking
+        recent_live_bookings = Booking.objects.filter(
+            status='confirmed',
+            event__category__name='Live Feed Events'
+        ).order_by('-created_at')[:10]
+        
+        recent_live_bookings_data = []
+        for booking in recent_live_bookings:
+            buyer_name = f"{booking.user.first_name} {booking.user.last_name}".strip() or booking.user.email.split('@')[0]
+            if "@" in buyer_name or len(buyer_name) > 15:
+                buyer_name = buyer_name[:3] + "***" + (buyer_name[buyer_name.find("@"):] if "@" in buyer_name else "")
+            
+            recent_live_bookings_data.append({
+                "booking_id": booking.id,
+                "event_id": booking.event.id,
+                "event_title": booking.event.title,
+                "buyer_name": buyer_name,
+                "tickets_count": booking.tickets_count,
+                "price": float(booking.total_price),
+                "timestamp": booking.created_at.isoformat() if booking.created_at else None,
+            })
+        return Response(recent_live_bookings_data, status=status.HTTP_200_OK)

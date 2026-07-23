@@ -100,29 +100,42 @@ if REDIS_URL:
     }
 
 # Database configuration
-# Priority 1: DATABASE_URL (Neon PostgreSQL connection string for production)
+# Priority 1: DATABASE_URL (Neon / Supabase / Vercel PostgreSQL connection string)
 # Priority 2: DB_ENGINE=postgresql with individual DB_* vars
 # Priority 3: SQLite for local development
-DATABASE_URL = os.environ.get('DATABASE_URL', '')
+DATABASE_URL = os.environ.get('DATABASE_URL', '').strip()
 
-def parse_db_url(url):
-    """Parse a postgres:// or postgresql:// DATABASE_URL into Django DATABASES dict."""
-    parsed = urllib.parse.urlparse(url)
-    return {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": parsed.path.lstrip("/"),
-        "USER": parsed.username or "",
-        "PASSWORD": parsed.password or "",
-        "HOST": parsed.hostname or "localhost",
-        "PORT": str(parsed.port) if parsed.port else "5432",
-        "OPTIONS": {
-            "sslmode": "require",  # Neon requires SSL
-        },
-    }
+try:
+    import dj_database_url
+    HAS_DJ_DB_URL = True
+except ImportError:
+    HAS_DJ_DB_URL = False
 
 if DATABASE_URL:
-    # Production: Neon PostgreSQL via connection string
-    DATABASES = {"default": parse_db_url(DATABASE_URL)}
+    if HAS_DJ_DB_URL:
+        DATABASES = {
+            'default': dj_database_url.config(
+                default=DATABASE_URL,
+                conn_max_age=600,
+                ssl_require=True
+            )
+        }
+    else:
+        parsed = urllib.parse.urlparse(DATABASE_URL)
+        db_name = parsed.path.lstrip("/").split("?")[0]
+        DATABASES = {
+            "default": {
+                "ENGINE": "django.db.backends.postgresql",
+                "NAME": db_name,
+                "USER": parsed.username or "",
+                "PASSWORD": parsed.password or "",
+                "HOST": parsed.hostname or "localhost",
+                "PORT": str(parsed.port) if parsed.port else "5432",
+                "OPTIONS": {
+                    "sslmode": "require",
+                },
+            }
+        }
 else:
     DB_ENGINE = os.environ.get('DB_ENGINE', 'sqlite')
     if DB_ENGINE == 'sqlite':
@@ -143,6 +156,7 @@ else:
                 "PORT": os.environ.get("DB_PORT", "5432"),
             }
         }
+
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [

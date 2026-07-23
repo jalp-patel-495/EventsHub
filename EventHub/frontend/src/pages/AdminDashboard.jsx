@@ -5,9 +5,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Users, Calendar, Shield, IndianRupee, Activity, FileText, Send, 
   Check, X, Search, Filter, ShieldAlert, Award, Home, Lock, Unlock, 
-  RefreshCw, AlertCircle, Eye, CornerDownRight, Landmark, MessageSquare, Trash, Building
+  RefreshCw, AlertCircle, Eye, CornerDownRight, Landmark, MessageSquare, Trash, Building, Ticket
 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { WS_URL } from '../api/api';
 
 const AdminDashboard = () => {
   const { user } = useAuth();
@@ -88,6 +89,35 @@ const AdminDashboard = () => {
 
   // Refund Modal State
   const [refundModal, setRefundModal] = useState({ show: false, booking: null });
+  const [liveSales, setLiveSales] = useState([]);
+
+  // Connect to Live Ticket Purchases WebSocket
+  useEffect(() => {
+    const wsUrl = `${WS_URL}/ws/live-tickets/`;
+    const ws = new WebSocket(wsUrl);
+    
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        setLiveSales((prev) => {
+          if (prev.some(sale => sale.booking_id === data.booking_id)) {
+            return prev;
+          }
+          return [data, ...prev].slice(0, 10);
+        });
+      } catch (err) {
+        console.error("Failed to parse live ticket purchase:", err);
+      }
+    };
+    
+    ws.onerror = (err) => {
+      console.error("Live tickets WebSocket error:", err);
+    };
+    
+    return () => {
+      ws.close();
+    };
+  }, []);
 
   // Styled Confirm Modal State
   const [confirmModal, setConfirmModal] = useState({
@@ -101,6 +131,9 @@ const AdminDashboard = () => {
     try {
       const res = await api.get('admin/summary/');
       setSummary(res.data);
+      if (res.data.recent_live_bookings) {
+        setLiveSales(res.data.recent_live_bookings);
+      }
     } catch (err) {
       console.error("Failed to load summary stats:", err);
       showFeedback("Failed to load dashboard metrics.", "error");
@@ -709,6 +742,17 @@ const AdminDashboard = () => {
 
                       <div className="glass-panel border border-white/10 rounded-2xl p-5 shadow-lg">
                         <div className="flex items-center justify-between">
+                          <p className="text-xs text-dark-muted font-bold uppercase tracking-wider">Total Tickets Sold</p>
+                          <div className="w-9 h-9 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center border border-amber-500/20">
+                            <Ticket className="w-4.5 h-4.5" />
+                          </div>
+                        </div>
+                        <h2 className="text-2xl font-extrabold text-white mt-3">{summary.finance.total_tickets_sold || 0}</h2>
+                        <p className="text-[10px] text-dark-muted font-semibold mt-1">Individual tickets sold</p>
+                      </div>
+
+                      <div className="glass-panel border border-white/10 rounded-2xl p-5 shadow-lg">
+                        <div className="flex items-center justify-between">
                           <p className="text-xs text-dark-muted font-bold uppercase tracking-wider">Active Bookings</p>
                           <div className="w-9 h-9 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center border border-blue-500/20">
                             <Calendar className="w-4.5 h-4.5" />
@@ -779,6 +823,34 @@ const AdminDashboard = () => {
                         <p className="text-[10px] text-red-400 font-semibold mt-1">Approvals required in system</p>
                       </div>
 
+                      <div className="glass-panel border border-white/10 rounded-2xl p-5 shadow-lg border-emerald-500/15 bg-emerald-950/5">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs text-dark-muted font-bold uppercase tracking-wider">Live Tickets Sold</p>
+                          <div className="w-9 h-9 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/20">
+                            <Ticket className="w-4.5 h-4.5" />
+                          </div>
+                        </div>
+                        <h2 className="text-2xl font-extrabold text-white mt-3">
+                          {summary.finance.total_live_tickets_sold || 0}
+                        </h2>
+                        <p className="text-[10px] text-emerald-400 font-semibold mt-1 flex items-center">
+                          <span>Live feed bookings count</span>
+                        </p>
+                      </div>
+
+                      <div className="glass-panel border border-white/10 rounded-2xl p-5 shadow-lg border-blue-500/15 bg-blue-950/5">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs text-dark-muted font-bold uppercase tracking-wider">Live Ticket Amount</p>
+                          <div className="w-9 h-9 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center border border-blue-500/20">
+                            <IndianRupee className="w-4.5 h-4.5" />
+                          </div>
+                        </div>
+                        <h2 className="text-2xl font-extrabold text-white mt-3">
+                          ₹{(summary.finance.total_live_revenue || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        </h2>
+                        <p className="text-[10px] text-blue-400 font-semibold mt-1">Total live feed sales value</p>
+                      </div>
+
                     </div>
 
                     {/* Chart Panels */}
@@ -798,6 +870,64 @@ const AdminDashboard = () => {
                         </div>
                       </div>
 
+                    </div>
+
+                    {/* Live Ticket Sales Feed (WebSocket Monitor) */}
+                    <div className="glass-panel border border-white/10 rounded-2xl p-6 shadow-lg relative overflow-hidden bg-gradient-to-r from-dark-bg via-slate-900 to-indigo-950/20">
+                      <div className="absolute top-0 right-0 p-4">
+                        <span className="flex h-3 w-3 relative">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                        </span>
+                      </div>
+                      <div className="flex items-center space-x-2.5 border-b border-white/5 pb-3">
+                        <Ticket className="w-5 h-5 text-emerald-400 animate-pulse" />
+                        <div>
+                          <h3 className="text-sm font-bold text-dark-text uppercase tracking-wider">Live Ticket Sales Feed</h3>
+                          <p className="text-[10px] text-dark-muted mt-0.5">Real-time WebSocket monitoring active</p>
+                        </div>
+                      </div>
+                      <div className="mt-4 space-y-3 max-h-[250px] overflow-y-auto pr-1">
+                        {liveSales.length === 0 ? (
+                          <div className="text-center py-8 text-dark-muted text-xs flex flex-col items-center justify-center space-y-2">
+                            <RefreshCw className="w-6 h-6 animate-spin text-dark-muted" />
+                            <span>Waiting for live ticketing transactions...</span>
+                          </div>
+                        ) : (
+                          <div className="space-y-3">
+                            <AnimatePresence>
+                              {liveSales.map((sale, idx) => (
+                                <motion.div
+                                  key={sale.booking_id + '-' + idx}
+                                  initial={{ opacity: 0, x: -20 }}
+                                  animate={{ opacity: 1, x: 0 }}
+                                  className="flex items-center justify-between p-3.5 rounded-xl bg-white/[0.02] border border-white/5 hover:border-emerald-500/20 transition-all"
+                                >
+                                  <div className="flex items-center space-x-3">
+                                    <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400 border border-emerald-500/20">
+                                      <Ticket className="w-4 h-4" />
+                                    </div>
+                                    <div>
+                                      <p className="text-xs font-bold text-white">
+                                        {sale.buyer_name} bought {sale.tickets_count} ticket(s)
+                                      </p>
+                                      <p className="text-[10px] text-dark-muted mt-0.5">
+                                        for <span className="text-emerald-400 font-semibold">{sale.event_title}</span>
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div className="text-right">
+                                    <p className="text-xs font-bold text-emerald-400 font-mono">₹{sale.price}</p>
+                                    <p className="text-[9px] text-dark-muted font-mono mt-0.5">
+                                      {new Date(sale.timestamp || Date.now()).toLocaleTimeString()}
+                                    </p>
+                                  </div>
+                                </motion.div>
+                              ))}
+                            </AnimatePresence>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                   </div>
@@ -1228,6 +1358,7 @@ const AdminDashboard = () => {
                           <option value="confirmed">Confirmed</option>
                           <option value="cancelled">Cancelled</option>
                           <option value="pending">Pending</option>
+                          <option value="refund_requested">Refund Requests</option>
                         </select>
                       </div>
                     </div>
@@ -1287,7 +1418,15 @@ const AdminDashboard = () => {
                                 </td>
                                 <td className="py-4 text-right">
                                   {booking.payment_status === 'paid' ? (
-                                    booking.event_details ? (
+                                    booking.refund_requested ? (
+                                      <button
+                                        onClick={() => setRefundModal({ show: true, booking })}
+                                        disabled={actionLoading === `refund-${booking.id}`}
+                                        className="bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/15 px-2.5 py-1.5 rounded-lg font-bold text-[9px] disabled:opacity-40 transition-colors"
+                                      >
+                                        {actionLoading === `refund-${booking.id}` ? 'Processing...' : 'Approve Refund'}
+                                      </button>
+                                    ) : booking.event_details ? (
                                       <span className="text-[10px] text-dark-muted font-semibold">Handled by Organizer</span>
                                     ) : (
                                       <button

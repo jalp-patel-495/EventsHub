@@ -14,7 +14,8 @@ from .views import (
     LiveEventsFeedView,
     LiveWeatherFeedView,
     ContactQueryCreateView,
-    UserContactQueryListView
+    UserContactQueryListView,
+    LiveEventsRecentSalesView
 )
 
 router = DefaultRouter()
@@ -29,6 +30,7 @@ urlpatterns = [
     path('bookings/<int:booking_id>/approve-refund/', OrganizerRefundApproveView.as_view(), name='booking_approve_refund'),
     path('coupons/apply/', ApplyCouponView.as_view(), name='coupon_apply'),
     path('live/', LiveEventsFeedView.as_view(), name='live_events_feed'),
+    path('live/recent-sales/', LiveEventsRecentSalesView.as_view(), name='live_events_recent_sales'),
     path('live/weather/', LiveWeatherFeedView.as_view(), name='live_weather_feed'),
     path('wishlist/', WishlistToggleView.as_view(), name='wishlist_list'),
     path('contact/', ContactQueryCreateView.as_view(), name='contact_create'),

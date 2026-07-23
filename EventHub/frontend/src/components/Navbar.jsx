@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Menu, X, LogOut, User as UserIcon, Calendar, Building, ShieldAlert, ChevronDown, Bell, Check, CheckCheck, Sun, Moon, QrCode, LayoutDashboard, Mail, Heart, Compass, Zap } from 'lucide-react';
+import { Menu, X, LogOut, User as UserIcon, Calendar, Building, ShieldAlert, ChevronDown, Bell, Check, CheckCheck, Sun, Moon, QrCode, LayoutDashboard, Mail, Heart, Compass, Zap, Ticket } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api, { BACKEND_URL, WS_URL } from '../api/api';
 
@@ -237,8 +237,12 @@ const Navbar = () => {
             {/* Logo */}
             <Link 
               to={isAuthenticated ? (user?.role === 'admin' ? '/admin-dashboard' : user?.role === 'organizer' ? '/organizer/events' : user?.role === 'plot_owner' ? '/venues/dashboard' : '/bookings') : '/'} 
-              className="flex items-center space-x-2"
+              className="flex items-center space-x-3 group"
             >
+              <div className="relative flex items-center justify-center w-8.5 h-8.5 rounded-xl bg-gradient-to-tr from-rose-500 via-pink-500 to-amber-500 text-white shadow-lg shadow-pink-500/20 group-hover:scale-105 transition-transform duration-300">
+                <Ticket className="w-4.5 h-4.5 animate-pulse" />
+                <div className="absolute inset-0 rounded-xl bg-gradient-to-tr from-rose-500 via-pink-500 to-amber-500 blur-[2px] opacity-40 group-hover:opacity-75 transition-opacity duration-300 -z-10"></div>
+              </div>
               <span className="font-extrabold text-xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-rose-500 via-pink-500 to-amber-500 font-sans">
                 AHMEDABAD EVENT HUB
               </span>

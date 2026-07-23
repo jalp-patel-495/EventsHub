@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Mail, MapPin, Phone } from 'lucide-react';
+import { Mail, MapPin, Phone, Ticket } from 'lucide-react';
 
 const Footer = () => {
   const location = useLocation();
@@ -30,7 +30,11 @@ const Footer = () => {
           
           {/* Column 1: Brand & Socials */}
           <div className="space-y-4">
-            <Link to="/" className="flex items-center space-x-2">
+            <Link to="/" className="flex items-center space-x-3 group">
+              <div className="relative flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-tr from-rose-500 via-pink-500 to-amber-500 text-white shadow-lg shadow-pink-500/20 group-hover:scale-105 transition-transform duration-300">
+                <Ticket className="w-4 h-4 animate-pulse" />
+                <div className="absolute inset-0 rounded-xl bg-gradient-to-tr from-rose-500 via-pink-500 to-amber-500 blur-[2px] opacity-40 group-hover:opacity-75 transition-opacity duration-300 -z-10"></div>
+              </div>
               <span className="font-extrabold text-lg tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-rose-500 via-pink-500 to-amber-500 font-sans">
                 AHMEDABAD EVENT HUB
               </span>
