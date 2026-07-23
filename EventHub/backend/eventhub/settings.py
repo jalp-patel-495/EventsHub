@@ -34,7 +34,6 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework_simplejwt",
     "rest_framework_simplejwt.token_blacklist",
-    "anymail",
     
     # Local applications
     "accounts",
@@ -58,9 +57,10 @@ except ImportError:
 
 try:
     import anymail
+    INSTALLED_APPS.append("anymail")
 except ImportError:
-    if "anymail" in INSTALLED_APPS:
-        INSTALLED_APPS.remove("anymail")
+    pass
+
 
 
 
