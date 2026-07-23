@@ -12,16 +12,28 @@ User = get_user_model()
 # List of users to ensure exist
 users_to_create = [
     {
-        'email': 'admin@example.com',
-        'first_name': 'System',
+        'email': 'ahmedabadeventhub@gmail.com',
+        'first_name': 'Ahmedabad Event Hub',
         'last_name': 'Admin',
         'role': 'admin',
         'is_staff': True,
         'is_superuser': True,
         'is_approved': True,
         'is_active': True,
-        'password': 'Password123!'
+        'password': 'Eventhub66!'
     },
+    {
+        'email': 'ahmedabaeventhub@gmail.com',
+        'first_name': 'Ahmedabad Event Hub',
+        'last_name': 'Admin',
+        'role': 'admin',
+        'is_staff': True,
+        'is_superuser': True,
+        'is_approved': True,
+        'is_active': True,
+        'password': 'Eventhub66!'
+    },
+
     {
         'email': 'organizer@example.com',
         'first_name': 'Event',
