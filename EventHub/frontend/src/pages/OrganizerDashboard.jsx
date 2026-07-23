@@ -130,7 +130,7 @@ const OrganizerDashboard = () => {
 
   const handleGenerateAIDescription = async () => {
     if (!title.trim()) {
-      alert("Please input an Event Title first so AI can generate details.");
+      showFeedback("Please input an Event Title first so AI can generate details.", "error");
       return;
     }
     setAiGenerating(true);
@@ -146,14 +146,16 @@ const OrganizerDashboard = () => {
       
       if (res.data.description) {
         setDescription(res.data.description);
+        showFeedback("AI Description generated successfully!", "success");
       }
     } catch (err) {
       console.error("AI Writer generation failed:", err);
-      alert("AI Writer failed to generate description. Please try again.");
+      showFeedback("AI Writer failed to generate description. Please try again.", "error");
     } finally {
       setAiGenerating(false);
     }
   };
+
 
   const fetchAIAnalytics = async () => {
     if (aiAnalytics) return;
@@ -228,12 +230,13 @@ const OrganizerDashboard = () => {
     if (!window.confirm("Are you sure you want to cancel this venue booking? A 10% fee will be retained, and you will receive a 90% refund.")) return;
     try {
       await api.post(`venues/bookings/${bookingId}/cancel/`);
-      alert("Venue booking cancelled successfully. 90% refund has been processed.");
+      showFeedback("Venue booking cancelled successfully. 90% refund has been processed.", "success");
       fetchDashboardData();
     } catch (err) {
-      alert(err.response?.data?.error || "Failed to cancel venue booking.");
+      showFeedback(err.response?.data?.error || "Failed to cancel venue booking.", "error");
     }
   };
+
 
   const handleOpenCreateModal = () => {
     setEditingEvent(null);
@@ -478,7 +481,7 @@ const OrganizerDashboard = () => {
       setEvents(eventsRes.data.results || eventsRes.data);
       setBookings(bookingsRes.data);
     } catch (err) {
-      alert("Venue booked but event listing creation failed: " + (err.response?.data?.detail || "Connection error"));
+      showFeedback("Venue booked but event listing creation failed: " + (err.response?.data?.detail || "Connection error"), "error");
     } finally {
       setLoading(false);
     }
@@ -488,11 +491,13 @@ const OrganizerDashboard = () => {
     if (!window.confirm("Are you sure you want to delete this event? This will remove all bookings.")) return;
     try {
       await api.delete(`events/listings/${eventId}/`);
+      showFeedback("Event deleted successfully.", "success");
       fetchDashboardData();
     } catch (err) {
-      alert("Failed to delete event.");
+      showFeedback("Failed to delete event.", "error");
     }
   };
+
 
   // Stats calculation
   const myEvents = events.filter(e => e.organizer === user?.id || e.organizer_details?.id === user?.id);
@@ -554,10 +559,10 @@ const OrganizerDashboard = () => {
             initial={{ opacity: 0, y: -20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -20, scale: 0.95 }}
-            className={`fixed top-24 right-6 z-50 px-5 py-3.5 rounded-xl border shadow-xl flex items-center space-x-3 backdrop-blur-md ${
+            className={`fixed top-24 right-6 z-[9999] px-5 py-3.5 rounded-xl border shadow-2xl flex items-center space-x-3 backdrop-blur-md ${
               feedbackMsg.type === 'error'
-                ? 'bg-red-500/10 border-red-500/35 text-red-400'
-                : 'bg-emerald-500/10 border-emerald-500/35 text-emerald-400'
+                ? 'bg-slate-900/95 border-red-500/40 text-red-400'
+                : 'bg-slate-900/95 border-emerald-500/40 text-emerald-400'
             }`}
           >
             {feedbackMsg.type === 'error' ? (
@@ -565,7 +570,8 @@ const OrganizerDashboard = () => {
             ) : (
               <CheckCircle className="w-5 h-5 flex-shrink-0" />
             )}
-            <span className="text-sm font-semibold">{feedbackMsg.text}</span>
+            <span className="text-sm font-semibold text-white">{feedbackMsg.text}</span>
+
           </motion.div>
         )}
       </AnimatePresence>
