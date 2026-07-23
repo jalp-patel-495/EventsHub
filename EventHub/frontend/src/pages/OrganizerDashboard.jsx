@@ -13,7 +13,8 @@ const OrganizerDashboard = () => {
   const [events, setEvents] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+
   const [venueBookings, setVenueBookings] = useState([]);
   
   const routeLocation = useLocation();

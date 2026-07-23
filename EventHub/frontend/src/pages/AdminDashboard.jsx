@@ -45,9 +45,10 @@ const AdminDashboard = () => {
     };
     navigate(paths[tabId] || '/admin/overview');
   };
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+
   
   // Dashboard Data States
   const [summary, setSummary] = useState(null);
@@ -242,7 +243,6 @@ const AdminDashboard = () => {
   };
 
   const loadTabContent = async () => {
-    setLoading(true);
     try {
       if (activeTab === 'overview' || activeTab === 'platform_revenue') {
         await fetchSummary();
@@ -266,6 +266,7 @@ const AdminDashboard = () => {
       setLoading(false);
     }
   };
+
 
 
   useEffect(() => {

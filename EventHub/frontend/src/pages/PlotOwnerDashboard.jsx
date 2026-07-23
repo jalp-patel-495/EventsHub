@@ -63,7 +63,8 @@ const PlotOwnerDashboard = () => {
   // States
   const [venues, setVenues] = useState([]);
   const [bookings, setBookings] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+
   const routeLocation = useLocation();
   const navigate = useNavigate();
   const activeTab = routeLocation.pathname === '/venues/dashboard'

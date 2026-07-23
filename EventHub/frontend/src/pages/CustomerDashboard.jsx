@@ -14,7 +14,8 @@ const CustomerDashboard = () => {
   const [bookings, setBookings] = useState([]);
   const [wishlist, setWishlist] = useState([]);
   const [notifications, setNotifications] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+
   const [activeTab, setActiveTab] = useState('dashboard'); // dashboard, bookings, wishlist, notifications
   const [message, setMessage] = useState('');
   const [recommendations, setRecommendations] = useState(null);
