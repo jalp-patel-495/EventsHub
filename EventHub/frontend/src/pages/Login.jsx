@@ -19,6 +19,8 @@ const Login = () => {
 
   useEffect(() => {
     if (isAuthenticated && user) {
+      setEmail('');
+      setPassword('');
       const dashboardPath = user.role === 'admin' ? '/admin-dashboard' : user.role === 'organizer' ? '/organizer/events' : user.role === 'plot_owner' ? '/venues/manage' : '/bookings';
       navigate(dashboardPath, { replace: true });
     }
@@ -47,6 +49,8 @@ const Login = () => {
     setLoading(true);
     try {
       const loggedInUser = await login(email, password);
+      setEmail('');
+      setPassword('');
       let targetPath = from;
       if (from === '/' || from === '/profile' || from === '/login' || from === '/register') {
         if (loggedInUser?.role === 'admin') {
@@ -96,6 +100,22 @@ const Login = () => {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Dummy hidden inputs to absorb browser autofill */}
+            <input 
+              type="text" 
+              name="prevent_autofill_email" 
+              style={{ position: 'absolute', top: -9999, left: -9999 }} 
+              tabIndex={-1} 
+              autoComplete="off"
+            />
+            <input 
+              type="password" 
+              name="prevent_autofill_password" 
+              style={{ position: 'absolute', top: -9999, left: -9999 }} 
+              tabIndex={-1} 
+              autoComplete="new-password"
+            />
+
             {/* Email */}
             <div>
               <label className="block text-xs font-semibold text-dark-muted uppercase tracking-wider mb-2">
@@ -112,6 +132,7 @@ const Login = () => {
                   placeholder="you@example.com"
                   className="glass-input w-full pl-10 pr-4 py-2.5 rounded-xl text-sm"
                   required
+                  autoComplete="off"
                 />
               </div>
             </div>
@@ -140,6 +161,7 @@ const Login = () => {
                   placeholder="••••••••"
                   className="glass-input w-full pl-10 pr-10 py-2.5 rounded-xl text-sm"
                   required
+                  autoComplete="new-password"
                 />
                 <button
                   type="button"

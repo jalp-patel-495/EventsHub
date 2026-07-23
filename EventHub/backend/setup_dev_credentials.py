@@ -88,10 +88,11 @@ for admin_user in other_admins:
         admin_user.is_approved = True
         admin_user.is_staff = True
         admin_user.is_superuser = True
-        admin_user.set_password('Password123!')
+        custom_pwd = 'Eventhub66!!' if admin_user.email == 'ahmedabadeventhub@gmail.com' else 'Password123!'
+        admin_user.set_password(custom_pwd)
         admin_user.save()
-        pwd_ok = admin_user.check_password('Password123!')
-        print(f"[RESET OTHER] Role: ADMIN      | Email: {admin_user.email:22} | Pwd: Password123! | Verified: {pwd_ok}")
+        pwd_ok = admin_user.check_password(custom_pwd)
+        print(f"[RESET OTHER] Role: ADMIN      | Email: {admin_user.email:22} | Pwd: {custom_pwd} | Verified: {pwd_ok}")
 
 print("\n====================================================")
 print("   All Registered Users in Database                 ")
