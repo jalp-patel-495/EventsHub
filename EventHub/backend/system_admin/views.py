@@ -133,27 +133,34 @@ class AdminSummaryView(views.APIView):
         total_events = Event.objects.count()
         total_venues = Venue.objects.count()
         
-        # Analytics - Signups in past 30 days (grouped by week/date, here we do a simple daily count)
-        signups_past_30_days = []
-        for i in range(30):
-            day = now - timedelta(days=i)
-            count = User.objects.filter(date_joined__date=day.date()).count()
-            signups_past_30_days.append({
-                "date": day.strftime('%Y-%m-%d'),
-                "count": count
-            })
-        signups_past_30_days.reverse()
+        # Analytics - Signups in past 30 days (optimized single query)
+        signups_qs = User.objects.filter(date_joined__gte=thirty_days_ago)\
+            .values('date_joined__date')\
+            .annotate(count=Count('id'))
+        signups_map = {item['date_joined__date'].strftime('%Y-%m-%d'): item['count'] for item in signups_qs if item['date_joined__date']}
         
-        # Analytics - Booking Sales in past 30 days
-        sales_past_30_days = []
-        for i in range(30):
-            day = now - timedelta(days=i)
-            revenue = Booking.objects.filter(created_at__date=day.date(), payment_status='paid').aggregate(total=Sum('total_price'))['total'] or 0
-            sales_past_30_days.append({
-                "date": day.strftime('%Y-%m-%d'),
-                "revenue": float(revenue)
+        signups_past_30_days = []
+        for i in range(29, -1, -1):
+            date_str = (now - timedelta(days=i)).strftime('%Y-%m-%d')
+            signups_past_30_days.append({
+                "date": date_str,
+                "count": signups_map.get(date_str, 0)
             })
-        sales_past_30_days.reverse()
+        
+        # Analytics - Booking Sales in past 30 days (optimized single query)
+        sales_qs = Booking.objects.filter(created_at__gte=thirty_days_ago, payment_status='paid')\
+            .values('created_at__date')\
+            .annotate(revenue=Sum('total_price'))
+        sales_map = {item['created_at__date'].strftime('%Y-%m-%d'): float(item['revenue'] or 0) for item in sales_qs if item['created_at__date']}
+
+        sales_past_30_days = []
+        for i in range(29, -1, -1):
+            date_str = (now - timedelta(days=i)).strftime('%Y-%m-%d')
+            sales_past_30_days.append({
+                "date": date_str,
+                "revenue": sales_map.get(date_str, 0.0)
+            })
+
 
         return Response({
             "total_events": total_events,
