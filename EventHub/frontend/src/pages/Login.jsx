@@ -72,7 +72,8 @@ const Login = () => {
   };
 
   return (
-    <div className="relative min-h-[85vh] flex items-center justify-center px-4 py-12 overflow-hidden z-10">
+    <div className="relative min-h-[75vh] flex items-center justify-center px-4 py-4 sm:py-6 overflow-hidden z-10">
+
       <ThreeDEventBackground />
       <div className="w-full max-w-md mx-auto relative flex justify-center">
         <motion.div 
