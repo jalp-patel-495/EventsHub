@@ -93,8 +93,16 @@ const PlotOwnerDashboard = () => {
     navigate(paths[tabId] || '/venues/dashboard');
   };
 
+  const [feedbackMsg, setFeedbackMsg] = useState(null);
+
+  const showFeedback = (text, type = 'success') => {
+    setFeedbackMsg({ text, type });
+    setTimeout(() => setFeedbackMsg(null), 4000);
+  };
+
   // Dedicated Service Tabs State
   const [confirmRefundModal, setConfirmRefundModal] = useState({ show: false, bookingId: null, amount: 0, retained: 0 });
+
   const [selectedServiceVenueId, setSelectedServiceVenueId] = useState('');
   const [activeServiceTab, setActiveServiceTab] = useState('catering');
   const [serviceHasCatering, setServiceHasCatering] = useState(false);
@@ -192,11 +200,12 @@ const PlotOwnerDashboard = () => {
       });
       fetchDashboardData();
       setFormError('');
-      alert(`${serviceType.toUpperCase()} service settings updated successfully!`);
+      showFeedback(`${serviceType.toUpperCase()} service settings updated successfully!`, "success");
     } catch (err) {
       console.error(err);
-      alert("Failed to update service settings. Please try again.");
+      showFeedback("Failed to update service settings. Please try again.", "error");
     } finally {
+
       setLoading(false);
     }
   };
@@ -639,18 +648,20 @@ const PlotOwnerDashboard = () => {
     if (!window.confirm("Are you sure you want to permanently delete this venue plot? This cannot be undone.")) return;
     try {
       await api.delete(`venues/listings/${venueId}/`);
+      showFeedback("Venue plot deleted successfully.", "success");
       fetchDashboardData();
     } catch (err) {
-      alert(err.response?.data?.error || "Failed to delete venue. You may not own it.");
+      showFeedback(err.response?.data?.error || "Failed to delete venue. You may not own it.", "error");
     }
   };
 
   const handleBookingAction = async (bookingId, action) => {
     try {
       await api.post(`venues/bookings/${bookingId}/${action}/`);
+      showFeedback(`Booking ${action}ed successfully.`, "success");
       fetchDashboardData();
     } catch (err) {
-      alert(err.response?.data?.error || "Failed to process action.");
+      showFeedback(err.response?.data?.error || "Failed to process action.", "error");
     }
   };
 
@@ -660,11 +671,13 @@ const PlotOwnerDashboard = () => {
     try {
       await api.post(`venues/bookings/${bookingId}/approve_cancel/`);
       setConfirmRefundModal({ show: false, bookingId: null, amount: 0, retained: 0 });
+      showFeedback("Cancellation refund request approved successfully.", "success");
       fetchDashboardData();
     } catch (err) {
-      alert(err.response?.data?.error || "Failed to process cancellation refund request.");
+      showFeedback(err.response?.data?.error || "Failed to process cancellation refund request.", "error");
     }
   };
+
 
   const activeRequestsCount = bookings.filter(b => b.status === 'pending').length;
   const approvedBookings = bookings.filter(b => b.status === 'approved');
@@ -705,7 +718,31 @@ const PlotOwnerDashboard = () => {
 
   return (
     <div className="w-full px-4 sm:px-6 lg:px-12 py-10">
+      {/* Toast Alert Feedback */}
+      <AnimatePresence>
+        {feedbackMsg && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            className={`fixed top-24 right-6 z-[9999] px-5 py-3.5 rounded-xl border shadow-2xl flex items-center space-x-3 backdrop-blur-md ${
+              feedbackMsg.type === 'error'
+                ? 'bg-slate-900/95 border-red-500/40 text-red-400'
+                : 'bg-slate-900/95 border-emerald-500/40 text-emerald-400'
+            }`}
+          >
+            {feedbackMsg.type === 'error' ? (
+              <XCircle className="w-5 h-5 flex-shrink-0" />
+            ) : (
+              <CheckCircle className="w-5 h-5 flex-shrink-0" />
+            )}
+            <span className="text-sm font-semibold text-white">{feedbackMsg.text}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Dynamic Header */}
+
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-10">
         <div>
           <h1 className="text-3xl font-black tracking-tight text-dark-text">
