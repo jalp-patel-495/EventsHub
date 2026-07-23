@@ -22,7 +22,6 @@ ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "*").split(",")
 # Application definition
 
 INSTALLED_APPS = [
-    "daphne",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -35,7 +34,6 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework_simplejwt",
     "rest_framework_simplejwt.token_blacklist",
-    "channels",
     "anymail",
     
     # Local applications
@@ -48,6 +46,16 @@ INSTALLED_APPS = [
     "system_admin",
     "catering",
 ]
+
+# Add daphne and channels if installed and requested
+try:
+    import daphne
+    import channels
+    INSTALLED_APPS.insert(0, "daphne")
+    INSTALLED_APPS.append("channels")
+except ImportError:
+    pass
+
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",  # Placed high in the middleware chain
