@@ -66,7 +66,8 @@ const LandingPage = () => {
       <ThreeDEventBackground />
       
       {/* Merged Hero & Roles Section (Page 1) */}
-      <div className="w-full min-h-[calc(100vh-4rem)] snap-start snap-always flex flex-col justify-center relative z-10 space-y-12 py-12 px-4 sm:px-6 lg:px-12 overflow-y-auto">
+      <div className="w-full min-h-[calc(100vh-4rem)] snap-start snap-always flex flex-col justify-start sm:justify-center relative z-10 space-y-8 pt-3 sm:pt-4 pb-8 px-4 sm:px-6 lg:px-12 overflow-y-auto">
+
         
         {/* Hero Section */}
         <motion.section 
