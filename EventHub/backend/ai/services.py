@@ -24,8 +24,15 @@ def call_ai_api(prompt, system_instruction="You are a helpful AI assistant for A
         except Exception as e:
             logger.error(f"Gemini API error: {e}. Trying OpenAI fallback.")
 
-    # 2. Try OpenAI API if key is present and is not a default placeholder
-    if openai_key and openai_key.strip() and not openai_key.startswith("your-") and openai_key != "placeholder":
+    # 2. Try OpenAI API if key is present, valid, and not a placeholder
+    if (
+        openai_key 
+        and openai_key.strip() 
+        and not openai_key.startswith("your-") 
+        and openai_key != "placeholder"
+        and "..." not in openai_key
+        and len(openai_key.strip()) > 20
+    ):
         try:
             client = OpenAI(api_key=openai_key)
             response = client.chat.completions.create(
@@ -34,11 +41,11 @@ def call_ai_api(prompt, system_instruction="You are a helpful AI assistant for A
                     {"role": "system", "content": system_instruction},
                     {"role": "user", "content": prompt}
                 ],
-                timeout=5.0
+                timeout=4.0
             )
             return response.choices[0].message.content
         except Exception as e:
-            logger.error(f"OpenAI API error: {e}. Resorting to Free Live AI fallback.")
+            logger.warning(f"OpenAI API error: {e}. Resorting to Free Live AI fallback.")
 
     # 3. Try Pollinations AI (Free Live AI Engine - No API Key Required)
     try:
@@ -52,15 +59,16 @@ def call_ai_api(prompt, system_instruction="You are a helpful AI assistant for A
                 ],
                 "model": "openai"
             },
-            timeout=10.0
+            timeout=3.0
         )
         if response.status_code == 200 and response.text.strip():
             return response.text
     except Exception as e:
-        logger.error(f"Free Live AI engine error: {e}. Resorting to Local Fallback.")
+        logger.info(f"Free Live AI engine unavailable ({e}). Resorting to Local Fallback.")
 
     # 4. Local Smart Heuristics Fallback Engine
     return call_local_fallback(prompt, system_instruction)
+
 
 
 def call_local_fallback(prompt, system_instruction):
