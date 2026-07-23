@@ -1,3 +1,4 @@
+
 import os
 import urllib.parse
 from pathlib import Path
@@ -17,7 +18,21 @@ SECRET_KEY = os.environ.get("SECRET_KEY", "django-insecure-^luu2j=*a**3hu@8%_w0a
 
 DEBUG = os.environ.get("DEBUG", "True") == "True"
 
-ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "*").split(",")
+ALLOWED_HOSTS = [
+    '*',
+    '.vercel.app',
+    '.now.sh',
+    'localhost',
+    '127.0.0.1',
+]
+
+_env_hosts = os.environ.get("ALLOWED_HOSTS", "")
+if _env_hosts:
+    for _h in _env_hosts.split(","):
+        _h_clean = _h.strip()
+        if _h_clean and _h_clean not in ALLOWED_HOSTS:
+            ALLOWED_HOSTS.append(_h_clean)
+
 
 # Application definition
 
