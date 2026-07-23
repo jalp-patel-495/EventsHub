@@ -243,24 +243,30 @@ const AdminDashboard = () => {
 
   const loadTabContent = async () => {
     setLoading(true);
-    if (activeTab === 'overview' || activeTab === 'platform_revenue') {
-      await fetchSummary();
-    } else if (activeTab === 'approvals') {
-      await fetchApprovals();
-      await fetchUsers(); // Users are checked for pending registrations
-    } else if (activeTab === 'all_events') {
-      await fetchAllEvents();
-    } else if (activeTab === 'all_venues') {
-      await fetchAllVenues();
-    } else if (activeTab === 'users') {
-      await fetchUsers();
-    } else if (activeTab === 'finance') {
-      await fetchBookings();
-    } else if (activeTab === 'complaints') {
-      await fetchComplaints();
+    try {
+      if (activeTab === 'overview' || activeTab === 'platform_revenue') {
+        await fetchSummary();
+      } else if (activeTab === 'approvals') {
+        await fetchApprovals();
+        await fetchUsers(); // Users are checked for pending registrations
+      } else if (activeTab === 'all_events') {
+        await fetchAllEvents();
+      } else if (activeTab === 'all_venues') {
+        await fetchAllVenues();
+      } else if (activeTab === 'users') {
+        await fetchUsers();
+      } else if (activeTab === 'finance') {
+        await fetchBookings();
+      } else if (activeTab === 'complaints') {
+        await fetchComplaints();
+      }
+    } catch (err) {
+      console.error("Error loading tab content:", err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
+
 
   useEffect(() => {
     loadTabContent();

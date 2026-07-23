@@ -20,7 +20,7 @@ users_to_create = [
         'is_superuser': True,
         'is_approved': True,
         'is_active': True,
-        'password': 'Eventhub66!'
+        'password': 'Eventhub66!!'
     },
     {
         'email': 'ahmedabaeventhub@gmail.com',
@@ -95,7 +95,7 @@ for u_data in users_to_create:
 # Double check if other admin accounts (like admin@eventhub.com) exist and update them as well
 other_admins = User.objects.filter(role='admin') | User.objects.filter(is_superuser=True)
 for admin_user in other_admins:
-    if admin_user.email != 'admin@example.com':
+    if admin_user.email != 'ahmedabadeventhub@gmail.com':
         admin_user.is_active = True
         admin_user.is_approved = True
         admin_user.is_staff = True
