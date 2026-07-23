@@ -69,9 +69,10 @@
   background: var(--glass-nav-bg);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border-bottom: 1px solid var(--glass-border);
+  border-bottom: none !important;
   transition: background-color 0.3s ease, border-color 0.3s ease;
 }
+
 
 .glass-panel {
   background: var(--glass-panel-bg);
