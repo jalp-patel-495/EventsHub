@@ -275,8 +275,31 @@ def call_local_fallback(prompt, system_instruction):
                 "To manage venues, please log in as a **Plot Owner**."
             )
 
+    # 3.5 Create Event / Add Event Guide
+    if any(keyword in user_question_lower for keyword in ["create event", "add event", "new event", "host event", "post event", "how to create", "steps to create", "step in create"]):
+        return (
+            "### Step-by-Step Guide to Create a New Event\n\n"
+            "Follow these simple steps to list and publish your event on Ahmedabad Event Hub:\n\n"
+            "1. **Log In as an Organizer**:\n"
+            "   - Sign in with an **Organizer** account credentials.\n"
+            "   - If you are a new user, register as an Organizer.\n\n"
+            "2. **Navigate to Organizer Dashboard**:\n"
+            "   - Click on your avatar menu at top right and select **My Dashboard** (or go to `/organizer/events`).\n\n"
+            "3. **Click '+ Create New Event'**:\n"
+            "   - On your dashboard header, click the blue **'+ Create New Event'** button.\n\n"
+            "4. **Fill in Event Details**:\n"
+            "   - **Title & Category**: Enter event name and select category (Music, Tech, Garba, Business, etc.).\n"
+            "   - **Date, Time & Venue**: Set event start date, time, and select an approved party plot or location.\n"
+            "   - **Ticket Pricing**: Set ticket price, available seat count, and early-bird discount codes.\n"
+            "   - **Banner & Media**: Upload your event poster image.\n"
+            "   - **AI Description**: Click **'Generate AI Description'** to auto-generate a professional SEO description.\n\n"
+            "5. **Publish Event**:\n"
+            "   - Click **Submit Event**. Once published, attendees can instantly discover and book tickets on the **Explore** page!"
+        )
+
     # 4. Events
     if any(keyword in user_question_lower for keyword in ["event", "upcoming", "show", "play", "concert", "what is on"]):
+
         if events:
             events_list = "\n".join([f"- **{e}**" for e in events])
             return (
