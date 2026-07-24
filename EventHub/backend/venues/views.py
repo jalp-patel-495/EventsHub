@@ -49,6 +49,44 @@ class VenueViewSet(viewsets.ModelViewSet):
         if owner:
             queryset = queryset.filter(owner_id=owner)
 
+        # Filter by max price per day
+        max_price = self.request.query_params.get('max_price')
+        if max_price:
+            try:
+                queryset = queryset.filter(price_per_day__lte=float(max_price))
+            except (ValueError, TypeError):
+                pass
+
+        # Filter by min price per day
+        min_price = self.request.query_params.get('min_price')
+        if min_price:
+            try:
+                queryset = queryset.filter(price_per_day__gte=float(min_price))
+            except (ValueError, TypeError):
+                pass
+
+        # Filter by facilities/services
+        facility = self.request.query_params.get('facility')
+        if facility:
+            if facility == 'catering':
+                queryset = queryset.filter(has_catering=True)
+            elif facility == 'dj':
+                queryset = queryset.filter(has_dj=True)
+            elif facility == 'decor':
+                queryset = queryset.filter(has_decor=True)
+
+        has_catering = self.request.query_params.get('has_catering')
+        if has_catering == 'true':
+            queryset = queryset.filter(has_catering=True)
+
+        has_dj = self.request.query_params.get('has_dj')
+        if has_dj == 'true':
+            queryset = queryset.filter(has_dj=True)
+
+        has_decor = self.request.query_params.get('has_decor')
+        if has_decor == 'true':
+            queryset = queryset.filter(has_decor=True)
+
         return queryset
 
     def perform_create(self, serializer):

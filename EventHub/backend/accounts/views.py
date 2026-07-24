@@ -15,9 +15,10 @@ from .serializers import (
     UserRegisterSerializer,
     CustomTokenObtainPairSerializer,
     ForgotPasswordSerializer,
-    ResetPasswordSerializer
+    ResetPasswordSerializer,
+    ChangePasswordSerializer
 )
-from .utils import send_registration_otp, send_password_reset_email
+from .utils import send_registration_otp, send_password_reset_email, create_password_reset_otp
 from .models import EmailOTP
 from django.utils import timezone
 import re
@@ -191,10 +192,11 @@ class ForgotPasswordView(APIView):
         
         try:
             user = User.objects.get(email=email)
+            otp_code = create_password_reset_otp(user)
             import threading
             email_thread = threading.Thread(
                 target=send_password_reset_email,
-                args=(user,),
+                args=(user, otp_code),
                 daemon=True
             )
             email_thread.start()
@@ -281,3 +283,21 @@ class ResetPasswordOTPView(APIView):
             return Response({"message": "Password has been reset successfully! You can now log in."}, status=status.HTTP_200_OK)
         except User.DoesNotExist:
             return Response({"error": "User with this email address does not exist."}, status=status.HTTP_404_NOT_FOUND)
+
+class ChangePasswordView(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def post(self, request):
+        serializer = ChangePasswordSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = request.user
+
+        old_password = serializer.validated_data['old_password']
+        if not user.check_password(old_password):
+            return Response({"error": "Incorrect current password."}, status=status.HTTP_400_BAD_REQUEST)
+
+        new_password = serializer.validated_data['new_password']
+        user.set_password(new_password)
+        user.save()
+        return Response({"message": "Password updated successfully!"}, status=status.HTTP_200_OK)
+

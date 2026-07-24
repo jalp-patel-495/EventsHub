@@ -38,6 +38,8 @@ class Coupon(models.Model):
     discount_percent = models.PositiveIntegerField(default=0)
     active = models.BooleanField(default=True)
     valid_until = models.DateField()
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, null=True, blank=True, related_name='coupons')
+    organizer = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True, related_name='coupons')
 
     def __str__(self):
         return f"{self.code} ({self.discount_percent}% off)"

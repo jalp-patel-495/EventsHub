@@ -13,6 +13,7 @@ const ForgotPassword = () => {
   const [passwordConfirm, setPasswordConfirm] = useState('');
   
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -182,7 +183,7 @@ const ForgotPassword = () => {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@example.com"
+                    placeholder="Enter Email Address"
                     className="glass-input w-full pl-10 pr-4 py-2.5 rounded-xl text-sm"
                     required
                   />
@@ -219,7 +220,7 @@ const ForgotPassword = () => {
                     maxLength="6"
                     value={otpCode}
                     onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
-                    placeholder="123456"
+                    placeholder="Enter OTP Code"
                     className="glass-input w-full pl-10 pr-4 py-2.5 rounded-xl text-sm text-center tracking-widest font-mono"
                     required
                   />
@@ -238,7 +239,8 @@ const ForgotPassword = () => {
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
+                    placeholder="Enter Password"
+                    autoComplete="new-password"
                     className="glass-input w-full pl-10 pr-10 py-2.5 rounded-xl text-sm"
                     required
                   />
@@ -261,13 +263,21 @@ const ForgotPassword = () => {
                     <Lock className="w-4 h-4" />
                   </span>
                   <input
-                    type={showPassword ? 'text' : 'password'}
+                    type={showConfirmPassword ? 'text' : 'password'}
                     value={passwordConfirm}
                     onChange={(e) => setPasswordConfirm(e.target.value)}
-                    placeholder="••••••••"
-                    className="glass-input w-full pl-10 pr-4 py-2.5 rounded-xl text-sm"
+                    placeholder="Re-enter Password"
+                    autoComplete="new-password"
+                    className="glass-input w-full pl-10 pr-10 py-2.5 rounded-xl text-sm"
                     required
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-dark-muted hover:text-dark-text"
+                  >
+                    {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
               </div>
 

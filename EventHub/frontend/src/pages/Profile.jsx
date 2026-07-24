@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { motion } from 'framer-motion';
-import { User, Phone, Mail, Calendar, Upload, Save, CheckCircle2, Shield, MessageSquare, CornerDownRight } from 'lucide-react';
+import { User, Phone, Mail, Calendar, Upload, Save, CheckCircle2, Shield, MessageSquare, CornerDownRight, Lock, Eye, EyeOff, KeyRound } from 'lucide-react';
 import api, { BACKEND_URL } from '../api/api';
 
 const Profile = () => {
@@ -18,6 +18,17 @@ const Profile = () => {
   const [loading, setLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+
+  // Password Change state
+  const [oldPassword, setOldPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showOldPassword, setShowOldPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [pwdLoading, setPwdLoading] = useState(false);
+  const [pwdSuccessMsg, setPwdSuccessMsg] = useState('');
+  const [pwdErrorMsg, setPwdErrorMsg] = useState('');
 
   // Support/Complaints state
   const [complaints, setComplaints] = useState([]);
@@ -114,6 +125,71 @@ const Profile = () => {
       setErrorMsg(err.message || 'Failed to update profile.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    setPwdLoading(true);
+    setPwdSuccessMsg('');
+    setPwdErrorMsg('');
+
+    if (!oldPassword) {
+      setPwdErrorMsg('Please enter your current password.');
+      setPwdLoading(false);
+      return;
+    }
+    if (!newPassword || newPassword.length < 8) {
+      setPwdErrorMsg('New password must be at least 8 characters long.');
+      setPwdLoading(false);
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPwdErrorMsg('New passwords do not match.');
+      setPwdLoading(false);
+      return;
+    }
+    if (!/[A-Z]/.test(newPassword)) {
+      setPwdErrorMsg('New password must contain at least one uppercase letter.');
+      setPwdLoading(false);
+      return;
+    }
+    if (!/[a-z]/.test(newPassword)) {
+      setPwdErrorMsg('New password must contain at least one lowercase letter.');
+      setPwdLoading(false);
+      return;
+    }
+    if (!/[0-9]/.test(newPassword)) {
+      setPwdErrorMsg('New password must contain at least one number.');
+      setPwdLoading(false);
+      return;
+    }
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(newPassword)) {
+      setPwdErrorMsg('New password must contain at least one special character.');
+      setPwdLoading(false);
+      return;
+    }
+
+    try {
+      const res = await api.post('accounts/change-password/', {
+        old_password: oldPassword,
+        new_password: newPassword,
+        new_password_confirm: confirmPassword,
+      });
+      setPwdSuccessMsg(res.data.message || 'Password updated successfully!');
+      setOldPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (err) {
+      const serverErr =
+        err.response?.data?.error ||
+        err.response?.data?.detail ||
+        (err.response?.data?.old_password ? err.response.data.old_password[0] : null) ||
+        (err.response?.data?.new_password ? err.response.data.new_password[0] : null) ||
+        'Failed to change password. Please verify your current password.';
+      setPwdErrorMsg(serverErr);
+    } finally {
+      setPwdLoading(false);
     }
   };
 
@@ -355,6 +431,156 @@ const Profile = () => {
               </button>
             </div>
           </form>
+
+          <div className="w-full border-t border-white/10 my-8"></div>
+
+          {/* Change Password Section */}
+          <div className="space-y-6">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-emerald-500/10 text-emerald-400 rounded-xl">
+                <KeyRound className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold tracking-tight text-dark-text">Change Password</h3>
+                <p className="text-xs text-dark-muted mt-0.5">Update your security password for account protection</p>
+              </div>
+            </div>
+
+            {pwdSuccessMsg && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex items-start space-x-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 p-3 rounded-lg text-sm"
+              >
+                <CheckCircle2 className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                <span>{pwdSuccessMsg}</span>
+              </motion.div>
+            )}
+
+            {pwdErrorMsg && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex items-start space-x-2 bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-lg text-sm"
+              >
+                <Lock className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                <span>{pwdErrorMsg}</span>
+              </motion.div>
+            )}
+
+            <form onSubmit={handleChangePassword} className="space-y-6">
+              {/* Current Password */}
+              <div>
+                <label className="block text-xs font-semibold text-dark-muted uppercase tracking-wider mb-2">
+                  Current Password
+                </label>
+                <div className="relative">
+                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-dark-muted">
+                    <Lock className="w-4 h-4" />
+                  </span>
+                  <input
+                    type={showOldPassword ? 'text' : 'password'}
+                    value={oldPassword}
+                    onChange={(e) => setOldPassword(e.target.value)}
+                    placeholder="Enter current password"
+                    autoComplete="current-password"
+                    className="glass-input w-full pl-10 pr-10 py-2.5 rounded-xl text-sm"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowOldPassword(!showOldPassword)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-dark-muted hover:text-dark-text"
+                  >
+                    {showOldPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                {/* New Password */}
+                <div>
+                  <label className="block text-xs font-semibold text-dark-muted uppercase tracking-wider mb-2">
+                    New Password
+                  </label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-dark-muted">
+                      <Lock className="w-4 h-4" />
+                    </span>
+                    <input
+                      type={showNewPassword ? 'text' : 'password'}
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="Enter new password"
+                      autoComplete="new-password"
+                      className="glass-input w-full pl-10 pr-10 py-2.5 rounded-xl text-sm"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-dark-muted hover:text-dark-text"
+                    >
+                      {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Confirm New Password */}
+                <div>
+                  <label className="block text-xs font-semibold text-dark-muted uppercase tracking-wider mb-2">
+                    Confirm New Password
+                  </label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-dark-muted">
+                      <Lock className="w-4 h-4" />
+                    </span>
+                    <input
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Confirm new password"
+                      autoComplete="new-password"
+                      className="glass-input w-full pl-10 pr-10 py-2.5 rounded-xl text-sm"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-dark-muted hover:text-dark-text"
+                    >
+                      {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-[11px] text-dark-muted leading-relaxed">
+                Password must be at least 8 characters long and contain uppercase, lowercase, numbers, and special symbols (!@#$%^&*).
+              </p>
+
+              {/* Change Password Submit Button */}
+              <div className="flex items-center justify-end">
+                <button
+                  type="submit"
+                  disabled={pwdLoading}
+                  className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-medium py-2.5 px-6 rounded-xl hover:from-emerald-600 hover:to-teal-600 transition-all flex items-center space-x-2 shadow-md shadow-emerald-950/20 disabled:opacity-50 disabled:pointer-events-none"
+                >
+                  {pwdLoading ? (
+                    <>
+                      <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                      <span>Updating Password...</span>
+                    </>
+                  ) : (
+                    <>
+                      <KeyRound className="w-4 h-4" />
+                      <span>Update Password</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       </motion.div>
 

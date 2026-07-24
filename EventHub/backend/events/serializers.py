@@ -59,9 +59,12 @@ class EventSerializer(serializers.ModelSerializer):
         return ret
 
 class CouponSerializer(serializers.ModelSerializer):
+    event_title = serializers.CharField(source='event.title', read_only=True)
+
     class Meta:
         model = Coupon
-        fields = ('id', 'code', 'discount_percent', 'active', 'valid_until')
+        fields = ('id', 'code', 'discount_percent', 'active', 'valid_until', 'event', 'event_title', 'organizer')
+        read_only_fields = ('organizer',)
 
 class BookingSerializer(serializers.ModelSerializer):
     user_details = UserSerializer(source='user', read_only=True)

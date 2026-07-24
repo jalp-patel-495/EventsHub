@@ -19,6 +19,22 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
   const [appliedCoupon, setAppliedCoupon] = useState(null);
   const [couponError, setCouponError] = useState('');
   const [couponLoading, setCouponLoading] = useState(false);
+  const [activeOffers, setActiveOffers] = useState([]);
+
+  // Fetch active offers for current event
+  React.useEffect(() => {
+    const fetchActiveCoupons = async () => {
+      try {
+        const res = await api.get(`events/${event.id}/coupons/`);
+        setActiveOffers(res.data || []);
+      } catch (err) {
+        console.error("Failed to load event coupons:", err);
+      }
+    };
+    if (event && event.id) {
+      fetchActiveCoupons();
+    }
+  }, [event]);
 
   // Post-payment ticket states
   const [bookingId, setBookingId] = useState(null);
@@ -34,6 +50,7 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
   const [cardCvv, setCardCvv] = useState('');
   const [isCardFlipped, setIsCardFlipped] = useState(false);
   const [upiId, setUpiId] = useState('');
+  const [upiError, setUpiError] = useState('');
   const [cardError, setCardError] = useState('');
   const [selectedBank, setSelectedBank] = useState('');
   const [processingMsg, setProcessingMsg] = useState('');
@@ -113,7 +130,7 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
     setCouponLoading(true);
     setCouponError('');
     try {
-      const response = await api.post('events/coupons/apply/', { code });
+      const response = await api.post('events/coupons/apply/', { code, event_id: event.id });
       setAppliedCoupon(response.data);
     } catch (err) {
       setCouponError(err.response?.data?.error || "Invalid coupon code.");
@@ -128,7 +145,7 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
     setCouponLoading(true);
     setCouponError('');
     try {
-      const response = await api.post('events/coupons/apply/', { code: couponCode });
+      const response = await api.post('events/coupons/apply/', { code: couponCode, event_id: event.id });
       setAppliedCoupon(response.data);
     } catch (err) {
       setCouponError(err.response?.data?.error || "Invalid coupon code.");
@@ -169,6 +186,29 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
     e.preventDefault();
     setCardError('');
     setNetbankError('');
+    setUpiError('');
+
+    if (selectedMethod === 'upi') {
+      const cleanUpi = upiId.trim();
+      if (!cleanUpi) {
+        setUpiError('Please enter your UPI VPA ID.');
+        return;
+      }
+      if (!cleanUpi.includes('@')) {
+        setUpiError("Invalid UPI ID. UPI ID must include '@' followed by your bank name (e.g. amit@okhdfcbank, user@paytm).");
+        return;
+      }
+      const parts = cleanUpi.split('@');
+      if (!parts[0] || !parts[1]) {
+        setUpiError("Invalid UPI ID format. Please specify username and bank name after '@' (e.g. amit@okhdfcbank).");
+        return;
+      }
+      const upiRegex = /^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z0-9]{2,64}$/;
+      if (!upiRegex.test(cleanUpi)) {
+        setUpiError("Invalid UPI ID format. Must be 'username@bankname' (e.g. amit@okhdfcbank, 9876543210@paytm, user@okaxis).");
+        return;
+      }
+    }
     
     if (selectedMethod === 'netbanking') {
       if (netbankUser.trim().length < 3) {
@@ -617,22 +657,20 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
                   </button>
                 </div>
 
-                {/* Selectable Coupon Offers */}
-                {!appliedCoupon && (
-                  <div className="flex items-center gap-2 mt-2">
+                {/* Selectable Active Coupon Offers */}
+                {!appliedCoupon && activeOffers.length > 0 && (
+                  <div className="flex items-center gap-2 mt-2 flex-wrap">
                     <span className="text-[9px] font-bold text-dark-muted uppercase tracking-wider">Active Offers:</span>
-                    <div className="flex gap-2">
-                      {[
-                        { code: 'SAVE20', label: '20% OFF' },
-                        { code: 'SAVE75', label: '75% OFF' }
-                      ].map((offer) => (
+                    <div className="flex gap-2 flex-wrap">
+                      {activeOffers.map((offer) => (
                         <button
-                          key={offer.code}
+                          key={offer.id || offer.code}
                           type="button"
                           onClick={() => applySuggestedCoupon(offer.code)}
-                          className="px-2.5 py-1 rounded bg-[#3B82F6]/10 hover:bg-[#3B82F6]/20 border border-[#3B82F6]/20 text-[9px] font-extrabold text-[#3B82F6] transition-all"
+                          className="px-2.5 py-1 rounded bg-[#3B82F6]/10 hover:bg-[#3B82F6]/20 border border-[#3B82F6]/20 text-[9px] font-extrabold text-[#3B82F6] transition-all flex items-center space-x-1"
                         >
-                          {offer.code} ({offer.label})
+                          <span>{offer.code}</span>
+                          <span className="text-emerald-400">({offer.discount_percent}% OFF)</span>
                         </button>
                       ))}
                     </div>
@@ -1048,11 +1086,19 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
                     required
                     value={upiId}
                     disabled={qrTimer === 0}
-                    onChange={(e) => setUpiId(e.target.value)}
-                    placeholder="amit@okhdfcbank"
+                    onChange={(e) => { setUpiId(e.target.value); setUpiError(''); }}
+                    placeholder="Enter UPI ID"
                     className="glass-input w-full px-3 py-2.5 text-xs disabled:opacity-50"
                   />
+                  <p className="text-[10px] text-dark-muted mt-1">Format: username@bankname (e.g. user@okhdfcbank, user@paytm)</p>
                 </div>
+
+                {upiError && (
+                  <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-2.5 rounded-lg text-xs flex items-center gap-2">
+                    <ShieldCheck className="w-3.5 h-3.5 flex-shrink-0 text-red-400" />
+                    <span>{upiError}</span>
+                  </div>
+                )}
 
                 <div className="flex gap-3 pt-3">
                   <button
