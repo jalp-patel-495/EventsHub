@@ -147,6 +147,7 @@ const Navbar = () => {
         ? [
             { name: 'Dashboard', path: '/organizer/events' },
             { name: 'Ticket Sales', path: '/organizer/sales' },
+            { name: 'Event Offers', path: '/organizer/offers' },
             { name: 'Refund Ticket Requests', path: '/organizer/refunds' },
             { name: 'Venue Rentals', path: '/organizer/rentals' },
             { name: 'Customer Reviews', path: '/organizer/reviews' },

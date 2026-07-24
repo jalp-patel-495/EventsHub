@@ -148,6 +148,8 @@ class BookingCreateListView(APIView):
         if coupon_code:
             try:
                 coupon_obj = Coupon.objects.get(code__iexact=coupon_code, active=True, valid_until__gte=timezone.now().date())
+                if coupon_obj.event and coupon_obj.event.id != event.id:
+                    return Response({"error": "This coupon code is not applicable for this event."}, status=status.HTTP_400_BAD_REQUEST)
                 coupon = coupon_obj
                 discount_percent = coupon_obj.discount_percent
             except Coupon.DoesNotExist:
@@ -445,13 +447,100 @@ class ApplyCouponView(APIView):
 
     def post(self, request):
         code = request.data.get('code', '').strip()
+        event_id = request.data.get('event_id')
         if not code:
             return Response({"error": "Coupon code is required."}, status=status.HTTP_400_BAD_REQUEST)
         try:
             coupon = Coupon.objects.get(code__iexact=code, active=True, valid_until__gte=timezone.now().date())
+            if event_id and coupon.event and str(coupon.event.id) != str(event_id):
+                return Response({"error": "This coupon code is not applicable for this event."}, status=status.HTTP_400_BAD_REQUEST)
             return Response(CouponSerializer(coupon).data, status=status.HTTP_200_OK)
         except Coupon.DoesNotExist:
             return Response({"error": "Invalid or expired coupon code."}, status=status.HTTP_400_BAD_REQUEST)
+
+class EventActiveCouponsView(APIView):
+    permission_classes = (permissions.AllowAny,)
+
+    def get(self, request, event_id):
+        event = get_object_or_404(Event, pk=event_id)
+        coupons = Coupon.objects.filter(
+            active=True,
+            valid_until__gte=timezone.now().date()
+        ).filter(Q(event=event) | Q(event__isnull=True))
+        return Response(CouponSerializer(coupons, many=True).data, status=status.HTTP_200_OK)
+
+class OrganizerCouponManagementView(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get(self, request):
+        if request.user.role != 'organizer' and not request.user.is_staff:
+            return Response({"error": "Access denied. Only organizers can view event offers."}, status=status.HTTP_403_FORBIDDEN)
+        coupons = Coupon.objects.filter(Q(organizer=request.user) | Q(event__organizer=request.user)).distinct().order_by('-id')
+        return Response(CouponSerializer(coupons, many=True).data, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        if request.user.role != 'organizer' and not request.user.is_staff:
+            return Response({"error": "Access denied. Only organizers can set event offers."}, status=status.HTTP_403_FORBIDDEN)
+
+        code = request.data.get('code', '').strip().upper()
+        discount_percent = request.data.get('discount_percent')
+        valid_until = request.data.get('valid_until')
+        event_id = request.data.get('event')
+
+        if not code or not discount_percent or not valid_until:
+            return Response({"error": "Coupon code, discount percentage, and expiry date are required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            discount_percent = int(discount_percent)
+            if discount_percent <= 0 or discount_percent > 100:
+                return Response({"error": "Discount percentage must be between 1 and 100."}, status=status.HTTP_400_BAD_REQUEST)
+        except ValueError:
+            return Response({"error": "Discount percentage must be a valid number."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if Coupon.objects.filter(code__iexact=code).exists():
+            return Response({"error": f"Coupon code '{code}' already exists."}, status=status.HTTP_400_BAD_REQUEST)
+
+        event_obj = None
+        if event_id:
+            event_obj = get_object_or_404(Event, pk=event_id, organizer=request.user)
+
+        coupon = Coupon.objects.create(
+            code=code,
+            discount_percent=discount_percent,
+            valid_until=valid_until,
+            active=True,
+            event=event_obj,
+            organizer=request.user
+        )
+        return Response(CouponSerializer(coupon).data, status=status.HTTP_201_CREATED)
+
+class OrganizerCouponDetailView(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def delete(self, request, pk):
+        if request.user.role != 'organizer' and not request.user.is_staff:
+            return Response({"error": "Access denied."}, status=status.HTTP_403_FORBIDDEN)
+
+        coupon = get_object_or_404(Coupon, pk=pk)
+        if coupon.organizer != request.user and (coupon.event and coupon.event.organizer != request.user) and not request.user.is_staff:
+            return Response({"error": "Permission denied."}, status=status.HTTP_403_FORBIDDEN)
+
+        coupon.delete()
+        return Response({"message": "Offer removed successfully."}, status=status.HTTP_200_OK)
+
+    def patch(self, request, pk):
+        if request.user.role != 'organizer' and not request.user.is_staff:
+            return Response({"error": "Access denied."}, status=status.HTTP_403_FORBIDDEN)
+
+        coupon = get_object_or_404(Coupon, pk=pk)
+        if coupon.organizer != request.user and (coupon.event and coupon.event.organizer != request.user) and not request.user.is_staff:
+            return Response({"error": "Permission denied."}, status=status.HTTP_403_FORBIDDEN)
+
+        if 'active' in request.data:
+            coupon.active = request.data['active']
+            coupon.save()
+
+        return Response(CouponSerializer(coupon).data, status=status.HTTP_200_OK)
 
 class BookingVerifyPaymentView(APIView):
     permission_classes = (permissions.IsAuthenticated,)

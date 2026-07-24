@@ -198,6 +198,14 @@ function App() {
                   </ProtectedRoute>
                 } 
               />
+              <Route 
+                path="/organizer/offers" 
+                element={
+                  <ProtectedRoute allowedRoles={['organizer']}>
+                    <OrganizerDashboard />
+                  </ProtectedRoute>
+                } 
+              />
 
               {/* Protected Routes (Plot Owner) */}
               <Route 

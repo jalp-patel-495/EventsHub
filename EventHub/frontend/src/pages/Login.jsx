@@ -130,7 +130,7 @@ const Login = () => {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@example.com"
+                  placeholder="Enter Email Address"
                   className="glass-input w-full pl-10 pr-4 py-2.5 rounded-xl text-sm"
                   required
                   autoComplete="off"
@@ -159,7 +159,7 @@ const Login = () => {
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
+                  placeholder="Enter Password"
                   className="glass-input w-full pl-10 pr-10 py-2.5 rounded-xl text-sm"
                   required
                   autoComplete="new-password"

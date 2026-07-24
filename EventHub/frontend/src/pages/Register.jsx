@@ -271,7 +271,7 @@ const Register = () => {
                       type="text"
                       value={firstName}
                       onChange={(e) => setFirstName(e.target.value)}
-                      placeholder="John"
+                      placeholder="Enter First Name"
                       className="glass-input w-full pl-10 pr-4 py-2.5 rounded-xl text-sm"
                       required
                     />
@@ -289,7 +289,7 @@ const Register = () => {
                       type="text"
                       value={lastName}
                       onChange={(e) => setLastName(e.target.value)}
-                      placeholder="Doe"
+                      placeholder="Enter Last Name"
                       className="glass-input w-full pl-10 pr-4 py-2.5 rounded-xl text-sm"
                       required
                     />
@@ -311,7 +311,7 @@ const Register = () => {
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="john@example.com"
+                      placeholder="Enter Email Address"
                       className="glass-input w-full pl-10 pr-4 py-2.5 rounded-xl text-sm"
                       required
                     />
@@ -332,7 +332,7 @@ const Register = () => {
                         const val = e.target.value.replace(/\D/g, '').slice(0, 10);
                         setPhone(val);
                       }}
-                      placeholder="9876543210"
+                      placeholder="Enter Phone Number"
                       maxLength="10"
                       pattern="[0-9]{10}"
                       className="glass-input w-full pl-10 pr-4 py-2.5 rounded-xl text-sm"
@@ -356,7 +356,7 @@ const Register = () => {
                       type={showPassword ? 'text' : 'password'}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••"
+                      placeholder="Enter Password"
                       className="glass-input w-full pl-10 pr-10 py-2.5 rounded-xl text-sm"
                       autoComplete="new-password"
                       required
@@ -384,7 +384,7 @@ const Register = () => {
                       type={showPassword ? 'text' : 'password'}
                       value={passwordConfirm}
                       onChange={(e) => setPasswordConfirm(e.target.value)}
-                      placeholder="••••••••"
+                      placeholder="Re-enter Password"
                       className="glass-input w-full pl-10 pr-4 py-2.5 rounded-xl text-sm"
                       autoComplete="new-password"
                       required

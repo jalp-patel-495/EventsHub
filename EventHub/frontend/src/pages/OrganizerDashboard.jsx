@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import api, { BACKEND_URL } from '../api/api';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, Trash2, Edit2, Plus, Sparkles, TrendingUp, Users, IndianRupee, Star, FileText, Upload, X, ShieldAlert, MapPin, Building, CheckCircle, XCircle, LayoutDashboard, Ticket } from 'lucide-react';
+import { Calendar, Trash2, Edit2, Plus, Sparkles, TrendingUp, Users, IndianRupee, Star, FileText, Upload, X, ShieldAlert, MapPin, Building, CheckCircle, XCircle, LayoutDashboard, Ticket, Tag, Percent } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import VenuePaymentModal from '../components/VenuePaymentModal';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -16,6 +16,8 @@ const OrganizerDashboard = () => {
   const [loading, setLoading] = useState(false);
 
   const [venueBookings, setVenueBookings] = useState([]);
+  const [coupons, setCoupons] = useState([]);
+  const [loadingCoupons, setLoadingCoupons] = useState(false);
   
   const routeLocation = useLocation();
   const navigate = useNavigate();
@@ -29,7 +31,9 @@ const OrganizerDashboard = () => {
           ? 'analytics'
           : routeLocation.pathname === '/organizer/refunds'
             ? 'refunds'
-            : 'events';
+            : routeLocation.pathname === '/organizer/offers'
+              ? 'offers'
+              : 'events';
   const setActiveTab = (tabId) => {
     const paths = {
       events: '/organizer/events',
@@ -37,10 +41,19 @@ const OrganizerDashboard = () => {
       venue_rentals: '/organizer/rentals',
       reviews: '/organizer/reviews',
       analytics: '/organizer/analytics',
-      refunds: '/organizer/refunds'
+      refunds: '/organizer/refunds',
+      offers: '/organizer/offers'
     };
     navigate(paths[tabId] || '/organizer/events');
   };
+
+  // Offer / Coupon Modal state
+  const [offerModalOpen, setOfferModalOpen] = useState(false);
+  const [offerCode, setOfferCode] = useState('');
+  const [offerDiscount, setOfferDiscount] = useState('');
+  const [offerExpiry, setOfferExpiry] = useState('');
+  const [offerEventId, setOfferEventId] = useState('');
+  const [offerLoading, setOfferLoading] = useState(false);
 
   // Modal states (Create/Edit)
   const [modalOpen, setModalOpen] = useState(false);
@@ -185,10 +198,71 @@ const OrganizerDashboard = () => {
     }
   };
 
+  const fetchCoupons = async () => {
+    setLoadingCoupons(true);
+    try {
+      const res = await api.get('events/coupons/organizer/');
+      setCoupons(res.data);
+    } catch (err) {
+      console.error("Failed to fetch organizer coupons:", err);
+    } finally {
+      setLoadingCoupons(false);
+    }
+  };
+
   useEffect(() => {
     fetchDashboardData();
     fetchApprovedVenues();
+    fetchCoupons();
   }, []);
+
+  const handleCreateOffer = async (e) => {
+    e.preventDefault();
+    if (!offerCode.trim()) {
+      showFeedback("Coupon code is required.", "error");
+      return;
+    }
+    if (!offerDiscount || parseInt(offerDiscount) <= 0 || parseInt(offerDiscount) > 100) {
+      showFeedback("Discount percentage must be between 1 and 100.", "error");
+      return;
+    }
+    if (!offerExpiry) {
+      showFeedback("Expiry date is required.", "error");
+      return;
+    }
+
+    setOfferLoading(true);
+    try {
+      await api.post('events/coupons/organizer/', {
+        code: offerCode.trim().toUpperCase(),
+        discount_percent: parseInt(offerDiscount),
+        valid_until: offerExpiry,
+        event: offerEventId || null
+      });
+      showFeedback(`Offer code '${offerCode.trim().toUpperCase()}' created successfully!`, "success");
+      setOfferModalOpen(false);
+      setOfferCode('');
+      setOfferDiscount('');
+      setOfferExpiry('');
+      setOfferEventId('');
+      fetchCoupons();
+    } catch (err) {
+      showFeedback(err.response?.data?.error || "Failed to create offer.", "error");
+    } finally {
+      setOfferLoading(false);
+    }
+  };
+
+  const handleRemoveOffer = async (couponId, code) => {
+    if (!window.confirm(`Are you sure you want to remove the offer '${code}'?`)) return;
+    try {
+      await api.delete(`events/coupons/organizer/${couponId}/`);
+      showFeedback(`Offer '${code}' removed successfully.`, "success");
+      fetchCoupons();
+    } catch (err) {
+      showFeedback(err.response?.data?.error || "Failed to remove offer.", "error");
+    }
+  };
 
   const fetchDashboardData = async () => {
     setLoading(true);
@@ -586,6 +660,7 @@ const OrganizerDashboard = () => {
             {activeTab === 'venue_rentals' && 'Venue Rentals'}
             {activeTab === 'reviews' && 'Customer Reviews'}
             {activeTab === 'analytics' && 'Revenue Analytics'}
+            {activeTab === 'offers' && 'Event Promotional Offers'}
           </h1>
           <p className="text-dark-muted mt-1">
             {activeTab === 'events' && 'Host events, review ticketing metrics, and manage customer sales'}
@@ -594,15 +669,31 @@ const OrganizerDashboard = () => {
             {activeTab === 'venue_rentals' && 'View lawns, plots, and halls booked for your events'}
             {activeTab === 'reviews' && 'Review feedback and ratings received from event attendees'}
             {activeTab === 'analytics' && 'Detailed overview of organizer income and event performance reports'}
+            {activeTab === 'offers' && 'Set promotional discount coupon codes for your events and manage active offers'}
           </p>
         </div>
-        <button
-          onClick={handleOpenCreateModal}
-          className="flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium px-5 py-2.5 rounded-xl hover:from-blue-700 hover:to-indigo-700 shadow-md shadow-blue-950/20 transition-all transform hover:-translate-y-0.5"
-        >
-          <Plus className="w-5 h-5" />
-          <span>Create New Event</span>
-        </button>
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={() => {
+              setOfferCode('');
+              setOfferDiscount('');
+              setOfferExpiry('');
+              setOfferEventId('');
+              setOfferModalOpen(true);
+            }}
+            className="flex items-center space-x-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-medium px-4 py-2.5 rounded-xl hover:from-emerald-600 hover:to-teal-700 shadow-md shadow-emerald-950/20 transition-all transform hover:-translate-y-0.5 text-xs sm:text-sm"
+          >
+            <Tag className="w-4 h-4" />
+            <span>Create New Offer</span>
+          </button>
+          <button
+            onClick={handleOpenCreateModal}
+            className="flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium px-4 py-2.5 rounded-xl hover:from-blue-700 hover:to-indigo-700 shadow-md shadow-blue-950/20 transition-all transform hover:-translate-y-0.5 text-xs sm:text-sm"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Create New Event</span>
+          </button>
+        </div>
       </div>
 
 
@@ -741,6 +832,19 @@ const OrganizerDashboard = () => {
                       </div>
 
                       <div className="flex items-center justify-end space-x-3 mt-6 pt-4 border-t border-white/5">
+                        <button
+                          onClick={() => {
+                            setOfferEventId(event.id);
+                            setOfferCode('');
+                            setOfferDiscount('');
+                            setOfferExpiry('');
+                            setOfferModalOpen(true);
+                          }}
+                          className="flex items-center space-x-1 text-xs text-emerald-400 hover:text-emerald-300 font-semibold transition-colors"
+                        >
+                          <Tag className="w-3.5 h-3.5" />
+                          <span>Set Offer</span>
+                        </button>
                         <button
                           onClick={() => handleOpenEditModal(event)}
                           className="flex items-center space-x-1 text-xs text-brand-primary hover:text-emerald-400 font-semibold transition-colors"
@@ -1239,8 +1343,222 @@ const OrganizerDashboard = () => {
               )}
             </motion.div>
           )}
+
+          {activeTab === 'offers' && (
+            <motion.div
+              key="offers"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 15 }}
+              className="space-y-6"
+            >
+              <div className="glass-panel p-6 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border border-white/5">
+                <div>
+                  <h3 className="text-xl font-bold text-dark-text flex items-center space-x-2">
+                    <Tag className="w-5 h-5 text-emerald-400" />
+                    <span>Promotional Offers & Discounts</span>
+                  </h3>
+                  <p className="text-xs text-dark-muted mt-1">
+                    Set coupon codes for your events. Active offers appear automatically on checkout ticket selection for buyers.
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setOfferCode('');
+                    setOfferDiscount('');
+                    setOfferExpiry('');
+                    setOfferEventId('');
+                    setOfferModalOpen(true);
+                  }}
+                  className="flex items-center space-x-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold px-4 py-2.5 rounded-xl hover:from-emerald-600 hover:to-teal-600 shadow-md transition-all text-xs uppercase tracking-wider"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Create New Offer</span>
+                </button>
+              </div>
+
+              <div className="glass-panel rounded-2xl overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-white/5 bg-white/5 text-xs font-semibold text-dark-muted uppercase tracking-wider">
+                        <th className="px-6 py-4">Coupon Code</th>
+                        <th className="px-6 py-4">Discount</th>
+                        <th className="px-6 py-4">Target Event</th>
+                        <th className="px-6 py-4">Valid Until</th>
+                        <th className="px-6 py-4">Status</th>
+                        <th className="px-6 py-4 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="text-sm divide-y divide-white/5">
+                      {loadingCoupons ? (
+                        <tr>
+                          <td colSpan="6" className="text-center py-12 text-dark-muted">Loading active offers...</td>
+                        </tr>
+                      ) : coupons.length === 0 ? (
+                        <tr>
+                          <td colSpan="6" className="text-center py-12 text-dark-muted">
+                            No promotional offers set yet. Click "Create New Offer" to add discount coupons for your events!
+                          </td>
+                        </tr>
+                      ) : (
+                        coupons.map((coupon) => {
+                          const isExpired = new Date(coupon.valid_until) < new Date(new Date().setHours(0,0,0,0));
+                          return (
+                            <tr key={coupon.id} className="hover:bg-white/5 transition-colors">
+                              <td className="px-6 py-4 font-mono font-bold text-emerald-400">
+                                {coupon.code}
+                              </td>
+                              <td className="px-6 py-4 font-extrabold text-dark-text">
+                                {coupon.discount_percent}% OFF
+                              </td>
+                              <td className="px-6 py-4 text-dark-text font-medium">
+                                {coupon.event_title || <span className="text-emerald-400 font-semibold text-xs uppercase">All Events</span>}
+                              </td>
+                              <td className="px-6 py-4 text-dark-muted text-xs">
+                                {new Date(coupon.valid_until).toLocaleDateString()}
+                              </td>
+                              <td className="px-6 py-4">
+                                <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-extrabold ${
+                                  !coupon.active ? 'bg-red-500/10 text-red-400' :
+                                  isExpired ? 'bg-amber-500/10 text-amber-400' :
+                                  'bg-emerald-500/10 text-emerald-400'
+                                }`}>
+                                  {!coupon.active ? 'Inactive' : isExpired ? 'Expired' : 'Active Offer'}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 text-right">
+                                <button
+                                  onClick={() => handleRemoveOffer(coupon.id, coupon.code)}
+                                  className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg text-xs font-bold transition-all border border-red-500/10 inline-flex items-center space-x-1"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                  <span>Remove Offer</span>
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </motion.div>
+          )}
         </AnimatePresence>
       </div>
+
+      {/* Set Offer Modal */}
+      <AnimatePresence>
+        {offerModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center px-4 overflow-y-auto py-10">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setOfferModalOpen(false)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="glass-panel w-full max-w-md rounded-2xl shadow-glass z-10 overflow-hidden relative flex flex-col my-auto"
+            >
+              <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
+                <h3 className="text-lg font-bold text-dark-text flex items-center space-x-2">
+                  <Tag className="w-5 h-5 text-emerald-400" />
+                  <span>Set Event Promotional Offer</span>
+                </h3>
+                <button onClick={() => setOfferModalOpen(false)} className="text-dark-muted hover:text-dark-text">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleCreateOffer} className="p-6 space-y-4 text-left">
+                <div>
+                  <label className="block text-xs font-semibold text-dark-muted uppercase tracking-wider mb-2">
+                    Coupon Code
+                  </label>
+                  <input
+                    type="text"
+                    value={offerCode}
+                    onChange={(e) => setOfferCode(e.target.value.toUpperCase())}
+                    placeholder="e.g. SAVE20, DIWALI50"
+                    className="glass-input w-full px-4 py-2.5 rounded-xl text-sm font-mono uppercase"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-dark-muted uppercase tracking-wider mb-2">
+                    Discount Percentage (%)
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="100"
+                    value={offerDiscount}
+                    onChange={(e) => setOfferDiscount(e.target.value)}
+                    placeholder="e.g. 20 (for 20% OFF)"
+                    className="glass-input w-full px-4 py-2.5 rounded-xl text-sm"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-dark-muted uppercase tracking-wider mb-2">
+                    Valid Until Date
+                  </label>
+                  <input
+                    type="date"
+                    value={offerExpiry}
+                    onChange={(e) => setOfferExpiry(e.target.value)}
+                    className="glass-input w-full px-4 py-2.5 rounded-xl text-sm"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-dark-muted uppercase tracking-wider mb-2">
+                    Target Event
+                  </label>
+                  <select
+                    value={offerEventId}
+                    onChange={(e) => setOfferEventId(e.target.value)}
+                    className="glass-input w-full px-4 py-2.5 rounded-xl text-sm"
+                  >
+                    <option value="">All My Events (General Coupon)</option>
+                    {events.map((ev) => (
+                      <option key={ev.id} value={ev.id}>
+                        {ev.title} (₹{ev.price})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex items-center justify-end space-x-3 pt-4 border-t border-white/5">
+                  <button
+                    type="button"
+                    onClick={() => setOfferModalOpen(false)}
+                    className="px-4 py-2 text-xs font-semibold text-dark-muted hover:text-dark-text"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={offerLoading}
+                    className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold px-5 py-2.5 rounded-xl hover:from-emerald-600 hover:to-teal-600 shadow-md text-xs uppercase tracking-wider disabled:opacity-50"
+                  >
+                    {offerLoading ? 'Saving...' : 'Set Offer'}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* CRUD Event Modal */}
       <AnimatePresence>

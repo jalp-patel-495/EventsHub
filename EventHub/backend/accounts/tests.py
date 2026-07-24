@@ -133,3 +133,42 @@ class AuthenticationTests(APITestCase):
         response = self.client.post(self.login_url, login_data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn('access', response.data)
+
+    def test_change_password_flow(self):
+        user = User.objects.create_user(
+            email='change_pwd@example.com',
+            password='OldPassword123!',
+            first_name='Change',
+            last_name='Pwd',
+            role='customer'
+        )
+        user.is_active = True
+        user.save()
+
+        # Login to get access token
+        login_res = self.client.post(reverse('login'), {'email': 'change_pwd@example.com', 'password': 'OldPassword123!'})
+        access = login_res.data['access']
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {access}')
+
+        # 1. Try wrong current password
+        response = self.client.post(reverse('change_password'), {
+            'old_password': 'WrongPassword123!',
+            'new_password': 'NewPassword123!',
+            'new_password_confirm': 'NewPassword123!'
+        })
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        # 2. Change password with correct old password
+        response = self.client.post(reverse('change_password'), {
+            'old_password': 'OldPassword123!',
+            'new_password': 'NewPassword123!',
+            'new_password_confirm': 'NewPassword123!'
+        })
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # 3. Verify login works with new password
+        self.client.credentials() # clear credentials
+        login_data = {'email': 'change_pwd@example.com', 'password': 'NewPassword123!'}
+        response = self.client.post(reverse('login'), login_data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+

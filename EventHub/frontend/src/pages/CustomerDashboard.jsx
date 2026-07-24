@@ -1362,7 +1362,7 @@ const CustomerDashboard = () => {
                         type="text"
                         value={cardholderName}
                         onChange={(e) => setCardholderName(e.target.value)}
-                        placeholder="John Doe"
+                        placeholder="Enter Cardholder Name"
                         className="glass-input w-full px-4 py-2 rounded-xl text-sm bg-dark-bg border border-white/10"
                         required
                       />
@@ -1377,7 +1377,7 @@ const CustomerDashboard = () => {
                           setCardNumber(val.slice(0, 19));
                         }}
                         maxLength="19"
-                        placeholder="1234 5678 1234 5678"
+                        placeholder="Enter Card Number"
                         className="glass-input w-full px-4 py-2 rounded-xl text-sm bg-dark-bg border border-white/10"
                         required
                       />
@@ -1409,7 +1409,7 @@ const CustomerDashboard = () => {
                             const val = e.target.value.replace(/\D/g, '').slice(0, 3);
                             setCvv(val);
                           }}
-                          placeholder="123"
+                          placeholder="Enter CVV"
                           maxLength="3"
                           className="glass-input w-full px-4 py-2 rounded-xl text-sm bg-dark-bg border border-white/10"
                           required

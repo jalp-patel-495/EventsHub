@@ -150,9 +150,20 @@ const EventExplore = () => {
   const totalPages = Math.ceil(totalCount / itemsPerPage) || 1;
 
   return (
-    <div className="w-full max-w-none px-4 sm:px-6 lg:px-12 py-10">
+    <div className="w-full max-w-none px-4 sm:px-6 lg:px-12 py-10 bg-dark-bg min-h-screen">
+      {/* Hero Header */}
+      <div className="w-full mb-8 relative text-left">
+        <div className="absolute top-1/2 left-0 w-96 h-48 bg-gradient-to-tr from-brand-primary/10 to-indigo-500/10 blur-[80px] -z-10 rounded-full" />
+        <h1 className="text-4xl sm:text-5xl font-extrabold font-display text-dark-text mb-3">
+          Discover <span className="text-brand-primary">Upcoming Events</span>
+        </h1>
+        <p className="text-sm sm:text-base text-dark-muted max-w-2xl">
+          Explore concerts, tech summits, workshops, garba nights, and cultural festivals happening across Ahmedabad.
+        </p>
+      </div>
+
       {/* Search & Filter Bar */}
-      <form onSubmit={handleSearchSubmit} className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-10">
+      <form onSubmit={handleSearchSubmit} className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-6">
         {/* Keyword Search */}
         <div className="lg:col-span-2 relative">
           <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-dark-muted">

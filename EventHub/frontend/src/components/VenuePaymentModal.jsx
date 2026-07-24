@@ -217,13 +217,23 @@ const VenuePaymentModal = ({ venue, startDate, endDate, onClose, onPaymentSucces
     setCardError('');
 
     if (selectedMethod === 'upi') {
-      const upiRegex = /^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/;
-      if (!upiId.trim()) {
-        setCardError('Please enter your UPI ID.');
+      const cleanUpi = upiId.trim();
+      if (!cleanUpi) {
+        setCardError('Please enter your UPI VPA ID.');
         return;
       }
-      if (!upiRegex.test(upiId.trim())) {
-        setCardError('Invalid UPI ID format. Example: yourname@paytm');
+      if (!cleanUpi.includes('@')) {
+        setCardError("Invalid UPI ID. UPI ID must include '@' followed by your bank name (e.g. amit@okhdfcbank, user@paytm).");
+        return;
+      }
+      const parts = cleanUpi.split('@');
+      if (!parts[0] || !parts[1]) {
+        setCardError("Invalid UPI ID format. Please specify username and bank name after '@' (e.g. amit@okhdfcbank).");
+        return;
+      }
+      const upiRegex = /^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z0-9]{2,64}$/;
+      if (!upiRegex.test(cleanUpi)) {
+        setCardError("Invalid UPI ID format. Must be 'username@bankname' (e.g. amit@okhdfcbank, 9876543210@paytm, user@okaxis).");
         return;
       }
     }
@@ -831,10 +841,10 @@ const VenuePaymentModal = ({ venue, startDate, endDate, onClose, onPaymentSucces
                     value={upiId}
                     disabled={qrTimer === 0}
                     onChange={(e) => { setUpiId(e.target.value); setCardError(''); }}
-                    placeholder="yourname@paytm"
+                    placeholder="Enter UPI ID"
                     className="glass-input w-full px-3 py-2.5 text-xs disabled:opacity-50"
                   />
-                  <p className="text-[10px] text-dark-muted mt-1">Format: username@bankname (e.g. amit@ybl)</p>
+                  <p className="text-[10px] text-dark-muted mt-1">Format: username@bankname (e.g. user@okhdfcbank, user@paytm)</p>
                 </div>
 
                 {cardError && (

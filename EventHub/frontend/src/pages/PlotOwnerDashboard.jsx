@@ -1454,7 +1454,7 @@ const PlotOwnerDashboard = () => {
                                 type="number"
                                 value={serviceCateringMinPlates}
                                 onChange={(e) => setServiceCateringMinPlates(e.target.value)}
-                                placeholder="50"
+                                placeholder="Enter Minimum Plate Order"
                                 min="10"
                                 className="glass-input w-full max-w-xs px-4 py-2.5 rounded-xl text-sm"
                               />
@@ -1514,7 +1514,7 @@ const PlotOwnerDashboard = () => {
                                         updated[idx].price = e.target.value;
                                         setServiceCateringOptions(updated);
                                       }}
-                                      placeholder="350"
+                                      placeholder="Enter Price Per Plate"
                                       min="1"
                                       className="glass-input w-full px-3 py-1.5 rounded-lg text-xs"
                                       required
@@ -1643,7 +1643,7 @@ const PlotOwnerDashboard = () => {
                                         updated[idx].price = e.target.value;
                                         setServiceDjOptions(updated);
                                       }}
-                                      placeholder="8000"
+                                      placeholder="Enter Price Per Day"
                                       min="1"
                                       className="glass-input w-full px-3 py-1.5 rounded-lg text-xs"
                                       required
@@ -1772,7 +1772,7 @@ const PlotOwnerDashboard = () => {
                                         updated[idx].price = e.target.value;
                                         setServiceDecorOptions(updated);
                                       }}
-                                      placeholder="15000"
+                                      placeholder="Enter Price Per Setup"
                                       min="1"
                                       className="glass-input w-full px-3 py-1.5 rounded-lg text-xs"
                                       required
@@ -1959,7 +1959,7 @@ const PlotOwnerDashboard = () => {
                       type="number"
                       value={pricePerDay}
                       onChange={(e) => setPricePerDay(e.target.value)}
-                      placeholder="5000"
+                      placeholder="Enter Price Per Day"
                       min="1"
                       max="500000"
                       className="glass-input w-full px-4 py-2.5 rounded-xl text-sm"
@@ -2012,7 +2012,7 @@ const PlotOwnerDashboard = () => {
                             type="number"
                             value={cateringMinPlates}
                             onChange={(e) => setCateringMinPlates(e.target.value)}
-                            placeholder="50"
+                            placeholder="Enter Minimum Plate Order"
                             min="10"
                             className="glass-input w-full max-w-xs px-4 py-2.5 rounded-xl text-sm"
                           />
@@ -2065,7 +2065,7 @@ const PlotOwnerDashboard = () => {
                                   type="number"
                                   value={opt.price}
                                   onChange={(e) => handleCateringOptionChange(idx, 'price', e.target.value)}
-                                  placeholder="350"
+                                  placeholder="Enter Price Per Plate"
                                   min="1"
                                   className="glass-input w-full px-3 py-1.5 rounded-lg text-xs"
                                   required
@@ -2168,7 +2168,7 @@ const PlotOwnerDashboard = () => {
                                   type="number"
                                   value={opt.price}
                                   onChange={(e) => handleDjOptionChange(idx, 'price', e.target.value)}
-                                  placeholder="8000"
+                                  placeholder="Enter Price Per Day"
                                   min="1"
                                   className="glass-input w-full px-3 py-1.5 rounded-lg text-xs"
                                   required
@@ -2271,7 +2271,7 @@ const PlotOwnerDashboard = () => {
                                   type="number"
                                   value={opt.price}
                                   onChange={(e) => handleDecorOptionChange(idx, 'price', e.target.value)}
-                                  placeholder="15000"
+                                  placeholder="Enter Price Per Setup"
                                   min="1"
                                   className="glass-input w-full px-3 py-1.5 rounded-lg text-xs"
                                   required
