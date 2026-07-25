@@ -25,6 +25,7 @@ const Navbar = () => {
   }, []);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [pendingApprovalsCount, setPendingApprovalsCount] = useState(0);
   const [toast, setToast] = useState({ show: false, title: '', message: '' });
   const navigate = useNavigate();
   const location = useLocation();
@@ -44,6 +45,43 @@ const Navbar = () => {
   const toggleTheme = () => {
     setTheme(prev => prev === 'dark' ? 'light' : 'dark');
   };
+
+  // Load pending approvals/requests count for admin, plot owner, organizer
+  useEffect(() => {
+    if (!isAuthenticated || !user) {
+      setPendingApprovalsCount(0);
+      return;
+    }
+
+    const fetchPendingCount = async () => {
+      try {
+        if (user.role === 'admin') {
+          const res = await api.get('admin/summary/');
+          if (res.data && res.data.pending) {
+            const total = (res.data.pending.organizers || 0) +
+                          (res.data.pending.plot_owners || 0) +
+                          (res.data.pending.events || 0) +
+                          (res.data.pending.venues || 0);
+            setPendingApprovalsCount(total);
+          }
+        } else if (user.role === 'plot_owner') {
+          const res = await api.get('venues/bookings/');
+          const pending = (res.data || []).filter(b => b.status === 'pending').length;
+          setPendingApprovalsCount(pending);
+        } else if (user.role === 'organizer') {
+          const res = await api.get('events/refund-requests/');
+          const pending = (res.data || []).filter(r => r.status === 'pending').length;
+          setPendingApprovalsCount(pending);
+        }
+      } catch (err) {
+        // silent catch
+      }
+    };
+
+    fetchPendingCount();
+    const interval = setInterval(fetchPendingCount, 8000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated, user]);
 
   // Load notifications and connect WebSockets
   useEffect(() => {
@@ -251,17 +289,26 @@ const Navbar = () => {
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-6">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.name}
-                  to={link.path}
-                  className={`text-sm font-medium transition-colors hover:text-brand-primary ${
-                    isActive(link.path) ? 'text-brand-primary' : 'text-dark-muted'
-                  }`}
-                >
-                  {link.name}
-                </Link>
-              ))}
+              {navLinks.map((link) => {
+                const isApprovalsLink = link.name === 'Approvals' || link.name === 'Rental Requests' || link.name === 'Refund Requests' || link.name === 'Refund Ticket Requests';
+                const showBadge = isApprovalsLink && pendingApprovalsCount > 0;
+                return (
+                  <Link
+                    key={link.name}
+                    to={link.path}
+                    className={`text-sm font-medium transition-colors hover:text-brand-primary relative flex items-center space-x-1.5 ${
+                      isActive(link.path) ? 'text-brand-primary' : 'text-dark-muted'
+                    }`}
+                  >
+                    <span>{link.name}</span>
+                    {showBadge && (
+                      <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full border border-dark-bg animate-pulse shadow-lg shadow-red-500/30">
+                        {pendingApprovalsCount}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
 
               {/* Role Specific Links */}
               {roleLinks.map((link) => (
@@ -510,18 +557,27 @@ const Navbar = () => {
                   </button>
                 </div>
 
-                {navLinks.map((link) => (
-                  <Link
-                    key={link.name}
-                    to={link.path}
-                    className={`block px-3 py-2 rounded-md text-base font-medium ${
-                      isActive(link.path) ? 'bg-brand-primary/10 text-brand-primary' : 'text-dark-muted hover:bg-white/5 hover:text-dark-text'
-                    }`}
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    {link.name}
-                  </Link>
-                ))}
+                {navLinks.map((link) => {
+                  const isApprovalsLink = link.name === 'Approvals' || link.name === 'Rental Requests' || link.name === 'Refund Requests' || link.name === 'Refund Ticket Requests';
+                  const showBadge = isApprovalsLink && pendingApprovalsCount > 0;
+                  return (
+                    <Link
+                      key={link.name}
+                      to={link.path}
+                      className={`flex items-center justify-between px-3 py-2 rounded-md text-base font-medium ${
+                        isActive(link.path) ? 'bg-brand-primary/10 text-brand-primary' : 'text-dark-muted hover:bg-white/5 hover:text-dark-text'
+                      }`}
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <span>{link.name}</span>
+                      {showBadge && (
+                        <span className="bg-red-500 text-white text-xs font-black px-2 py-0.5 rounded-full border border-dark-bg animate-pulse">
+                          {pendingApprovalsCount} Pending
+                        </span>
+                      )}
+                    </Link>
+                  );
+                })}
                 
                 {roleLinks.map((link) => (
                   <Link

@@ -191,7 +191,7 @@ const TicketScanner = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div className="w-full px-4 sm:px-6 lg:px-12 py-8">
       {/* Hide html5-qrcode default UI components (buttons, icons, boxes, texts, borders) */}
       <style dangerouslySetInnerHTML={{__html: `
         #camera-reader img,
@@ -233,10 +233,10 @@ const TicketScanner = () => {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
           {/* Main Scanner Section */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-7 space-y-6">
             {/* Event Selector & Metrics */}
             <div className="glass-panel rounded-3xl p-6 border-white/5 space-y-4">
               <div>
@@ -436,7 +436,7 @@ const TicketScanner = () => {
           </div>
 
           {/* Attendee Checklist Side Panel */}
-          <div className="space-y-6">
+          <div className="lg:col-span-5 space-y-6">
             <div className="glass-panel rounded-3xl p-6 border-white/5 h-[645px] flex flex-col">
               <h3 className="text-lg font-bold text-dark-text mb-2">Confirmed Tickets Checklist</h3>
               <p className="text-xs text-dark-muted mb-4">Click a ticket to simulate scan/entry at the gate</p>

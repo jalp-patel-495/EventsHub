@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api, { WS_URL } from '../api/api';
 import { useAuth } from '../context/AuthContext';
 import BookingModal from '../components/BookingModal';
+import EventDetailModal from '../components/EventDetailModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CloudSun, Navigation, Search, MapPin, Tag, RefreshCw, Calendar, Clock, Send, MessageSquare, User as UserIcon, Sparkles, ExternalLink, CheckCircle2, Ticket, X, PartyPopper, Lock } from 'lucide-react';
 
@@ -15,6 +16,7 @@ const LiveEvents = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('all'); // all, free, paid
   const [bookingEvent, setBookingEvent] = useState(null);
+  const [selectedDetailEvent, setSelectedDetailEvent] = useState(null);
   const [freeTicketEvent, setFreeTicketEvent] = useState(null);
   const [freeTicketLoading, setFreeTicketLoading] = useState(false);
   const [freeTicketConfirmed, setFreeTicketConfirmed] = useState(false);
@@ -219,18 +221,25 @@ const LiveEvents = () => {
     }
   };
 
-  const filteredEvents = events.filter(event => {
-    const matchesSearch = event.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          event.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          event.description.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    if (filterType === 'free') {
-      return matchesSearch && event.price === 0;
-    } else if (filterType === 'paid') {
-      return matchesSearch && event.price > 0;
-    }
-    return matchesSearch;
-  });
+  const filteredEvents = (() => {
+    const seen = new Set();
+    return events.filter(event => {
+      const normTitle = (event.title || '').trim().toLowerCase();
+      if (seen.has(normTitle)) return false;
+      seen.add(normTitle);
+
+      const matchesSearch = event.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                            event.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            event.description.toLowerCase().includes(searchQuery.toLowerCase());
+
+      if (filterType === 'free') {
+        return matchesSearch && event.price === 0;
+      } else if (filterType === 'paid') {
+        return matchesSearch && event.price > 0;
+      }
+      return matchesSearch;
+    });
+  })();
 
   return (
     <div className="w-full max-w-none px-4 sm:px-6 lg:px-12 py-10">
@@ -369,17 +378,23 @@ const LiveEvents = () => {
                   className="glass-card rounded-2xl overflow-hidden flex flex-col hover:border-emerald-500/30 transition-all group shadow-md"
                 >
                   {/* Image banner */}
-                  <div className="relative h-44 overflow-hidden bg-white/5">
+                  <div className="relative h-44 overflow-hidden bg-white/5 cursor-pointer" onClick={() => setSelectedDetailEvent(event)}>
                     {event.image ? (
                       <img
                         src={event.image}
                         alt={event.title}
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800&auto=format&fit=crop&q=80";
+                        }}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-dark-muted">
-                        <CloudSun className="w-12 h-12" />
-                      </div>
+                      <img
+                        src="https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800&auto=format&fit=crop&q=80"
+                        alt={event.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
                     )}
                     {/* Source Badge */}
                     <span className={`absolute top-4 left-4 backdrop-blur-md text-[9px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider border ${
@@ -398,7 +413,7 @@ const LiveEvents = () => {
                   </div>
 
                   {/* Body details */}
-                  <div className="p-5 flex flex-col flex-grow">
+                  <div className="p-5 flex flex-col flex-grow cursor-pointer" onClick={() => setSelectedDetailEvent(event)}>
                     <h3 className="font-bold text-base text-dark-text group-hover:text-brand-primary transition-colors line-clamp-1">
                       {event.title}
                     </h3>
@@ -892,6 +907,22 @@ const LiveEvents = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Event Overview Detail Modal */}
+      {selectedDetailEvent && (
+        <EventDetailModal
+          event={selectedDetailEvent}
+          showHostBox={false}
+          onClose={() => setSelectedDetailEvent(null)}
+          onBookNow={(evt) => {
+            if (!isAuthenticated) {
+              setShowLoginPrompt(true);
+            } else {
+              setBookingEvent(evt);
+            }
+          }}
+        />
+      )}
     </div>
   );
 };

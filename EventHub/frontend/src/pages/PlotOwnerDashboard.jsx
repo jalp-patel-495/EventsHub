@@ -242,6 +242,7 @@ const PlotOwnerDashboard = () => {
 
   // Form states
   const [name, setName] = useState('');
+  const [category, setCategory] = useState('Party Plot / Lawn');
   const [description, setDescription] = useState('');
   const [location, setLocation] = useState('');
   const [pricePerDay, setPricePerDay] = useState('');
@@ -298,45 +299,55 @@ const PlotOwnerDashboard = () => {
   const autocompleteRef = useRef(null);
 
   useEffect(() => {
+    // Suppress Google Maps API auth failure alert popup modal
+    window.gm_authFailure = () => {
+      console.warn("Google Maps API key missing or invalid. Falling back to local address suggestions.");
+    };
+
     const initAutocomplete = () => {
       if (!locationInputRef.current || !window.google || !window.google.maps || !window.google.maps.places) return;
-      
-      autocompleteRef.current = new window.google.maps.places.Autocomplete(locationInputRef.current, {
-        types: ['geocode', 'establishment'],
-        componentRestrictions: { country: 'in' }
-      });
+      try {
+        autocompleteRef.current = new window.google.maps.places.Autocomplete(locationInputRef.current, {
+          types: ['geocode', 'establishment'],
+          componentRestrictions: { country: 'in' }
+        });
 
-      autocompleteRef.current.addListener('place_changed', () => {
-        const place = autocompleteRef.current.getPlace();
-        if (place && place.formatted_address) {
-          setLocation(place.formatted_address);
-        } else if (place && place.name) {
-          setLocation(place.name);
-        }
-      });
+        autocompleteRef.current.addListener('place_changed', () => {
+          const place = autocompleteRef.current.getPlace();
+          if (place && place.formatted_address) {
+            setLocation(place.formatted_address);
+          } else if (place && place.name) {
+            setLocation(place.name);
+          }
+        });
+      } catch (err) {
+        console.warn("Google Autocomplete initialization error:", err);
+      }
     };
 
     if (modalOpen) {
-      if (window.google && window.google.maps && window.google.maps.places) {
-        initAutocomplete();
-      } else {
-        let script = document.querySelector('script[src*="maps.googleapis.com"]');
-        if (!script) {
-          script = document.createElement('script');
-          const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
-          script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
-          script.async = true;
-          script.defer = true;
-          document.body.appendChild(script);
+      const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
+      if (apiKey && apiKey.length > 10 && apiKey !== "YOUR_API_KEY") {
+        if (window.google && window.google.maps && window.google.maps.places) {
+          initAutocomplete();
+        } else {
+          let script = document.querySelector('script[src*="maps.googleapis.com"]');
+          if (!script) {
+            script = document.createElement('script');
+            script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
+            script.async = true;
+            script.defer = true;
+            document.body.appendChild(script);
+          }
+          
+          const handleScriptLoad = () => {
+            setTimeout(initAutocomplete, 500);
+          };
+          script.addEventListener('load', handleScriptLoad);
+          return () => {
+            script.removeEventListener('load', handleScriptLoad);
+          };
         }
-        
-        const handleScriptLoad = () => {
-          setTimeout(initAutocomplete, 500);
-        };
-        script.addEventListener('load', handleScriptLoad);
-        return () => {
-          script.removeEventListener('load', handleScriptLoad);
-        };
       }
     }
   }, [modalOpen]);
@@ -363,6 +374,7 @@ const PlotOwnerDashboard = () => {
 
   const resetForm = () => {
     setName('');
+    setCategory('Party Plot / Lawn');
     setDescription('');
     setLocation('');
     setPricePerDay('');
@@ -403,6 +415,7 @@ const PlotOwnerDashboard = () => {
   const handleOpenEditModal = (venue) => {
     setEditingVenue(venue);
     setName(venue.name);
+    setCategory(venue.category || 'Party Plot / Lawn');
     setDescription(venue.description);
     setLocation(venue.location);
     setPricePerDay(venue.price_per_day);
@@ -625,6 +638,7 @@ const PlotOwnerDashboard = () => {
 
     const formData = new FormData();
     formData.append('name', name.trim());
+    formData.append('category', category);
     formData.append('description', description.trim());
     formData.append('location', location.trim());
     formData.append('price_per_day', pricePerDay);
@@ -661,10 +675,13 @@ const PlotOwnerDashboard = () => {
       resetForm();
       fetchDashboardData();
     } catch (err) {
+      console.error("Venue form submission error:", err);
       const errData = err.response?.data;
       if (errData && typeof errData === 'object') {
-        const messages = Object.entries(errData).map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : v}`).join(' | ');
+        const messages = Object.entries(errData).map(([k, v]) => `${k.toUpperCase()}: ${Array.isArray(v) ? v.join(', ') : v}`).join(' | ');
         setFormError(messages);
+      } else if (typeof errData === 'string' && errData.length < 200) {
+        setFormError(errData);
       } else {
         setFormError("Operation failed. Please verify your input details and try again.");
       }
@@ -801,6 +818,41 @@ const PlotOwnerDashboard = () => {
           <span>Add New Venue</span>
         </button>
 
+      </div>
+
+      {/* Sub-Dashboard Nav Pills Bar with Live Approval Request Badges */}
+      <div className="flex flex-wrap items-center gap-2 mb-8 p-1.5 rounded-2xl bg-white/[0.03] border border-white/5 backdrop-blur-md">
+        {[
+          { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
+          { id: 'venues', label: 'My Venues', icon: Building, badge: venues.filter(v => !v.is_approved).length > 0 ? `${venues.filter(v => !v.is_approved).length} Pending Admin` : null, badgeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/30' },
+          { id: 'requests', label: 'Rental Requests', icon: Calendar, badge: bookings.filter(b => b.status === 'pending').length > 0 ? bookings.filter(b => b.status === 'pending').length : null, badgeColor: 'bg-red-500 text-white animate-pulse shadow-md shadow-red-500/30' },
+          { id: 'refunds', label: 'Refund Requests', icon: ShieldAlert, badge: bookings.filter(b => b.cancel_requested && b.status === 'cancelled').length > 0 ? bookings.filter(b => b.cancel_requested && b.status === 'cancelled').length : null, badgeColor: 'bg-rose-500 text-white animate-pulse' },
+          { id: 'services', label: 'Manage Services', icon: Sparkles },
+          { id: 'reviews', label: 'Customer Reviews', icon: Star },
+          { id: 'calendar', label: 'Calendar', icon: Calendar },
+        ].map((tab) => {
+          const Icon = tab.icon;
+          const isSelected = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all border cursor-pointer ${
+                isSelected
+                  ? 'bg-brand-primary text-white border-transparent shadow-lg shadow-blue-500/20'
+                  : 'bg-white/5 hover:bg-white/10 text-dark-muted hover:text-dark-text border-white/5'
+              }`}
+            >
+              <Icon className="w-4 h-4 text-brand-primary" />
+              <span>{tab.label}</span>
+              {tab.badge && (
+                <span className={`px-2 py-0.5 text-[10px] font-black rounded-full border shadow-sm ${tab.badgeColor || 'bg-red-500 text-white'}`}>
+                  {tab.badge}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
       {/* Panels */}
@@ -1894,6 +1946,29 @@ const PlotOwnerDashboard = () => {
                     />
                   </div>
 
+                  {/* Venue / Plot Category */}
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-semibold text-dark-muted uppercase tracking-wider mb-2 flex items-center justify-between">
+                      <span>Venue / Plot Category (Type) *</span>
+                      <span className="text-[10px] text-brand-primary font-bold">Select Plot Type</span>
+                    </label>
+                    <select
+                      value={category}
+                      onChange={(e) => setCategory(e.target.value)}
+                      className="glass-input w-full px-4 py-2.5 rounded-xl text-sm bg-dark-bg text-dark-text border border-white/10 focus:border-brand-primary"
+                      required
+                    >
+                      <option value="Party Plot / Lawn">🌳 Party Plot / Open Lawn</option>
+                      <option value="Banquet Hall">🏛️ Banquet Hall</option>
+                      <option value="Resort & Farmhouse">🏰 Resort & Farmhouse</option>
+                      <option value="Rooftop Venue">🏙️ Rooftop Venue</option>
+                      <option value="Auditorium & Convention Center">🏢 Auditorium & Convention Center</option>
+                      <option value="Lakefront & Outdoor Ground">🏖️ Lakefront & Outdoor Ground</option>
+                      <option value="Exhibition Ground">🎪 Exhibition Ground</option>
+                      <option value="Hotel Ballroom">🏨 Hotel Ballroom</option>
+                    </select>
+                  </div>
+
                   {/* Description */}
                   <div className="sm:col-span-2">
                     <div className="flex justify-between items-center mb-2">
@@ -1927,26 +2002,46 @@ const PlotOwnerDashboard = () => {
                     <input
                       ref={locationInputRef}
                       type="text"
+                      list="ahmedabad-locations"
                       value={location}
                       onChange={(e) => setLocation(e.target.value)}
                       placeholder="e.g. Science City, Ahmedabad"
                       className="glass-input w-full px-4 py-2.5 rounded-xl text-sm"
                       required
                     />
+                    <datalist id="ahmedabad-locations">
+                      <option value="Science City, S.G. Highway, Ahmedabad, Gujarat" />
+                      <option value="Sindhu Bhavan Road, Bodakdev, Ahmedabad, Gujarat" />
+                      <option value="Prahlad Nagar, S.G. Highway, Ahmedabad, Gujarat" />
+                      <option value="S.G. Highway, Gota, Ahmedabad, Gujarat" />
+                      <option value="Gurukul Road, Memnagar, Ahmedabad, Gujarat" />
+                      <option value="Drive In Road, Thaltej, Ahmedabad, Gujarat" />
+                      <option value="Agrasen Road, Shela, Ahmedabad, Gujarat 380058" />
+                      <option value="Near Club O7, Shela, Ahmedabad, Gujarat" />
+                      <option value="Bhadaj, Science City, Ahmedabad, Gujarat" />
+                      <option value="Vastrapur Lake, Vastrapur, Ahmedabad, Gujarat" />
+                      <option value="C.G. Road, Navrangpura, Ahmedabad, Gujarat" />
+                      <option value="Bopal - Ghuma Road, South Bopal, Ahmedabad, Gujarat" />
+                      <option value="Sabarmati Riverfront, Ashram Road, Ahmedabad, Gujarat" />
+                      <option value="IIM Road, Panjrapole, Ahmedabad, Gujarat" />
+                      <option value="Satellite, Near Shyamal Cross Road, Ahmedabad, Gujarat" />
+                    </datalist>
                   </div>
 
                   {location && location.trim().length > 5 && (
                     <div className="sm:col-span-2 mt-1">
                       <label className="block text-xs font-semibold text-dark-muted uppercase tracking-wider mb-2">Map Location Preview</label>
-                      <div className="w-full h-44 rounded-xl overflow-hidden border border-white/5 shadow-md">
+                      <div className="w-full h-44 rounded-xl overflow-hidden border border-white/5 shadow-md relative">
                         <iframe
                           title="Venue Map Preview"
                           width="100%"
                           height="100%"
                           frameBorder="0"
+                          scrolling="no"
                           style={{ border: 0 }}
-                          src={`https://maps.google.com/maps?q=${encodeURIComponent(location)}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
+                          src={`https://maps.google.com/maps?q=${encodeURIComponent(location)}&t=&z=15&ie=UTF8&output=embed`}
                           allowFullScreen
+                          className="pointer-events-none"
                         ></iframe>
                       </div>
                     </div>

@@ -27,7 +27,7 @@ class VenueSerializer(serializers.ModelSerializer):
     class Meta:
         model = Venue
         fields = (
-            'id', 'name', 'description', 'location', 'price_per_day',
+            'id', 'name', 'category', 'description', 'location', 'price_per_day',
             'facilities', 'image', 'owner', 'owner_details', 'is_approved', 'created_at',
             # Catering
             'has_catering', 'catering_price_per_plate', 'catering_description',

@@ -6,6 +6,7 @@ User = get_user_model()
 
 class Venue(models.Model):
     name = models.CharField(max_length=200)
+    category = models.CharField(max_length=100, default='Party Plot / Lawn', blank=True)
     description = models.TextField()
     location = models.CharField(max_length=255)
     price_per_day = models.DecimalField(

@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import api, { BACKEND_URL } from '../api/api';
 import { motion } from 'framer-motion';
 import { Building, Star, MapPin, Search, ArrowRight, Filter, RefreshCw, CheckCircle2 } from 'lucide-react';
+import VenueDetailModal from '../components/VenueDetailModal';
 
 const VenueExplore = () => {
   const { isAuthenticated } = useAuth();
@@ -11,6 +12,7 @@ const VenueExplore = () => {
 
   const [venues, setVenues] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedVenue, setSelectedVenue] = useState(null);
   const [search, setSearch] = useState('');
   const [facility, setFacility] = useState('');
   const [minPrice, setMinPrice] = useState('');
@@ -81,38 +83,50 @@ const VenueExplore = () => {
       <div className="w-full mb-8 relative text-left">
         <div className="absolute top-1/2 left-0 w-96 h-48 bg-gradient-to-tr from-brand-primary/10 to-indigo-500/10 blur-[80px] -z-10 rounded-full" />
         <h1 className="text-4xl sm:text-5xl font-extrabold font-display text-dark-text mb-3">
-          Premium Event <span className="text-brand-primary">Venue Plots</span>
+          Discover <span className="text-brand-primary">Upcoming Venue Plots</span>
         </h1>
         <p className="text-sm sm:text-base text-dark-muted max-w-2xl">
-          Explore and book premium event spaces, party plots, and banquet halls across Ahmedabad.
+          Explore banquet halls, party lawns, open grounds, and luxury resorts for your events across Ahmedabad.
         </p>
       </div>
 
       <div className="w-full space-y-8">
-        {/* Full-Width Search & Filter Bar (Matching Event Explore Style) */}
+        {/* Full-Width Search & Filter Bar (Exact Match with Image 1) */}
         <form onSubmit={handleSearchSubmit} className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-6">
           {/* Keyword Search Input */}
           <div className="lg:col-span-2 relative">
-            <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-dark-muted">
+            <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-dark-muted">
               <Search className="w-5 h-5" />
             </span>
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search venue names, party plots, locations..."
+              placeholder="Search venues by title, description, location..."
               className="glass-input w-full pl-10 pr-4 py-3 rounded-xl text-sm"
             />
           </div>
           
-          {/* Facility / Category Select */}
+          {/* Category Select */}
           <div>
             <select
               value={facility}
               onChange={(e) => setFacility(e.target.value)}
-              className="glass-input w-full px-4 py-3 rounded-xl text-sm cursor-pointer"
+              className="glass-input w-full px-4 py-3 rounded-xl text-sm cursor-pointer bg-dark-bg text-dark-text border border-white/10"
             >
-              <option value="">All Venues & Facilities</option>
+              <option value="">All Categories</option>
+              <option value="party_lawn">Party Plot / Lawn</option>
+              <option value="banquet">Banquet Hall</option>
+              <option value="resort">Resort & Farmhouse</option>
+              <option value="open_ground">Open Ground / Stadium</option>
+              <option value="villa">Luxury Villa / Poolside</option>
+              <option value="conference">Conference & Convention Hall</option>
+              <option value="rooftop">Rooftop Terrace & Garden</option>
+              <option value="auditorium">Auditorium & Theatre</option>
+              <option value="beach">Beachside Lawn & Club</option>
+              <option value="heritage">Heritage Haveli & Palace</option>
+              <option value="community">Community & Marriage Hall</option>
+              <option value="exhibition">Exhibition & Trade Center</option>
               <option value="catering">In-house Catering Support</option>
               <option value="dj">DJ & Sound System Setup</option>
               <option value="decor">Stage Decoration Services</option>
@@ -136,7 +150,7 @@ const VenueExplore = () => {
             </button>
             <button
               type="submit"
-              className="flex-grow bg-brand-primary hover:bg-emerald-600 text-white font-medium py-3 px-6 rounded-xl transition-colors shadow-md shadow-emerald-950/20 text-sm font-bold uppercase tracking-wider"
+              className="flex-grow bg-brand-primary hover:bg-emerald-600 text-white font-medium py-3 px-6 rounded-xl transition-colors shadow-md shadow-emerald-950/20"
             >
               Search Venues
             </button>
@@ -257,14 +271,15 @@ const VenueExplore = () => {
                 key={venue.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-dark-card border border-dark-border rounded-3xl overflow-hidden shadow-lg hover:shadow-xl hover:border-brand-primary/20 transition-all flex flex-col h-full"
+                className="bg-dark-card border border-dark-border rounded-3xl overflow-hidden shadow-lg hover:shadow-xl hover:border-brand-primary/20 transition-all flex flex-col h-full cursor-pointer group"
+                onClick={() => setSelectedVenue(venue)}
               >
                 {/* Image */}
                 {venue.image ? (
                   <img
                     src={venue.image.startsWith('http') ? venue.image : `${BACKEND_URL}${venue.image}`}
                     alt={venue.name}
-                    className="w-full h-48 object-cover"
+                    className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                 ) : (
                   <div className="w-full h-48 bg-white/5 flex items-center justify-center text-dark-muted border-b border-dark-border">
@@ -275,8 +290,13 @@ const VenueExplore = () => {
                 {/* Details */}
                 <div className="p-6 flex-grow flex flex-col justify-between space-y-4">
                   <div className="space-y-2">
-                    <div className="flex justify-between items-start gap-2">
-                      <h3 className="text-lg font-bold text-dark-text leading-snug">{venue.name}</h3>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-0.5 rounded-md">
+                        {venue.category || 'Party Plot / Lawn'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-start gap-2 pt-1">
+                      <h3 className="text-lg font-bold text-dark-text leading-snug group-hover:text-brand-primary transition-colors">{venue.name}</h3>
                       <span className="text-sm font-black text-brand-primary bg-brand-primary/10 px-2.5 py-1 rounded-xl flex-shrink-0">
                         ₹{parseFloat(venue.price_per_day).toLocaleString('en-IN')}/day
                       </span>
@@ -297,7 +317,10 @@ const VenueExplore = () => {
                     </div>
 
                     <button
-                      onClick={() => handleBookClick(venue)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleBookClick(venue);
+                      }}
                       className="w-full bg-brand-primary hover:bg-emerald-600 text-white py-3 rounded-2xl font-bold text-xs uppercase tracking-wider transition-colors shadow-md flex items-center justify-center space-x-2"
                     >
                       <span>Book Venue Plot</span>
@@ -310,6 +333,15 @@ const VenueExplore = () => {
           </div>
         )}
       </div>
+
+      {/* Venue Overview Details Modal */}
+      {selectedVenue && (
+        <VenueDetailModal
+          venue={selectedVenue}
+          onClose={() => setSelectedVenue(null)}
+          onBookNow={handleBookClick}
+        />
+      )}
     </div>
   );
 };

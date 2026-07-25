@@ -8,7 +8,9 @@ import {
   RefreshCw, AlertCircle, Eye, CornerDownRight, Landmark, MessageSquare, Trash, Building, Ticket
 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { WS_URL } from '../api/api';
+import { WS_URL, BACKEND_URL } from '../api/api';
+import EventDetailModal from '../components/EventDetailModal';
+import VenueDetailModal from '../components/VenueDetailModal';
 
 const AdminDashboard = () => {
   const { user } = useAuth();
@@ -91,6 +93,11 @@ const AdminDashboard = () => {
   // Refund Modal State
   const [refundModal, setRefundModal] = useState({ show: false, booking: null });
   const [liveSales, setLiveSales] = useState([]);
+
+  // Inspection Detail Modal State for Events and Venues
+  const [detailModalItem, setDetailModalItem] = useState(null);
+  const [previewEvent, setPreviewEvent] = useState(null);
+  const [previewVenue, setPreviewVenue] = useState(null);
 
   // Connect to Live Ticket Purchases WebSocket
   useEffect(() => {
@@ -661,6 +668,7 @@ const AdminDashboard = () => {
               </button>
             </div>
             {[
+              { id: 'approvals', label: 'Pending Approvals', icon: ShieldAlert, countKey: 'approvals' },
               { id: 'users', label: 'User Control', icon: Users },
               { id: 'finance', label: 'Transactions & Refunds', icon: IndianRupee },
               { id: 'complaints', label: 'Complaints Panel', icon: MessageSquare },
@@ -1142,8 +1150,11 @@ const AdminDashboard = () => {
                         <div className="space-y-4">
                           {pendingEvents.map(event => (
                             <div key={event.id} className="border border-white/5 bg-white/[0.01] hover:bg-white/[0.02] rounded-xl p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 transition-colors">
-                              <div>
-                                <h3 className="font-extrabold text-sm text-dark-text">{event.title}</h3>
+                              <div onClick={() => setDetailModalItem({ type: 'event', item: event })} className="cursor-pointer group">
+                                <h3 className="font-extrabold text-sm text-dark-text group-hover:text-red-400 group-hover:underline transition-colors flex items-center gap-1.5">
+                                  <span>{event.title}</span>
+                                  <span className="text-[10px] bg-red-500/20 text-red-400 border border-red-500/30 px-1.5 py-0.2 rounded">View Details</span>
+                                </h3>
                                 <p className="text-xs text-dark-muted mt-1">Host: {event.organizer_details?.email}</p>
                                 <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-[10px] text-dark-muted">
                                   <span>Price: ₹{event.price}</span>
@@ -1186,8 +1197,11 @@ const AdminDashboard = () => {
                         <div className="space-y-4">
                           {pendingVenues.map(venue => (
                             <div key={venue.id} className="border border-white/5 bg-white/[0.01] hover:bg-white/[0.02] rounded-xl p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 transition-colors">
-                              <div>
-                                <h3 className="font-extrabold text-sm text-dark-text">{venue.name}</h3>
+                              <div onClick={() => setDetailModalItem({ type: 'venue', item: venue })} className="cursor-pointer group">
+                                <h3 className="font-extrabold text-sm text-dark-text group-hover:text-red-400 group-hover:underline transition-colors flex items-center gap-1.5">
+                                  <span>{venue.name}</span>
+                                  <span className="text-[10px] bg-red-500/20 text-red-400 border border-red-500/30 px-1.5 py-0.2 rounded">View Details</span>
+                                </h3>
                                 <p className="text-xs text-dark-muted mt-1">Owner: {venue.owner_details?.email}</p>
                                 <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-[10px] text-dark-muted">
                                   <span>Rent: ₹{venue.price_per_day}/day</span>
@@ -1550,18 +1564,22 @@ const AdminDashboard = () => {
                             </thead>
                             <tbody>
                               {paginatedEvents.map(event => (
-                                <tr key={event.id} className="border-b border-white/5 hover:bg-white/[0.01]">
+                                <tr 
+                                  key={event.id} 
+                                  onClick={() => setPreviewEvent(event)}
+                                  className="border-b border-white/5 hover:bg-white/5 cursor-pointer transition-colors group"
+                                >
                                   <td className="py-3 font-bold text-dark-text">
                                     <div className="flex items-center space-x-3">
                                       <img
                                         src={event.image || 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&w=80&q=80'}
                                         alt={event.title}
-                                        className="w-10 h-10 object-cover rounded-lg border border-white/10 flex-shrink-0"
+                                        className="w-10 h-10 object-cover rounded-lg border border-white/10 flex-shrink-0 group-hover:scale-110 transition-transform shadow-md"
                                         onError={(e) => {
                                           e.target.src = 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&w=80&q=80';
                                         }}
                                       />
-                                      <span>{event.title}</span>
+                                      <span className="text-white group-hover:text-red-400 group-hover:underline font-extrabold transition-colors">{event.title}</span>
                                     </div>
                                   </td>
                                   <td className="py-3 text-dark-muted">{event.organizer_details?.email || event.organizer}</td>
@@ -1575,7 +1593,7 @@ const AdminDashboard = () => {
                                       <span className="px-2 py-0.5 rounded text-[10px] uppercase font-bold bg-yellow-500/10 text-yellow-400 border border-yellow-500/20">Pending</span>
                                     )}
                                   </td>
-                                  <td className="py-3 text-right space-x-2">
+                                  <td className="py-3 text-right space-x-2" onClick={(e) => e.stopPropagation()}>
                                     {!event.is_approved && (
                                       <button
                                         onClick={() => handleEventApproval(event.id, 'approve')}
@@ -1645,18 +1663,22 @@ const AdminDashboard = () => {
                             </thead>
                             <tbody>
                               {paginatedVenues.map(venue => (
-                                <tr key={venue.id} className="border-b border-white/5 hover:bg-white/[0.01]">
+                                <tr 
+                                  key={venue.id} 
+                                  onClick={() => setPreviewVenue(venue)}
+                                  className="border-b border-white/5 hover:bg-white/5 cursor-pointer transition-colors group"
+                                >
                                   <td className="py-3 font-bold text-dark-text">
                                     <div className="flex items-center space-x-3">
                                       <img
                                         src={venue.image || 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&w=80&q=80'}
                                         alt={venue.name}
-                                        className="w-10 h-10 object-cover rounded-lg border border-white/10 flex-shrink-0"
+                                        className="w-10 h-10 object-cover rounded-lg border border-white/10 flex-shrink-0 group-hover:scale-110 transition-transform shadow-md"
                                         onError={(e) => {
                                           e.target.src = 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&w=80&q=80';
                                         }}
                                       />
-                                      <span>{venue.name}</span>
+                                      <span className="text-white group-hover:text-red-400 group-hover:underline font-extrabold transition-colors">{venue.name}</span>
                                     </div>
                                   </td>
                                   <td className="py-3 text-dark-muted">{venue.owner_details?.email || venue.owner}</td>
@@ -1670,7 +1692,7 @@ const AdminDashboard = () => {
                                       <span className="px-2 py-0.5 rounded text-[10px] uppercase font-bold bg-yellow-500/10 text-yellow-400 border border-yellow-500/20">Pending</span>
                                     )}
                                   </td>
-                                  <td className="py-3 text-right space-x-2">
+                                  <td className="py-3 text-right space-x-2" onClick={(e) => e.stopPropagation()}>
                                     {!venue.is_approved && (
                                       <button
                                         onClick={() => handleVenueApproval(venue.id, 'approve')}
@@ -1998,6 +2020,215 @@ const AdminDashboard = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Admin Inspection Detail Modal */}
+      <AnimatePresence>
+        {detailModalItem && (
+          <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md overflow-y-auto">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-3xl bg-slate-950 border border-white/10 rounded-3xl shadow-2xl overflow-hidden my-8"
+            >
+              {/* Header Close Button */}
+              <button
+                onClick={() => setDetailModalItem(null)}
+                className="absolute top-4 right-4 z-20 p-2.5 rounded-full bg-black/70 hover:bg-black text-white backdrop-blur-md transition-all shadow-lg border border-white/10"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              {/* Banner Image */}
+              <div className="relative h-64 sm:h-72 w-full overflow-hidden bg-slate-900">
+                <img
+                  src={detailModalItem.item.image ? (detailModalItem.item.image.startsWith('http') ? detailModalItem.item.image : `${BACKEND_URL}${detailModalItem.item.image}`) : (detailModalItem.type === 'event' ? 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=1200' : 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=1200')}
+                  alt="Banner Preview"
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/50 to-transparent"></div>
+                <div className="absolute bottom-4 left-6 right-6">
+                  <div className="flex flex-wrap items-center gap-2 mb-2">
+                    <span className="px-3 py-1 text-[11px] font-extrabold uppercase rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30 backdrop-blur-md">
+                      {detailModalItem.type === 'event' ? (detailModalItem.item.category || 'Event Listing') : (detailModalItem.item.category || 'Venue Plot')}
+                    </span>
+                    {detailModalItem.item.is_approved ? (
+                      <span className="px-3 py-1 text-[11px] font-extrabold uppercase rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 backdrop-blur-md">
+                        Approved
+                      </span>
+                    ) : (
+                      <span className="px-3 py-1 text-[11px] font-extrabold uppercase rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 backdrop-blur-md animate-pulse">
+                        Pending Approval
+                      </span>
+                    )}
+                  </div>
+                  <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                    {detailModalItem.type === 'event' ? detailModalItem.item.title : detailModalItem.item.name}
+                  </h2>
+                </div>
+              </div>
+
+              {/* Body Content */}
+              <div className="p-6 space-y-6 max-h-[55vh] overflow-y-auto">
+                {/* Host / Owner Info */}
+                <div className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-rose-500 to-amber-500 text-white font-bold flex items-center justify-center text-sm uppercase">
+                      {(detailModalItem.type === 'event' 
+                        ? (detailModalItem.item.organizer_details?.first_name?.[0] || detailModalItem.item.organizer_details?.email?.[0] || 'O') 
+                        : (detailModalItem.item.owner_details?.first_name?.[0] || detailModalItem.item.owner_details?.email?.[0] || 'V'))}
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-dark-muted uppercase tracking-wider">
+                        {detailModalItem.type === 'event' ? 'Event Organizer' : 'Venue Plot Owner'}
+                      </p>
+                      <p className="text-sm font-extrabold text-white">
+                        {detailModalItem.type === 'event'
+                          ? (detailModalItem.item.organizer_details?.email || detailModalItem.item.organizer)
+                          : (detailModalItem.item.owner_details?.email || detailModalItem.item.owner)}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-xs text-dark-muted font-mono font-bold bg-white/5 px-3 py-1 rounded-lg border border-white/5">
+                    ID: #{detailModalItem.item.id}
+                  </span>
+                </div>
+
+                {/* Info Grid */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  {detailModalItem.type === 'event' ? (
+                    <>
+                      <div className="p-3.5 rounded-xl bg-white/5 border border-white/5">
+                        <p className="text-[10px] font-bold text-dark-muted uppercase">Ticket Price</p>
+                        <p className="text-base font-extrabold text-emerald-400 mt-0.5">₹{detailModalItem.item.price}</p>
+                      </div>
+                      <div className="p-3.5 rounded-xl bg-white/5 border border-white/5">
+                        <p className="text-[10px] font-bold text-dark-muted uppercase">Tickets Sold</p>
+                        <p className="text-base font-extrabold text-blue-400 mt-0.5">{detailModalItem.item.tickets_sold} / {detailModalItem.item.tickets_total}</p>
+                      </div>
+                      <div className="p-3.5 rounded-xl bg-white/5 border border-white/5">
+                        <p className="text-[10px] font-bold text-dark-muted uppercase">Date & Time</p>
+                        <p className="text-xs font-bold text-white mt-0.5">{detailModalItem.item.date} {detailModalItem.item.time}</p>
+                      </div>
+                      <div className="p-3.5 rounded-xl bg-white/5 border border-white/5">
+                        <p className="text-[10px] font-bold text-dark-muted uppercase">Gross Sales</p>
+                        <p className="text-base font-extrabold text-purple-400 mt-0.5">₹{(detailModalItem.item.price * (detailModalItem.item.tickets_sold || 0)).toLocaleString('en-IN')}</p>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="p-3.5 rounded-xl bg-white/5 border border-white/5">
+                        <p className="text-[10px] font-bold text-dark-muted uppercase">Rent Per Day</p>
+                        <p className="text-base font-extrabold text-emerald-400 mt-0.5">₹{detailModalItem.item.price_per_day}</p>
+                      </div>
+                      <div className="p-3.5 rounded-xl bg-white/5 border border-white/5">
+                        <p className="text-[10px] font-bold text-dark-muted uppercase">Capacity</p>
+                        <p className="text-base font-extrabold text-blue-400 mt-0.5">{detailModalItem.item.capacity} guests</p>
+                      </div>
+                      <div className="p-3.5 rounded-xl bg-white/5 border border-white/5">
+                        <p className="text-[10px] font-bold text-dark-muted uppercase">Venue Category</p>
+                        <p className="text-xs font-bold text-white mt-0.5">{detailModalItem.item.category || 'General Plot'}</p>
+                      </div>
+                      <div className="p-3.5 rounded-xl bg-white/5 border border-white/5">
+                        <p className="text-[10px] font-bold text-dark-muted uppercase">Location City</p>
+                        <p className="text-xs font-bold text-amber-400 mt-0.5">Ahmedabad, Gujarat</p>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Description */}
+                <div className="space-y-2">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-dark-muted">Full Description</h4>
+                  <p className="text-xs text-slate-300 leading-relaxed bg-white/5 p-4 rounded-2xl border border-white/5 whitespace-pre-wrap">
+                    {detailModalItem.item.description || 'No detailed description provided for this listing.'}
+                  </p>
+                </div>
+
+                {/* Venue Amenities if Venue */}
+                {detailModalItem.type === 'venue' && (
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-dark-muted">Available Amenities & Services</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {detailModalItem.item.has_catering && <span className="px-3 py-1 rounded-xl bg-emerald-500/10 text-emerald-400 text-xs font-bold border border-emerald-500/20">🍽️ Catering Available</span>}
+                      {detailModalItem.item.has_dj && <span className="px-3 py-1 rounded-xl bg-purple-500/10 text-purple-400 text-xs font-bold border border-purple-500/20">🎵 DJ System Available</span>}
+                      {detailModalItem.item.has_decoration && <span className="px-3 py-1 rounded-xl bg-pink-500/10 text-pink-400 text-xs font-bold border border-pink-500/20">✨ Decoration Package</span>}
+                      {detailModalItem.item.has_parking && <span className="px-3 py-1 rounded-xl bg-blue-500/10 text-blue-400 text-xs font-bold border border-blue-500/20">🅿️ Valet & Parking</span>}
+                    </div>
+                  </div>
+                )}
+
+                {/* Location & Address */}
+                <div className="space-y-2">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-dark-muted">Full Address & Location</h4>
+                  <div className="p-4 rounded-2xl bg-white/5 border border-white/5 flex items-start space-x-3">
+                    <MapPin className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+                    <p className="text-xs text-slate-200 font-medium">{detailModalItem.item.location}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer Action Buttons */}
+              <div className="p-4 sm:p-6 bg-slate-900 border-t border-white/10 flex flex-wrap items-center justify-between gap-3">
+                <button
+                  onClick={() => setDetailModalItem(null)}
+                  className="px-5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold text-xs transition-all"
+                >
+                  Close Preview
+                </button>
+
+                <div className="flex items-center space-x-3">
+                  {!detailModalItem.item.is_approved && (
+                    <button
+                      onClick={() => {
+                        if (detailModalItem.type === 'event') {
+                          handleEventApproval(detailModalItem.item.id, 'approve');
+                        } else {
+                          handleVenueApproval(detailModalItem.item.id, 'approve');
+                        }
+                        setDetailModalItem(null);
+                      }}
+                      className="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs transition-all shadow-lg shadow-emerald-500/20"
+                    >
+                      Approve Listing
+                    </button>
+                  )}
+
+                  <button
+                    onClick={() => {
+                      if (detailModalItem.type === 'event') {
+                        handleEventDelete(detailModalItem.item.id);
+                      } else {
+                        handleVenueDelete(detailModalItem.item.id);
+                      }
+                      setDetailModalItem(null);
+                    }}
+                    className="px-5 py-2.5 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 font-bold text-xs transition-all"
+                  >
+                    Delete Listing
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Event Detail Modal Preview */}
+      {previewEvent && (
+        <EventDetailModal
+          event={previewEvent}
+          onClose={() => setPreviewEvent(null)}
+        />
+      )}
+
+      {/* Venue Detail Modal Preview */}
+      {previewVenue && (
+        <VenueDetailModal
+          venue={previewVenue}
+          onClose={() => setPreviewVenue(null)}
+        />
+      )}
 
     </div>
   );

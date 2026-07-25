@@ -21,7 +21,7 @@ const Login = () => {
     if (isAuthenticated && user) {
       setEmail('');
       setPassword('');
-      const dashboardPath = user.role === 'admin' ? '/admin-dashboard' : user.role === 'organizer' ? '/organizer/events' : user.role === 'plot_owner' ? '/venues/manage' : '/bookings';
+      const dashboardPath = user.role === 'admin' ? '/admin-dashboard' : user.role === 'organizer' ? '/organizer/events' : user.role === 'plot_owner' ? '/venues/manage' : '/events';
       navigate(dashboardPath, { replace: true });
     }
   }, [isAuthenticated, user, navigate]);
@@ -60,7 +60,7 @@ const Login = () => {
         } else if (loggedInUser?.role === 'plot_owner') {
           targetPath = '/venues/manage';
         } else {
-          targetPath = '/bookings';
+          targetPath = '/events';
         }
       }
       navigate(targetPath, { replace: true });

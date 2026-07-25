@@ -131,11 +131,11 @@ function App() {
                 } 
               />
 
-              {/* Protected Routes (Customer) */}
+              {/* Protected Routes (Bookings & Venue Rentals) */}
               <Route 
                 path="/bookings" 
                 element={
-                  <ProtectedRoute allowedRoles={['customer']}>
+                  <ProtectedRoute allowedRoles={['customer', 'organizer', 'plot_owner', 'admin']}>
                     <CustomerDashboard />
                   </ProtectedRoute>
                 } 

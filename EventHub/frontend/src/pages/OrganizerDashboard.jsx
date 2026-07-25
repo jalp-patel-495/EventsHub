@@ -23,22 +23,19 @@ const OrganizerDashboard = () => {
   const navigate = useNavigate();
   const activeTab = routeLocation.pathname === '/organizer/sales'
     ? 'bookings'
-    : routeLocation.pathname === '/organizer/rentals'
-      ? 'venue_rentals'
-      : routeLocation.pathname === '/organizer/reviews'
-        ? 'reviews'
-        : routeLocation.pathname === '/organizer/analytics'
-          ? 'analytics'
-          : routeLocation.pathname === '/organizer/refunds'
-            ? 'refunds'
-            : routeLocation.pathname === '/organizer/offers'
-              ? 'offers'
-              : 'events';
+    : routeLocation.pathname === '/organizer/reviews'
+      ? 'reviews'
+      : routeLocation.pathname === '/organizer/analytics'
+        ? 'analytics'
+        : routeLocation.pathname === '/organizer/refunds'
+          ? 'refunds'
+          : routeLocation.pathname === '/organizer/offers'
+            ? 'offers'
+            : 'events';
   const setActiveTab = (tabId) => {
     const paths = {
       events: '/organizer/events',
       bookings: '/organizer/sales',
-      venue_rentals: '/organizer/rentals',
       reviews: '/organizer/reviews',
       analytics: '/organizer/analytics',
       refunds: '/organizer/refunds',
@@ -98,45 +95,55 @@ const OrganizerDashboard = () => {
   const autocompleteRef = useRef(null);
 
   useEffect(() => {
+    // Suppress Google Maps API auth failure alert popup modal
+    window.gm_authFailure = () => {
+      console.warn("Google Maps API key missing or invalid. Falling back to local address suggestions.");
+    };
+
     const initAutocomplete = () => {
       if (!locationInputRef.current || !window.google || !window.google.maps || !window.google.maps.places) return;
-      
-      autocompleteRef.current = new window.google.maps.places.Autocomplete(locationInputRef.current, {
-        types: ['geocode', 'establishment'],
-        componentRestrictions: { country: 'in' }
-      });
+      try {
+        autocompleteRef.current = new window.google.maps.places.Autocomplete(locationInputRef.current, {
+          types: ['geocode', 'establishment'],
+          componentRestrictions: { country: 'in' }
+        });
 
-      autocompleteRef.current.addListener('place_changed', () => {
-        const place = autocompleteRef.current.getPlace();
-        if (place && place.formatted_address) {
-          setLocation(place.formatted_address);
-        } else if (place && place.name) {
-          setLocation(place.name);
-        }
-      });
+        autocompleteRef.current.addListener('place_changed', () => {
+          const place = autocompleteRef.current.getPlace();
+          if (place && place.formatted_address) {
+            setLocation(place.formatted_address);
+          } else if (place && place.name) {
+            setLocation(place.name);
+          }
+        });
+      } catch (err) {
+        console.warn("Google Autocomplete initialization error:", err);
+      }
     };
 
     if (modalOpen) {
-      if (window.google && window.google.maps && window.google.maps.places) {
-        initAutocomplete();
-      } else {
-        let script = document.querySelector('script[src*="maps.googleapis.com"]');
-        if (!script) {
-          script = document.createElement('script');
-          const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
-          script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
-          script.async = true;
-          script.defer = true;
-          document.body.appendChild(script);
+      const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
+      if (apiKey && apiKey.length > 10 && apiKey !== "YOUR_API_KEY") {
+        if (window.google && window.google.maps && window.google.maps.places) {
+          initAutocomplete();
+        } else {
+          let script = document.querySelector('script[src*="maps.googleapis.com"]');
+          if (!script) {
+            script = document.createElement('script');
+            script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
+            script.async = true;
+            script.defer = true;
+            document.body.appendChild(script);
+          }
+          
+          const handleScriptLoad = () => {
+            setTimeout(initAutocomplete, 500);
+          };
+          script.addEventListener('load', handleScriptLoad);
+          return () => {
+            script.removeEventListener('load', handleScriptLoad);
+          };
         }
-        
-        const handleScriptLoad = () => {
-          setTimeout(initAutocomplete, 500);
-        };
-        script.addEventListener('load', handleScriptLoad);
-        return () => {
-          script.removeEventListener('load', handleScriptLoad);
-        };
       }
     }
   }, [modalOpen]);
@@ -657,7 +664,6 @@ const OrganizerDashboard = () => {
             {activeTab === 'events' && 'Organizer Dashboard'}
             {activeTab === 'bookings' && 'Ticket Sales'}
             {activeTab === 'refunds' && 'Refund Ticket Requests'}
-            {activeTab === 'venue_rentals' && 'Venue Rentals'}
             {activeTab === 'reviews' && 'Customer Reviews'}
             {activeTab === 'analytics' && 'Revenue Analytics'}
             {activeTab === 'offers' && 'Event Promotional Offers'}
@@ -666,7 +672,6 @@ const OrganizerDashboard = () => {
             {activeTab === 'events' && 'Host events, review ticketing metrics, and manage customer sales'}
             {activeTab === 'bookings' && 'View and track all event tickets purchased by customers'}
             {activeTab === 'refunds' && 'Manage and approve cancelation refund requests submitted by attendees'}
-            {activeTab === 'venue_rentals' && 'View lawns, plots, and halls booked for your events'}
             {activeTab === 'reviews' && 'Review feedback and ratings received from event attendees'}
             {activeTab === 'analytics' && 'Detailed overview of organizer income and event performance reports'}
             {activeTab === 'offers' && 'Set promotional discount coupon codes for your events and manage active offers'}
@@ -695,9 +700,6 @@ const OrganizerDashboard = () => {
           </button>
         </div>
       </div>
-
-
-      {/* Grid Stats */}
       {activeTab === 'events' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
           <div className="glass-panel rounded-2xl p-6 flex items-start space-x-4">
@@ -1709,12 +1711,27 @@ const OrganizerDashboard = () => {
                       <input
                         ref={locationInputRef}
                         type="text"
+                        list="ahmedabad-event-locations"
                         value={location}
                         onChange={(e) => setLocation(e.target.value)}
                         placeholder="e.g. Club O7, Ahmedabad"
                         className="glass-input w-full px-4 py-2.5 rounded-xl text-sm"
                         required
                       />
+                      <datalist id="ahmedabad-event-locations">
+                        <option value="Science City, S.G. Highway, Ahmedabad, Gujarat" />
+                        <option value="Sindhu Bhavan Road, Bodakdev, Ahmedabad, Gujarat" />
+                        <option value="Prahlad Nagar, S.G. Highway, Ahmedabad, Gujarat" />
+                        <option value="S.G. Highway, Gota, Ahmedabad, Gujarat" />
+                        <option value="Gurukul Road, Memnagar, Ahmedabad, Gujarat" />
+                        <option value="Drive In Road, Thaltej, Ahmedabad, Gujarat" />
+                        <option value="Agrasen Road, Shela, Ahmedabad, Gujarat 380058" />
+                        <option value="Near Club O7, Shela, Ahmedabad, Gujarat" />
+                        <option value="Bhadaj, Science City, Ahmedabad, Gujarat" />
+                        <option value="Vastrapur Lake, Vastrapur, Ahmedabad, Gujarat" />
+                        <option value="C.G. Road, Navrangpura, Ahmedabad, Gujarat" />
+                        <option value="Sabarmati Riverfront, Ashram Road, Ahmedabad, Gujarat" />
+                      </datalist>
                     </div>
                   )}
 
@@ -1723,12 +1740,13 @@ const OrganizerDashboard = () => {
                     (locationType === 'platform' && approvedVenues.find(v => v.id === parseInt(selectedVenueId)))) && (
                     <div className="sm:col-span-2 mt-1">
                       <label className="block text-xs font-semibold text-dark-muted uppercase tracking-wider mb-2">Map Location Preview</label>
-                      <div className="w-full h-44 rounded-xl overflow-hidden border border-white/5 shadow-md">
+                      <div className="w-full h-44 rounded-xl overflow-hidden border border-white/5 shadow-md relative">
                         <iframe
                           title="Event Map Preview"
                           width="100%"
                           height="100%"
                           frameBorder="0"
+                          scrolling="no"
                           style={{ border: 0 }}
                           src={`https://maps.google.com/maps?q=${encodeURIComponent(
                             locationType === 'custom' 
@@ -1737,8 +1755,9 @@ const OrganizerDashboard = () => {
                                   const v = approvedVenues.find(v => v.id === parseInt(selectedVenueId));
                                   return v ? `${v.name}, ${v.location}` : '';
                                 })()
-                          )}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
+                          )}&t=&z=15&ie=UTF8&output=embed`}
                           allowFullScreen
+                          className="pointer-events-none"
                         ></iframe>
                       </div>
                     </div>
