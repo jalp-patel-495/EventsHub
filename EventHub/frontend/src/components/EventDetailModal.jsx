@@ -287,6 +287,41 @@ const EventDetailModal = ({ event, onClose, onBookNow, isWishlisted, onToggleWis
                   </div>
                 </div>
 
+                {/* Location & Interactive Google Map Preview */}
+                <div className="space-y-4 pt-4 border-t border-white/5">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-black uppercase tracking-wider text-dark-muted">Location & Address</h3>
+                    <a
+                      href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(event.location || '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs font-bold text-emerald-400 hover:underline inline-flex items-center gap-1 bg-emerald-500/10 px-3 py-1.5 rounded-xl border border-emerald-500/20"
+                    >
+                      Open in Maps <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 flex items-start space-x-3">
+                    <MapPin className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-bold text-dark-text">{event.title}</p>
+                      <p className="text-xs text-dark-muted mt-0.5">{event.location}</p>
+                    </div>
+                  </div>
+
+                  {event.location && (
+                    <div className="w-full h-56 rounded-2xl overflow-hidden border border-white/10 shadow-lg relative">
+                      <iframe
+                        title="Event Location Map"
+                        src={`https://maps.google.com/maps?q=${encodeURIComponent(event.location)}&t=&z=14&ie=UTF8&iwloc=&output=embed`}
+                        className="w-full h-full border-0"
+                        loading="lazy"
+                        scrolling="no"
+                      ></iframe>
+                    </div>
+                  )}
+                </div>
+
               </div>
 
               {/* Right Column: Floating Booking Box (1 Col) */}
