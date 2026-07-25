@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Calendar, MapPin, Filter, Star, Heart, X, Ticket, ChevronLeft, ChevronRight, CheckCircle2, ArrowLeft, Smartphone, CreditCard, Lock, ShieldCheck, Download, QrCode } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import BookingModal from '../components/BookingModal';
+import EventDetailModal from '../components/EventDetailModal';
 
 const EventExplore = () => {
   const { isAuthenticated, user } = useAuth();
@@ -16,6 +17,7 @@ const EventExplore = () => {
   const [wishlistedIds, setWishlistedIds] = useState(new Set());
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [selectedDetailEvent, setSelectedDetailEvent] = useState(null);
 
   // Filter/Search states
   const [search, setSearch] = useState('');
@@ -307,17 +309,19 @@ const EventExplore = () => {
                   return (
                     <div key={event.id} className="glass-card rounded-2xl overflow-hidden flex flex-col relative group">
                       {/* Image Banner */}
-                      {event.image ? (
-                        <img
-                          src={event.image.startsWith('http') ? event.image : `${BACKEND_URL}${event.image}`}
-                          alt={event.title}
-                          className="w-full h-48 object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-48 bg-white/5 flex items-center justify-center text-dark-muted">
-                          <Calendar className="w-10 h-10" />
-                        </div>
-                      )}
+                      <div className="cursor-pointer" onClick={() => setSelectedDetailEvent(event)}>
+                        {event.image ? (
+                          <img
+                            src={event.image.startsWith('http') ? event.image : `${BACKEND_URL}${event.image}`}
+                            alt={event.title}
+                            className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-500"
+                          />
+                        ) : (
+                          <div className="w-full h-48 bg-white/5 flex items-center justify-center text-dark-muted">
+                            <Calendar className="w-10 h-10" />
+                          </div>
+                        )}
+                      </div>
 
                       {/* Wishlist Heart */}
                       <button
@@ -341,12 +345,17 @@ const EventExplore = () => {
                             <span>{event.rating_avg}</span>
                           </span>
                         </div>
-                        <h4 className="font-bold text-lg text-dark-text leading-tight group-hover:text-brand-primary transition-colors">{event.title}</h4>
-                        <p className="text-xs text-dark-muted mt-1 flex items-center space-x-1">
+                        <h4 
+                          onClick={() => setSelectedDetailEvent(event)}
+                          className="font-bold text-lg text-dark-text leading-tight group-hover:text-brand-primary transition-colors cursor-pointer"
+                        >
+                          {event.title}
+                        </h4>
+                        <p className="text-xs text-dark-muted mt-1 flex items-center space-x-1 cursor-pointer" onClick={() => setSelectedDetailEvent(event)}>
                           <Calendar className="w-3 h-3 text-brand-primary" />
                           <span>{event.date} at {event.time}</span>
                         </p>
-                        <p className="text-xs text-dark-muted mt-0.5 flex items-center space-x-1">
+                        <p className="text-xs text-dark-muted mt-0.5 flex items-center space-x-1 cursor-pointer" onClick={() => setSelectedDetailEvent(event)}>
                           <MapPin className="w-3 h-3 text-brand-primary" />
                           <span>{event.location}</span>
                         </p>
@@ -419,6 +428,17 @@ const EventExplore = () => {
           )}
         </div>
       </div>
+
+      {/* Event Overview Detail Modal */}
+      {selectedDetailEvent && (
+        <EventDetailModal
+          event={selectedDetailEvent}
+          onClose={() => setSelectedDetailEvent(null)}
+          onBookNow={handleOpenBookingModal}
+          isWishlisted={wishlistedIds.has(selectedDetailEvent.id)}
+          onToggleWishlist={handleWishlistToggle}
+        />
+      )}
 
       {/* Booking Ticket Modal */}
       <AnimatePresence>

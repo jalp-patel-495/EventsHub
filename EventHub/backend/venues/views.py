@@ -49,6 +49,11 @@ class VenueViewSet(viewsets.ModelViewSet):
         if owner:
             queryset = queryset.filter(owner_id=owner)
 
+        # Filter by category / plot_type
+        category_param = self.request.query_params.get('category')
+        if category_param:
+            queryset = queryset.filter(category__icontains=category_param)
+
         # Filter by max price per day
         max_price = self.request.query_params.get('max_price')
         if max_price:

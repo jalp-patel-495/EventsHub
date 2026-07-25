@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import api, { BACKEND_URL } from '../api/api';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, Heart, Bell, Trash2, ShieldAlert, CheckCircle, Ticket, XCircle, Download, Sparkles, MapPin, Building, Star, X, Coins } from 'lucide-react';
+import { Calendar, Heart, Bell, Trash2, ShieldAlert, CheckCircle, Ticket, XCircle, Download, Sparkles, MapPin, Building, Star, X, Coins, Search } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import VenuePaymentModal from '../components/VenuePaymentModal';
+import VenueDetailModal from '../components/VenueDetailModal';
 
 const CustomerDashboard = () => {
   const { user } = useAuth();
@@ -68,6 +69,9 @@ const CustomerDashboard = () => {
   // Direct Venue Booking States
   const [venues, setVenues] = useState([]);
   const [venueBookings, setVenueBookings] = useState([]);
+  const [venueSearch, setVenueSearch] = useState('');
+  const [venueCategoryFilter, setVenueCategoryFilter] = useState('');
+  const [selectedDetailVenue, setSelectedDetailVenue] = useState(null);
   const [loadingVenues, setLoadingVenues] = useState(false);
   const [rentModal, setRentModal] = useState({ show: false, venue: null });
   const [bookingDates, setBookingDates] = useState({ start: '', end: '' });
@@ -238,14 +242,16 @@ const CustomerDashboard = () => {
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      const [bookingsRes, wishlistRes, notificationsRes] = await Promise.all([
+      const [bookingsRes, wishlistRes, notificationsRes, venueBookingsRes] = await Promise.all([
         api.get('events/bookings/'),
         api.get('events/wishlist/'),
-        api.get('notifications/')
+        api.get('notifications/'),
+        api.get('venues/bookings/').catch(() => ({ data: [] }))
       ]);
       setBookings(bookingsRes.data);
       setWishlist(wishlistRes.data);
       setNotifications(notificationsRes.data);
+      setVenueBookings(venueBookingsRes.data || []);
     } catch (err) {
       console.error("Error fetching customer dashboard data:", err);
     } finally {
@@ -583,129 +589,264 @@ const CustomerDashboard = () => {
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 15 }}
-              className="space-y-4"
+              className="space-y-8"
             >
-              {bookings.length === 0 ? (
-                <div className="glass-panel text-center py-16 rounded-2xl">
-                  <Ticket className="w-12 h-12 text-dark-muted mx-auto mb-4" />
-                  <p className="text-dark-muted">No tickets booked yet. Explore events on the home page!</p>
+              {/* 🎟️ 1. EVENT TICKET BOOKINGS */}
+              <div className="space-y-4">
+                <div className="flex items-center space-x-2 pb-2 border-b border-white/5">
+                  <Ticket className="w-5 h-5 text-brand-primary" />
+                  <h3 className="text-lg font-bold text-dark-text uppercase tracking-wider">My Event Tickets ({bookings.length})</h3>
                 </div>
-              ) : (
-                bookings.map((booking) => (
-                  <div key={booking.id} className="glass-card rounded-2xl p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-                    <div className="flex items-center space-x-4">
-                      {booking.event_details.image ? (
-                        <img
-                          src={booking.event_details.image.startsWith('http') ? booking.event_details.image : `${BACKEND_URL}${booking.event_details.image}`}
-                          alt={booking.event_details.title}
-                          className="w-16 h-16 rounded-xl object-cover"
-                        />
-                      ) : (
-                        <div className="w-16 h-16 rounded-xl bg-white/5 flex items-center justify-center text-dark-muted">
-                          <Calendar className="w-6 h-6" />
-                        </div>
-                      )}
-                      <div>
-                        <h4 className="font-bold text-lg text-dark-text">{booking.event_details.title}</h4>
-                        <p className="text-xs text-dark-muted mt-1">{booking.event_details.date} at {booking.event_details.time}</p>
-                        <p className="text-xs text-dark-muted">{booking.event_details.location}</p>
-                        <div className="flex items-center space-x-1.5 mt-1 text-[11px] text-amber-400 font-semibold">
-                          <Star className="w-3.5 h-3.5 fill-amber-400" />
-                          <span>{booking.event_details.rating_avg || '0.0'} ({booking.event_details.rating_count || 0} reviews)</span>
-                        </div>
-                      </div>
-                    </div>
 
-                    <div className="flex items-center space-x-8 w-full md:w-auto justify-between border-t md:border-t-0 border-white/5 pt-4 md:pt-0">
-                      <div>
-                        <span className="text-xs font-semibold text-dark-muted uppercase">Tickets</span>
-                        <p className="font-bold text-dark-text mt-0.5">
-                          {booking.tickets_count} <span className="text-[10px] text-emerald-400 font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 uppercase ml-1.5">{booking.ticket_category}</span>
-                        </p>
-                      </div>
-                      <div>
-                        <span className="text-xs font-semibold text-dark-muted uppercase">Paid</span>
-                        {booking.payment_status === 'refunded' ? (
-                          <p className="font-bold text-red-400 mt-0.5 line-through">
-                            ₹{(parseFloat(booking.total_price) + (parseFloat(booking.event_details?.price) > 0 ? booking.tickets_count * 15 : 0)).toFixed(2)}
-                          </p>
+                {bookings.length === 0 ? (
+                  <div className="glass-panel text-center py-10 rounded-2xl">
+                    <Ticket className="w-10 h-10 text-dark-muted mx-auto mb-3" />
+                    <p className="text-xs text-dark-muted">No tickets booked yet. Explore events on the home page!</p>
+                  </div>
+                ) : (
+                  bookings.map((booking) => (
+                    <div key={booking.id} className="glass-card rounded-2xl p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                      <div className="flex items-center space-x-4">
+                        {booking.event_details.image ? (
+                          <img
+                            src={booking.event_details.image.startsWith('http') ? booking.event_details.image : `${BACKEND_URL}${booking.event_details.image}`}
+                            alt={booking.event_details.title}
+                            className="w-16 h-16 rounded-xl object-cover"
+                          />
                         ) : (
-                          <p className="font-bold text-brand-primary mt-0.5">
-                            ₹{(parseFloat(booking.total_price) + (parseFloat(booking.event_details?.price) > 0 ? booking.tickets_count * 15 : 0)).toFixed(2)}
+                          <div className="w-16 h-16 rounded-xl bg-white/5 flex items-center justify-center text-dark-muted">
+                            <Calendar className="w-6 h-6" />
+                          </div>
+                        )}
+                        <div>
+                          <h4 className="font-bold text-lg text-dark-text">{booking.event_details.title}</h4>
+                          <p className="text-xs text-dark-muted mt-1">{booking.event_details.date} at {booking.event_details.time}</p>
+                          <p className="text-xs text-dark-muted">{booking.event_details.location}</p>
+                          <div className="flex items-center space-x-1.5 mt-1 text-[11px] text-amber-400 font-semibold">
+                            <Star className="w-3.5 h-3.5 fill-amber-400" />
+                            <span>{booking.event_details.rating_avg || '0.0'} ({booking.event_details.rating_count || 0} reviews)</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center space-x-8 w-full md:w-auto justify-between border-t md:border-t-0 border-white/5 pt-4 md:pt-0">
+                        <div>
+                          <span className="text-xs font-semibold text-dark-muted uppercase">Tickets</span>
+                          <p className="font-bold text-dark-text mt-0.5">
+                            {booking.tickets_count} <span className="text-[10px] text-emerald-400 font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 uppercase ml-1.5">{booking.ticket_category}</span>
                           </p>
+                        </div>
+                        <div>
+                          <span className="text-xs font-semibold text-dark-muted uppercase">Paid</span>
+                          {booking.payment_status === 'refunded' ? (
+                            <p className="font-bold text-red-400 mt-0.5 line-through">
+                              ₹{(parseFloat(booking.total_price) + (parseFloat(booking.event_details?.price) > 0 ? booking.tickets_count * 15 : 0)).toFixed(2)}
+                            </p>
+                          ) : (
+                            <p className="font-bold text-brand-primary mt-0.5">
+                              ₹{(parseFloat(booking.total_price) + (parseFloat(booking.event_details?.price) > 0 ? booking.tickets_count * 15 : 0)).toFixed(2)}
+                            </p>
+                          )}
+                        </div>
+                        {booking.payment_status === 'refunded' ? (
+                          <div>
+                            <span className="text-xs font-semibold text-dark-muted uppercase">Refunded</span>
+                            <p className="font-bold text-emerald-400 mt-0.5">₹{(parseFloat(booking.total_price) * 0.5).toFixed(2)}</p>
+                          </div>
+                        ) : booking.refund_requested ? (
+                          <div>
+                            <span className="text-xs font-semibold text-dark-muted uppercase">Refund Pending</span>
+                            <p className="font-bold text-yellow-400 mt-0.5 font-sans">₹{(parseFloat(booking.total_price) * 0.5).toFixed(2)}</p>
+                          </div>
+                        ) : null}
+                        <div>
+                          <span className="text-xs font-semibold text-dark-muted uppercase">Status</span>
+                          <span className={`block text-xs font-bold px-2 py-0.5 rounded mt-0.5 uppercase ${
+                            booking.payment_status === 'refunded' ? 'bg-red-500/10 text-red-400' :
+                            booking.refund_requested ? 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/10' :
+                            booking.status === 'confirmed' ? 'bg-emerald-500/10 text-emerald-400' : 
+                            'bg-red-500/10 text-red-400'
+                          }`}>
+                            {booking.payment_status === 'refunded' ? 'Refunded' :
+                             booking.refund_requested ? 'Refund Pending' :
+                             booking.status}
+                          </span>
+                        </div>
+                        {booking.status === 'confirmed' && (
+                          <div className="flex space-x-2">
+                            <a
+                              href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(booking.event_details.location)}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-2 text-blue-400 hover:text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 rounded-xl transition-all flex items-center justify-center"
+                              title="View Directions on Google Maps"
+                            >
+                              <MapPin className="w-4 h-4" />
+                            </a>
+                            <button
+                              onClick={() => handleOpenReviewModal('event', booking.event_details)}
+                              className={`p-2 rounded-xl transition-all ${
+                                booking.event_details.reviews?.some(r => r.user === user?.id)
+                                  ? 'text-dark-muted bg-white/5 cursor-not-allowed border border-white/5'
+                                  : 'text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20'
+                              }`}
+                              title={booking.event_details.reviews?.some(r => r.user === user?.id) ? "You already reviewed this event" : "Rate & Review Event"}
+                              disabled={booking.event_details.reviews?.some(r => r.user === user?.id)}
+                            >
+                              <Star className={`w-4 h-4 ${booking.event_details.reviews?.some(r => r.user === user?.id) ? '' : 'fill-amber-400'}`} />
+                            </button>
+                            <button
+                              onClick={() => handleDownloadTicket(booking)}
+                              className="p-2 text-brand-primary hover:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-xl transition-all"
+                              title="Download PDF Ticket"
+                            >
+                              <Download className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                setSelectedCancelBooking(booking);
+                                setTicketsToCancel(1);
+                                setCancelModalOpen(true);
+                              }}
+                              className="p-2 text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 rounded-xl transition-all"
+                              title="Cancel Ticket(s)"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         )}
                       </div>
-                      {booking.payment_status === 'refunded' ? (
-                        <div>
-                          <span className="text-xs font-semibold text-dark-muted uppercase">Refunded</span>
-                          <p className="font-bold text-emerald-400 mt-0.5">₹{(parseFloat(booking.total_price) * 0.5).toFixed(2)}</p>
-                        </div>
-                      ) : booking.refund_requested ? (
-                        <div>
-                          <span className="text-xs font-semibold text-dark-muted uppercase">Refund Pending</span>
-                          <p className="font-bold text-yellow-400 mt-0.5 font-sans">₹{(parseFloat(booking.total_price) * 0.5).toFixed(2)}</p>
-                        </div>
-                      ) : null}
-                      <div>
-                        <span className="text-xs font-semibold text-dark-muted uppercase">Status</span>
-                        <span className={`block text-xs font-bold px-2 py-0.5 rounded mt-0.5 uppercase ${
-                          booking.payment_status === 'refunded' ? 'bg-red-500/10 text-red-400' :
-                          booking.refund_requested ? 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/10' :
-                          booking.status === 'confirmed' ? 'bg-emerald-500/10 text-emerald-400' : 
-                          'bg-red-500/10 text-red-400'
-                        }`}>
-                          {booking.payment_status === 'refunded' ? 'Refunded' :
-                           booking.refund_requested ? 'Refund Pending' :
-                           booking.status}
-                        </span>
-                      </div>
-                      {booking.status === 'confirmed' && (
-                        <div className="flex space-x-2">
-                          <a
-                            href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(booking.event_details.location)}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="p-2 text-blue-400 hover:text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 rounded-xl transition-all flex items-center justify-center"
-                            title="View Directions on Google Maps"
-                          >
-                            <MapPin className="w-4 h-4" />
-                          </a>
-                          <button
-                            onClick={() => handleOpenReviewModal('event', booking.event_details)}
-                            className={`p-2 rounded-xl transition-all ${
-                              booking.event_details.reviews?.some(r => r.user === user?.id)
-                                ? 'text-dark-muted bg-white/5 cursor-not-allowed border border-white/5'
-                                : 'text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20'
-                            }`}
-                            title={booking.event_details.reviews?.some(r => r.user === user?.id) ? "You already reviewed this event" : "Rate & Review Event"}
-                            disabled={booking.event_details.reviews?.some(r => r.user === user?.id)}
-                          >
-                            <Star className={`w-4 h-4 ${booking.event_details.reviews?.some(r => r.user === user?.id) ? '' : 'fill-amber-400'}`} />
-                          </button>
-                          <button
-                            onClick={() => handleDownloadTicket(booking)}
-                            className="p-2 text-brand-primary hover:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-xl transition-all"
-                            title="Download PDF Ticket"
-                          >
-                            <Download className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => {
-                              setSelectedCancelBooking(booking);
-                              setTicketsToCancel(1);
-                              setCancelModalOpen(true);
-                            }}
-                            className="p-2 text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 rounded-xl transition-all"
-                            title="Cancel Ticket(s)"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      )}
                     </div>
+                  ))
+                )}
+              </div>
+
+              {/* 🏛️ 2. VENUE RENTAL BOOKINGS */}
+              <div className="space-y-4 pt-6 border-t border-white/10">
+                <div className="flex items-center space-x-2 pb-2 border-b border-white/5">
+                  <Building className="w-5 h-5 text-emerald-400" />
+                  <h3 className="text-lg font-bold text-dark-text uppercase tracking-wider">My Venue Rentals ({venueBookings.length})</h3>
+                </div>
+
+                {venueBookings.length === 0 ? (
+                  <div className="glass-panel text-center py-10 rounded-2xl">
+                    <Building className="w-10 h-10 text-dark-muted mx-auto mb-3 opacity-50" />
+                    <p className="text-xs text-dark-muted">You haven't requested any venue rentals yet. Browse venue plots on the Venues page!</p>
                   </div>
-                ))
-              )}
+                ) : (
+                  <div className="space-y-4">
+                    {venueBookings.map((vb) => (
+                      <div key={vb.id} className="glass-card rounded-2xl p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 border border-white/5 bg-dark-bg/25">
+                        <div className="flex items-center space-x-4">
+                          {vb.venue_details?.image ? (
+                            <img
+                              src={vb.venue_details.image.startsWith('http') ? vb.venue_details.image : `${BACKEND_URL}${vb.venue_details.image}`}
+                              alt={vb.venue_details.name}
+                              className="w-16 h-16 rounded-xl object-cover border border-white/10"
+                            />
+                          ) : (
+                            <div className="w-16 h-16 rounded-xl bg-white/5 flex items-center justify-center text-dark-muted">
+                              <Building className="w-6 h-6" />
+                            </div>
+                          )}
+                          <div>
+                            <h4 className="font-bold text-lg text-dark-text">{vb.venue_details?.name}</h4>
+                            <p className="text-xs text-emerald-400 font-semibold mt-0.5">{vb.start_date} to {vb.end_date}</p>
+                            <p className="text-xs text-dark-muted">{vb.venue_details?.location}</p>
+
+                            {/* Service Badges */}
+                            {(vb.use_catering || vb.use_dj || vb.use_decor) && (
+                              <div className="flex flex-wrap gap-1.5 mt-2">
+                                {vb.use_catering && (
+                                  <span className="text-[9px] font-bold bg-orange-500/10 text-orange-400 px-2 py-0.5 rounded flex items-center gap-1">
+                                    🍽 Catering ({vb.catering_cuisine}) ×{vb.catering_plates}
+                                  </span>
+                                )}
+                                {vb.use_dj && (
+                                  <span className="text-[9px] font-bold bg-purple-500/10 text-purple-400 px-2 py-0.5 rounded flex items-center gap-1">
+                                    🎵 DJ ({vb.dj_package})
+                                  </span>
+                                )}
+                                {vb.use_decor && (
+                                  <span className="text-[9px] font-bold bg-pink-500/10 text-pink-400 px-2 py-0.5 rounded flex items-center gap-1">
+                                    🎨 Decor ({vb.decor_theme})
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center space-x-6 w-full md:w-auto justify-between border-t md:border-t-0 border-white/5 pt-4 md:pt-0">
+                          <div>
+                            <span className="text-xs font-semibold text-dark-muted uppercase">Total Price</span>
+                            <p className="font-extrabold text-emerald-400 mt-0.5 font-mono">
+                              ₹{parseFloat(vb.total_price || 0).toLocaleString('en-IN')}
+                            </p>
+                          </div>
+                          <div>
+                            <span className="text-xs font-semibold text-dark-muted uppercase">Status</span>
+                            <span className={`block text-xs font-bold px-2 py-0.5 rounded mt-0.5 uppercase ${
+                              vb.status === 'approved' ? (vb.cancel_requested ? 'bg-yellow-500/10 text-yellow-400' : 'bg-emerald-500/10 text-emerald-400') :
+                              vb.status === 'pending' ? 'bg-yellow-500/10 text-yellow-400' :
+                              'bg-red-500/10 text-red-400'
+                            }`}>
+                              {vb.cancel_requested && vb.status === 'approved' ? 'Cancel Requested' : vb.status}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center space-x-2">
+                            {vb.status === 'pending' && vb.payment_status !== 'paid' && (
+                              <button
+                                onClick={() => setPaymentModalVenueBooking(vb)}
+                                className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-extrabold text-xs shadow-md uppercase tracking-wider"
+                              >
+                                Pay Now
+                              </button>
+                            )}
+
+                            {vb.venue_details && (
+                              <a
+                                href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(vb.venue_details?.location || vb.venue_details?.name)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="p-2 text-blue-400 hover:text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 rounded-xl transition-all"
+                                title="View Location Directions"
+                              >
+                                <MapPin className="w-4 h-4" />
+                              </a>
+                            )}
+
+                            {vb.status === 'approved' && !vb.cancel_requested && (
+                              <button
+                                onClick={() => handleOpenReviewModal('venue', vb.venue_details)}
+                                className="p-2 text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 rounded-xl transition-all border border-amber-500/20"
+                                title="Rate & Review Venue Plot"
+                              >
+                                <Star className="w-4 h-4 fill-amber-400" />
+                              </button>
+                            )}
+
+                            {!vb.cancel_requested && vb.status !== 'rejected' && vb.status !== 'cancelled' && (
+                              <button
+                                onClick={() => {
+                                  setSelectedCancelBooking(vb);
+                                  setCancelType('venue');
+                                  setCancelModalOpen(true);
+                                }}
+                                className="p-2 text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 rounded-xl transition-all"
+                                title="Cancel Venue Rental"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </motion.div>
           )}
           {activeTab === 'wishlist' && (
@@ -823,167 +964,213 @@ const CustomerDashboard = () => {
                 </div>
               )}
 
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* 1. Browse Venues (Col-span 2) */}
-                <div className="lg:col-span-2 space-y-6">
-                  <div className="flex items-center space-x-2">
-                    <Building className="w-5 h-5 text-brand-primary" />
-                    <h3 className="text-lg font-bold text-dark-text uppercase tracking-wider">Browse & Book Venue Plots</h3>
-                  </div>
+              {/* Hero Header & Search Bar matching Image 1 */}
+              <div className="w-full mb-6 relative text-left">
+                <h1 className="text-2xl sm:text-3xl font-extrabold font-display text-dark-text mb-1">
+                  Discover <span className="text-brand-primary">Upcoming Venue Plots</span>
+                </h1>
+                <p className="text-xs sm:text-sm text-dark-muted">
+                  Explore banquet halls, party lawns, open grounds, and luxury resorts for your events across Ahmedabad.
+                </p>
+              </div>
 
-                  {loadingVenues ? (
-                    <div className="py-12 flex justify-center"><div className="w-8 h-8 border-2 border-brand-primary border-t-transparent rounded-full animate-spin"></div></div>
-                  ) : venues.length === 0 ? (
-                    <div className="glass-panel text-center py-12 rounded-2xl text-dark-muted">No venues available at the moment.</div>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {venues.map((venue) => (
-                        <div key={venue.id} className="glass-card rounded-2xl overflow-hidden flex flex-col h-full border border-white/5 hover:border-brand-primary/20 transition-all bg-dark-bg/20">
-                          {/* Image */}
-                          {venue.image ? (
-                            <img
-                              src={venue.image.startsWith('http') ? venue.image : `${BACKEND_URL}${venue.image}`}
-                              alt={venue.name}
-                              className="w-full h-40 object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-40 bg-white/5 flex items-center justify-center text-dark-muted border-b border-white/5">
-                              <Building className="w-10 h-10" />
-                            </div>
-                          )}
-                          
-                          {/* Body */}
-                          <div className="p-5 flex-grow flex flex-col justify-between space-y-4">
-                            <div>
-                              <div className="flex justify-between items-start gap-2">
-                                <div>
-                                  <h4 className="font-bold text-dark-text text-base leading-snug">{venue.name}</h4>
-                                  <div className="flex items-center space-x-1 mt-1 text-[11px] text-amber-400 font-semibold">
-                                    <Star className="w-3.5 h-3.5 fill-amber-400" />
-                                    <span>{venue.rating_avg || '0.0'} ({venue.rating_count || 0} reviews)</span>
-                                  </div>
+              {/* Full-width Search Bar */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-6">
+                <div className="md:col-span-2 relative">
+                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-dark-muted">
+                    <Search className="w-4 h-4" />
+                  </span>
+                  <input
+                    type="text"
+                    value={venueSearch || ''}
+                    onChange={(e) => setVenueSearch(e.target.value)}
+                    placeholder="Search venues by title, description, location..."
+                    className="glass-input w-full pl-9 pr-3 py-2.5 rounded-xl text-xs"
+                  />
+                </div>
+                <div>
+                  <select
+                    value={venueCategoryFilter || ''}
+                    onChange={(e) => setVenueCategoryFilter(e.target.value)}
+                    className="glass-input w-full px-3 py-2.5 rounded-xl text-xs cursor-pointer bg-dark-bg text-dark-text border border-white/10"
+                  >
+                    <option value="">All Categories</option>
+                    <option value="party_lawn">Party Plot / Lawn</option>
+                    <option value="banquet">Banquet Hall</option>
+                    <option value="resort">Resort & Farmhouse</option>
+                    <option value="open_ground">Open Ground / Stadium</option>
+                    <option value="villa">Luxury Villa / Poolside</option>
+                    <option value="conference">Conference & Convention Hall</option>
+                    <option value="rooftop">Rooftop Terrace & Garden</option>
+                    <option value="auditorium">Auditorium & Theatre</option>
+                    <option value="beach">Beachside Lawn & Club</option>
+                    <option value="heritage">Heritage Haveli & Palace</option>
+                    <option value="community">Community & Marriage Hall</option>
+                    <option value="exhibition">Exhibition & Trade Center</option>
+                  </select>
+                </div>
+                <div className="flex space-x-2">
+                  <button
+                    type="button"
+                    className="flex-grow bg-brand-primary hover:bg-emerald-600 text-white font-bold py-2.5 px-4 rounded-xl text-xs transition-colors shadow-md flex items-center justify-center space-x-1"
+                  >
+                    <span>Search Venues</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                <div className="flex items-center space-x-2">
+                  <Building className="w-5 h-5 text-brand-primary" />
+                  <h3 className="text-lg font-bold text-dark-text uppercase tracking-wider">BROWSE & BOOK VENUE PLOTS</h3>
+                </div>
+
+                {loadingVenues ? (
+                  <div className="py-12 flex justify-center"><div className="w-8 h-8 border-2 border-brand-primary border-t-transparent rounded-full animate-spin"></div></div>
+                ) : venues.filter((venue) => {
+                    const matchesSearch = !venueSearch || 
+                      venue.name?.toLowerCase().includes(venueSearch.toLowerCase()) ||
+                      venue.description?.toLowerCase().includes(venueSearch.toLowerCase()) ||
+                      venue.location?.toLowerCase().includes(venueSearch.toLowerCase()) ||
+                      venue.category?.toLowerCase().includes(venueSearch.toLowerCase());
+
+                    const cat = (venue.category || '').toLowerCase();
+                    const filter = (venueCategoryFilter || '').toLowerCase();
+
+                    let matchesCategory = true;
+                    if (filter) {
+                      if (filter === 'party_lawn') {
+                        matchesCategory = cat.includes('party') || cat.includes('lawn') || cat.includes('plot');
+                      } else if (filter === 'banquet') {
+                        matchesCategory = cat.includes('banquet') || cat.includes('hall');
+                      } else if (filter === 'resort') {
+                        matchesCategory = cat.includes('resort') || cat.includes('farm');
+                      } else if (filter === 'open_ground') {
+                        matchesCategory = cat.includes('open') || cat.includes('ground') || cat.includes('stadium');
+                      } else if (filter === 'villa') {
+                        matchesCategory = cat.includes('villa') || cat.includes('pool');
+                      } else if (filter === 'conference') {
+                        matchesCategory = cat.includes('conference') || cat.includes('convention');
+                      } else if (filter === 'rooftop') {
+                        matchesCategory = cat.includes('rooftop') || cat.includes('terrace');
+                      } else if (filter === 'auditorium') {
+                        matchesCategory = cat.includes('auditorium') || cat.includes('theatre');
+                      } else if (filter === 'beach') {
+                        matchesCategory = cat.includes('beach');
+                      } else if (filter === 'heritage') {
+                        matchesCategory = cat.includes('heritage') || cat.includes('haveli') || cat.includes('palace');
+                      } else if (filter === 'community') {
+                        matchesCategory = cat.includes('community') || cat.includes('marriage');
+                      } else if (filter === 'exhibition') {
+                        matchesCategory = cat.includes('exhibition') || cat.includes('trade');
+                      } else {
+                        matchesCategory = cat.includes(filter);
+                      }
+                    }
+
+                    return matchesSearch && matchesCategory;
+                  }).length === 0 ? (
+                  <div className="glass-panel text-center py-12 rounded-2xl text-dark-muted">No venues found matching your criteria.</div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {venues.filter((venue) => {
+                      const matchesSearch = !venueSearch || 
+                        venue.name?.toLowerCase().includes(venueSearch.toLowerCase()) ||
+                        venue.description?.toLowerCase().includes(venueSearch.toLowerCase()) ||
+                        venue.location?.toLowerCase().includes(venueSearch.toLowerCase()) ||
+                        venue.category?.toLowerCase().includes(venueSearch.toLowerCase());
+
+                      const cat = (venue.category || '').toLowerCase();
+                      const filter = (venueCategoryFilter || '').toLowerCase();
+
+                      let matchesCategory = true;
+                      if (filter) {
+                        if (filter === 'party_lawn') {
+                          matchesCategory = cat.includes('party') || cat.includes('lawn') || cat.includes('plot');
+                        } else if (filter === 'banquet') {
+                          matchesCategory = cat.includes('banquet') || cat.includes('hall');
+                        } else if (filter === 'resort') {
+                          matchesCategory = cat.includes('resort') || cat.includes('farm');
+                        } else if (filter === 'open_ground') {
+                          matchesCategory = cat.includes('open') || cat.includes('ground') || cat.includes('stadium');
+                        } else if (filter === 'villa') {
+                          matchesCategory = cat.includes('villa') || cat.includes('pool');
+                        } else if (filter === 'conference') {
+                          matchesCategory = cat.includes('conference') || cat.includes('convention');
+                        } else if (filter === 'rooftop') {
+                          matchesCategory = cat.includes('rooftop') || cat.includes('terrace');
+                        } else if (filter === 'auditorium') {
+                          matchesCategory = cat.includes('auditorium') || cat.includes('theatre');
+                        } else if (filter === 'beach') {
+                          matchesCategory = cat.includes('beach');
+                        } else if (filter === 'heritage') {
+                          matchesCategory = cat.includes('heritage') || cat.includes('haveli') || cat.includes('palace');
+                        } else if (filter === 'community') {
+                          matchesCategory = cat.includes('community') || cat.includes('marriage');
+                        } else if (filter === 'exhibition') {
+                          matchesCategory = cat.includes('exhibition') || cat.includes('trade');
+                        } else {
+                          matchesCategory = cat.includes(filter);
+                        }
+                      }
+
+                      return matchesSearch && matchesCategory;
+                    }).map((venue) => (
+                      <div 
+                        key={venue.id} 
+                        onClick={() => setSelectedDetailVenue(venue)}
+                        className="glass-card rounded-2xl overflow-hidden flex flex-col h-full border border-white/5 hover:border-brand-primary/20 transition-all bg-dark-bg/20 cursor-pointer group"
+                      >
+                        {/* Image */}
+                        {venue.image ? (
+                          <img
+                            src={venue.image.startsWith('http') ? venue.image : `${BACKEND_URL}${venue.image}`}
+                            alt={venue.name}
+                            className="w-full h-40 object-cover group-hover:scale-105 transition-transform duration-500"
+                          />
+                        ) : (
+                          <div className="w-full h-40 bg-white/5 flex items-center justify-center text-dark-muted border-b border-white/5">
+                            <Building className="w-10 h-10" />
+                          </div>
+                        )}
+                        
+                        {/* Body */}
+                        <div className="p-5 flex-grow flex flex-col justify-between space-y-4">
+                          <div>
+                            <div className="flex justify-between items-start gap-2">
+                              <div>
+                                <h4 className="font-bold text-dark-text text-base leading-snug group-hover:text-brand-primary transition-colors">{venue.name}</h4>
+                                <div className="flex items-center space-x-1 mt-1 text-[11px] text-amber-400 font-semibold">
+                                  <Star className="w-3.5 h-3.5 fill-amber-400" />
+                                  <span>{venue.rating_avg || '0.0'} ({venue.rating_count || 0} reviews)</span>
                                 </div>
-                                <span className="text-xs font-black text-brand-primary bg-brand-primary/10 px-2 py-1 rounded-lg flex-shrink-0">
-                                  ₹{parseFloat(venue.price_per_day).toLocaleString('en-IN')}/day
-                                </span>
                               </div>
-                              <p className="text-xs text-dark-muted mt-2 line-clamp-2 leading-relaxed">{venue.description}</p>
-                              
-                              <div className="flex items-center space-x-1.5 text-[10px] text-dark-muted mt-3">
-                                <MapPin className="w-3.5 h-3.5 text-brand-primary" />
-                                <span className="truncate">{venue.location}</span>
-                              </div>
+                              <span className="text-xs font-black text-brand-primary bg-brand-primary/10 px-2 py-1 rounded-lg flex-shrink-0">
+                                ₹{parseFloat(venue.price_per_day).toLocaleString('en-IN')}/day
+                              </span>
                             </div>
-
-                            <button
-                              onClick={() => setRentModal({ show: true, venue })}
-                              className="w-full bg-brand-primary hover:bg-[#0ea5e9] text-white py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-colors shadow-md mt-4"
-                            >
-                              Book Venue Plot
-                            </button>
+                            <p className="text-xs text-dark-muted mt-2 line-clamp-2 leading-relaxed">{venue.description}</p>
+                            
+                            <div className="flex items-center space-x-1.5 text-[10px] text-dark-muted mt-3">
+                              <MapPin className="w-3.5 h-3.5 text-brand-primary" />
+                              <span className="truncate">{venue.location}</span>
+                            </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
 
-                {/* 2. My Bookings (Col-span 1) */}
-                <div className="space-y-6">
-                  <div className="flex items-center space-x-2">
-                    <Calendar className="w-5 h-5 text-emerald-400" />
-                    <h3 className="text-lg font-bold text-dark-text uppercase tracking-wider">My Venue Rentals</h3>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setRentModal({ show: true, venue });
+                            }}
+                            className="w-full bg-brand-primary hover:bg-[#0ea5e9] text-white py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-colors shadow-md mt-4"
+                          >
+                            Book Venue Plot
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-
-                  {loadingVenues ? (
-                    <div className="py-12 flex justify-center"><div className="w-8 h-8 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin"></div></div>
-                  ) : venueBookings.length === 0 ? (
-                    <div className="glass-panel text-center py-12 rounded-2xl text-dark-muted text-xs">You haven't requested any venue rentals yet.</div>
-                  ) : (
-                    <div className="space-y-4 max-h-[600px] overflow-y-auto pr-1">
-                      {venueBookings.map((vb) => (
-                        <div key={vb.id} className="glass-card rounded-2xl p-5 border border-white/5 space-y-3.5 bg-dark-bg/25">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <h5 className="font-bold text-dark-text text-sm">{vb.venue_details?.name}</h5>
-                              <p className="text-[10px] text-dark-muted mt-1">{vb.start_date} to {vb.end_date}</p>
-                            </div>
-                            <span className={`px-2 py-0.5 rounded text-[9px] uppercase font-extrabold ${
-                              vb.status === 'approved' ? (vb.cancel_requested ? 'bg-yellow-500/10 text-yellow-400' : 'bg-emerald-500/10 text-emerald-400') :
-                              vb.status === 'pending' ? 'bg-yellow-500/10 text-yellow-400' :
-                              'bg-red-500/10 text-red-400'
-                            }`}>
-                              {vb.cancel_requested && vb.status === 'approved' ? 'Cancel Requested' : vb.status}
-                            </span>
-                          </div>
-
-                          {/* Service Badges */}
-                          {(vb.use_catering || vb.use_dj || vb.use_decor) && (
-                            <div className="flex flex-wrap gap-1.5">
-                              {vb.use_catering && (
-                                <span className="text-[9px] font-bold bg-orange-500/10 text-orange-400 px-2 py-0.5 rounded flex items-center gap-1" title={`Menu: ${vb.catering_description}`}>
-                                  🍽 Catering ({vb.catering_cuisine}) ×{vb.catering_plates} plates
-                                </span>
-                              )}
-                              {vb.use_dj && (
-                                <span className="text-[9px] font-bold bg-purple-500/10 text-purple-400 px-2 py-0.5 rounded flex items-center gap-1" title={`Equipment: ${vb.dj_equipment}`}>
-                                  🎵 DJ ({vb.dj_package})
-                                </span>
-                              )}
-                              {vb.use_decor && (
-                                <span className="text-[9px] font-bold bg-pink-500/10 text-pink-400 px-2 py-0.5 rounded flex items-center gap-1" title={`Theme: ${vb.decor_theme}`}>
-                                  🎨 Decor ({vb.decor_theme})
-                                </span>
-                              )}
-                            </div>
-                          )}
-
-                          <div className="flex justify-between items-center text-xs border-t border-white/5 pt-2.5">
-                            <span className="text-dark-muted font-medium">Total Rent:</span>
-                            <span className="font-black text-dark-text font-mono">₹{parseFloat(vb.total_price).toLocaleString('en-IN')}</span>
-                          </div>
-
-                           {vb.status === 'approved' && (
-                            <div className="flex flex-col gap-2 w-full">
-                              <div className="flex gap-2 w-full">
-                                <a
-                                  href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(vb.venue_details?.location || vb.venue_details?.name)}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="flex-1 flex items-center justify-center space-x-1.5 bg-white/5 hover:bg-white/10 text-brand-primary hover:text-white py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all border border-white/5"
-                                >
-                                  <MapPin className="w-3.5 h-3.5" />
-                                  <span>Get Directions</span>
-                                </a>
-                                <button
-                                  onClick={() => handleOpenReviewModal('venue', vb.venue_details)}
-                                  className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all border flex items-center justify-center gap-1 ${
-                                    vb.venue_details?.reviews?.some(r => r.user === user?.id)
-                                      ? 'bg-white/5 text-dark-muted border-white/5 cursor-not-allowed'
-                                      : 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border-amber-500/20'
-                                  }`}
-                                  disabled={vb.venue_details?.reviews?.some(r => r.user === user?.id)}
-                                >
-                                  <Star className={`w-3.5 h-3.5 ${vb.venue_details?.reviews?.some(r => r.user === user?.id) ? '' : 'fill-amber-400'}`} />
-                                  <span>{vb.venue_details?.reviews?.some(r => r.user === user?.id) ? 'Rated' : 'Rate'}</span>
-                                </button>
-                              </div>
-                              {!vb.cancel_requested && (
-                                <button
-                                  onClick={() => handleCancelVenueBooking(vb)}
-                                  className="w-full flex items-center justify-center space-x-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all border border-red-500/10"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                  <span>Cancel Rental</span>
-                                </button>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                )}
               </div>
             </motion.div>
           )}
@@ -1594,6 +1781,18 @@ const CustomerDashboard = () => {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Venue Detail Modal */}
+      {selectedDetailVenue && (
+        <VenueDetailModal
+          venue={selectedDetailVenue}
+          onClose={() => setSelectedDetailVenue(null)}
+          onBookNow={(venue) => {
+            setSelectedDetailVenue(null);
+            setRentModal({ show: true, venue });
+          }}
+        />
+      )}
     </div>
   );
 };
