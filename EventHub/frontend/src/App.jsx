@@ -115,6 +115,7 @@ function App() {
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/explore" element={<EventExplore />} />
+              <Route path="/events" element={<Navigate to="/explore" replace />} />
               <Route path="/live-feed" element={<LiveEvents />} />
               <Route path="/pay-simulate" element={<PaySimulate />} />
               <Route path="/catering" element={<CateringExplore />} />
