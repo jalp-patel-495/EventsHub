@@ -1928,11 +1928,8 @@ const PlotOwnerDashboard = () => {
                       <option value="Party Plot / Lawn">🌳 Party Plot / Open Lawn</option>
                       <option value="Banquet Hall">🏛️ Banquet Hall</option>
                       <option value="Resort & Farmhouse">🏰 Resort & Farmhouse</option>
-                      <option value="Rooftop Venue">🏙️ Rooftop Venue</option>
                       <option value="Auditorium & Convention Center">🏢 Auditorium & Convention Center</option>
-                      <option value="Lakefront & Outdoor Ground">🏖️ Lakefront & Outdoor Ground</option>
                       <option value="Exhibition Ground">🎪 Exhibition Ground</option>
-                      <option value="Hotel Ballroom">🏨 Hotel Ballroom</option>
                     </select>
                   </div>
 
