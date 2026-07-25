@@ -195,17 +195,17 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
         return;
       }
       if (!cleanUpi.includes('@')) {
-        setUpiError("Invalid UPI ID. UPI ID must include '@' followed by your bank name (e.g. amit@okhdfcbank, user@paytm).");
+        setUpiError("Invalid UPI ID. UPI ID must include '@' followed by your bank name (e.g. name@okhdfcbank, user@paytm).");
         return;
       }
       const parts = cleanUpi.split('@');
       if (!parts[0] || !parts[1]) {
-        setUpiError("Invalid UPI ID format. Please specify username and bank name after '@' (e.g. amit@okhdfcbank).");
+        setUpiError("Invalid UPI ID format. Please specify username and bank name after '@' (e.g. name@okhdfcbank).");
         return;
       }
       const upiRegex = /^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z0-9]{2,64}$/;
       if (!upiRegex.test(cleanUpi)) {
-        setUpiError("Invalid UPI ID format. Must be 'username@bankname' (e.g. amit@okhdfcbank, 9876543210@paytm, user@okaxis).");
+        setUpiError("Invalid UPI ID format. Must be 'username@bankname' (e.g. name@okhdfcbank, 9876543210@paytm, user@okaxis).");
         return;
       }
     }
@@ -241,6 +241,10 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
         setCardError('Card Number must be exactly 16 digits.');
         return;
       }
+      if (/^0+$/.test(cleanedCardNumber)) {
+        setCardError('Invalid Card Number. Card number cannot be all zeros.');
+        return;
+      }
       if (cardHolder.trim().length < 3) {
         setCardError('Cardholder Name must be at least 3 characters.');
         return;
@@ -266,6 +270,10 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
       }
       if (cardCvv.length !== 3) {
         setCardError('CVV must be exactly 3 digits.');
+        return;
+      }
+      if (cardCvv === '000') {
+        setCardError("Invalid CVV. CVV cannot be '000'.");
         return;
       }
     }
@@ -902,7 +910,7 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
                     setCardNumber(val);
                     setCardError('');
                   }}
-                  placeholder="4111 2222 3333 4444"
+                  placeholder="Enter Card Number"
                   maxLength="19"
                   className="glass-input w-full px-3 py-2.5 text-xs focus:ring-1 focus:ring-[#3B82F6]/30"
                 />
@@ -918,7 +926,7 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
                     setCardHolder(val);
                     setCardError('');
                   }}
-                  placeholder="Amit Patel"
+                  placeholder="Enter Your Name"
                   className="glass-input w-full px-3 py-2.5 text-xs focus:ring-1 focus:ring-[#3B82F6]/30"
                 />
               </div>
@@ -955,7 +963,7 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
                       setCardCvv(val);
                       setCardError('');
                     }}
-                    placeholder="123"
+                    placeholder="Enter CVV No"
                     maxLength="3"
                     className="glass-input w-full px-3 py-2.5 text-xs focus:ring-1 focus:ring-[#3B82F6]/30"
                   />

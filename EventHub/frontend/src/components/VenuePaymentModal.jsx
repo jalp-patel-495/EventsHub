@@ -248,6 +248,10 @@ const VenuePaymentModal = ({ venue, startDate, endDate, onClose, onPaymentSucces
         setCardError('Card Number must contain only digits.');
         return;
       }
+      if (/^0+$/.test(cleanedCardNumber)) {
+        setCardError('Invalid Card Number. Card number cannot be all zeros.');
+        return;
+      }
       if (cardHolder.trim().length < 3) {
         setCardError('Cardholder Name must be at least 3 characters.');
         return;
@@ -273,6 +277,10 @@ const VenuePaymentModal = ({ venue, startDate, endDate, onClose, onPaymentSucces
       }
       if (cardCvv.length !== 3) {
         setCardError('CVV must be exactly 3 digits.');
+        return;
+      }
+      if (cardCvv === '000') {
+        setCardError("Invalid CVV. CVV cannot be '000'.");
         return;
       }
     }
