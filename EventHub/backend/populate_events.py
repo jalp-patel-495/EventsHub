@@ -168,7 +168,7 @@ def generate_events(organizer, categories, venues):
                 "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=500",
             ],
             "titles": [
-                "Sunburn Club Night", "Arijit Singh Symphony", "Retro Bollywood Beats", 
+                "Jamverse: The Jamming Session 2.0", "Sunburn Club Night", "Arijit Singh Symphony", "Retro Bollywood Beats", 
                 "Indie Rock Showcase", "Jazz under the Stars", "Electronic Music Festival", 
                 "Sufi Night Live", "Metal Mania Concert", "Acoustic Pop Session", 
                 "Hip Hop Block Party", "EDM Dance Arena", "Ghazal & Classical Evening", 
@@ -293,6 +293,7 @@ def generate_events(organizer, categories, venues):
                 "https://images.unsplash.com/photo-1496024840928-4c417adf211d?w=500",
             ],
             "titles": [
+                "Mandavadi - Garba & Mandli Night 2026", "Sach Raatri Grand Navratri Garba 2026", "Sharad Ratri 2026 - Aarambh Private Garba",
                 "Pre-Navratri Garba Night", "Diwali Mela 2026", "Uttarayan Kite Festival", 
                 "Holi Color Fest", "Janmashtami Utsav", "Traditional Garba Workshop", 
                 "Rath Yatra Heritage Tour", "Garba Queens Championship", "Dussehra Dandiya Night", 

@@ -820,40 +820,7 @@ const PlotOwnerDashboard = () => {
 
       </div>
 
-      {/* Sub-Dashboard Nav Pills Bar with Live Approval Request Badges */}
-      <div className="flex flex-wrap items-center gap-2 mb-8 p-1.5 rounded-2xl bg-white/[0.03] border border-white/5 backdrop-blur-md">
-        {[
-          { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
-          { id: 'venues', label: 'My Venues', icon: Building, badge: venues.filter(v => !v.is_approved).length > 0 ? `${venues.filter(v => !v.is_approved).length} Pending Admin` : null, badgeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/30' },
-          { id: 'requests', label: 'Rental Requests', icon: Calendar, badge: bookings.filter(b => b.status === 'pending').length > 0 ? bookings.filter(b => b.status === 'pending').length : null, badgeColor: 'bg-red-500 text-white animate-pulse shadow-md shadow-red-500/30' },
-          { id: 'refunds', label: 'Refund Requests', icon: ShieldAlert, badge: bookings.filter(b => b.cancel_requested && b.status === 'cancelled').length > 0 ? bookings.filter(b => b.cancel_requested && b.status === 'cancelled').length : null, badgeColor: 'bg-rose-500 text-white animate-pulse' },
-          { id: 'services', label: 'Manage Services', icon: Sparkles },
-          { id: 'reviews', label: 'Customer Reviews', icon: Star },
-          { id: 'calendar', label: 'Calendar', icon: Calendar },
-        ].map((tab) => {
-          const Icon = tab.icon;
-          const isSelected = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all border cursor-pointer ${
-                isSelected
-                  ? 'bg-brand-primary text-white border-transparent shadow-lg shadow-blue-500/20'
-                  : 'bg-white/5 hover:bg-white/10 text-dark-muted hover:text-dark-text border-white/5'
-              }`}
-            >
-              <Icon className="w-4 h-4 text-brand-primary" />
-              <span>{tab.label}</span>
-              {tab.badge && (
-                <span className={`px-2 py-0.5 text-[10px] font-black rounded-full border shadow-sm ${tab.badgeColor || 'bg-red-500 text-white'}`}>
-                  {tab.badge}
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </div>
+
 
       {/* Panels */}
       <div className="mt-8">

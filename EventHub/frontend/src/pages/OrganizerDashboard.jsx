@@ -271,6 +271,17 @@ const OrganizerDashboard = () => {
     }
   };
 
+  const handleDeleteEvent = async (eventId) => {
+    if (!window.confirm("Are you sure you want to delete this event? This action cannot be undone.")) return;
+    try {
+      await api.delete(`events/listings/${eventId}/`);
+      showFeedback("Event deleted successfully.", "success");
+      fetchDashboardData();
+    } catch (err) {
+      showFeedback(err.response?.data?.error || "Failed to delete event.", "error");
+    }
+  };
+
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
@@ -565,17 +576,6 @@ const OrganizerDashboard = () => {
       showFeedback("Venue booked but event listing creation failed: " + (err.response?.data?.detail || "Connection error"), "error");
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleDeleteEvent = async (eventId) => {
-    if (!window.confirm("Are you sure you want to delete this event? This will remove all bookings.")) return;
-    try {
-      await api.delete(`events/listings/${eventId}/`);
-      showFeedback("Event deleted successfully.", "success");
-      fetchDashboardData();
-    } catch (err) {
-      showFeedback("Failed to delete event.", "error");
     }
   };
 
