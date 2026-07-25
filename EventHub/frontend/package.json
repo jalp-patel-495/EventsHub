@@ -2,12 +2,15 @@
   "name": "frontend",
   "private": true,
   "version": "0.0.0",
+  "homepage": "https://jalp-patel-495.github.io/EventsHub",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "backend": "cd ../backend && run_backend.bat",
     "seed": "cd ../backend && .venv\\Scripts\\python.exe populate_events.py",
     "build": "vite build",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d dist",
     "lint": "oxlint",
     "preview": "vite preview"
   },
@@ -29,6 +32,7 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.3",
     "autoprefixer": "^10.5.2",
+    "gh-pages": "^6.3.0",
     "oxlint": "^1.71.0",
     "postcss": "^8.5.16",
     "tailwindcss": "^3.4.19",
