@@ -1001,7 +1001,6 @@ const CustomerDashboard = () => {
                     <option value="open_ground">Open Ground / Stadium</option>
                     <option value="villa">Luxury Villa / Poolside</option>
                     <option value="conference">Conference & Convention Hall</option>
-                    <option value="rooftop">Rooftop Terrace & Garden</option>
                     <option value="auditorium">Auditorium & Theatre</option>
                     <option value="beach">Beachside Lawn & Club</option>
                     <option value="heritage">Heritage Haveli & Palace</option>
