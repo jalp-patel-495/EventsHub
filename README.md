@@ -20,6 +20,11 @@ EventHub is a modern, responsive web application designed for discovering, booki
 
 ---
 
+## 🏆 Project Status
+Active development and continuous updates.
+
+---
+
 ## 🚀 Getting Started
 
 ### Backend Setup
