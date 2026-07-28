@@ -3,13 +3,14 @@ import api, { BACKEND_URL } from '../api/api';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Calendar, MapPin, Filter, Star, Heart, X, Ticket, ChevronLeft, ChevronRight, CheckCircle2, ArrowLeft, Smartphone, CreditCard, Lock, ShieldCheck, Download, QrCode } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import BookingModal from '../components/BookingModal';
 import EventDetailModal from '../components/EventDetailModal';
 
 const EventExplore = () => {
   const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   // API Data states
   const [events, setEvents] = useState([]);
@@ -26,9 +27,7 @@ const EventExplore = () => {
   const [maxPrice, setMaxPrice] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [page, setPage] = useState(1);
   const [showFilters, setShowFilters] = useState(false); // filters hidden by default
-  const itemsPerPage = showFilters ? 8 : 12;
 
   // Booking Modal State
   const [bookingEvent, setBookingEvent] = useState(null);
@@ -40,13 +39,16 @@ const EventExplore = () => {
     }
   }, [isAuthenticated]);
 
+  // Read URL query params on load (e.g. ?category=... or ?search=...)
   useEffect(() => {
-    fetchEvents();
-  }, [category, minPrice, maxPrice, startDate, endDate, page, itemsPerPage]);
-
-  useEffect(() => {
-    const queryParams = new URLSearchParams(window.location.search);
+    const queryParams = new URLSearchParams(location.search);
+    const catParam = queryParams.get('category');
+    const searchParam = queryParams.get('search');
     const bookEventId = queryParams.get('book');
+
+    if (catParam) setCategory(catParam);
+    if (searchParam) setSearch(searchParam);
+
     if (bookEventId) {
       const fetchAndOpenBooking = async () => {
         try {
@@ -58,7 +60,11 @@ const EventExplore = () => {
       };
       fetchAndOpenBooking();
     }
-  }, []);
+  }, [location.search]);
+
+  useEffect(() => {
+    fetchEvents();
+  }, [search, category, minPrice, maxPrice, startDate, endDate]);
 
   const fetchCategories = async () => {
     try {
@@ -82,7 +88,7 @@ const EventExplore = () => {
   const fetchEvents = async () => {
     setLoading(true);
     try {
-      let url = `events/listings/?page=${page}&page_size=${itemsPerPage}`;
+      let url = `events/listings/?page_size=1000`;
       if (search) url += `&search=${search}`;
       if (category) url += `&category=${category}`;
       if (minPrice) url += `&min_price=${minPrice}`;
@@ -102,7 +108,6 @@ const EventExplore = () => {
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
-    setPage(1);
     fetchEvents();
   };
 
@@ -145,11 +150,7 @@ const EventExplore = () => {
 
   const handleToggleFilters = () => {
     setShowFilters(!showFilters);
-    setPage(1);
   };
-
-  // Pagination bounds
-  const totalPages = Math.ceil(totalCount / itemsPerPage) || 1;
 
   return (
     <div className="w-full max-w-none px-4 sm:px-6 lg:px-12 py-10 bg-dark-bg min-h-screen">
@@ -184,7 +185,7 @@ const EventExplore = () => {
         <div>
           <select
             value={category}
-            onChange={(e) => { setCategory(e.target.value); setPage(1); }}
+            onChange={(e) => setCategory(e.target.value)}
             className="glass-input w-full px-4 py-3 rounded-xl text-sm cursor-pointer"
           >
             <option value="">All Categories</option>
@@ -235,7 +236,7 @@ const EventExplore = () => {
                 <input
                   type="number"
                   value={minPrice}
-                  onChange={(e) => { setMinPrice(e.target.value); setPage(1); }}
+                  onChange={(e) => setMinPrice(e.target.value)}
                   placeholder="Min"
                   className="glass-input w-full px-3 py-2 rounded-lg text-xs"
                 />
@@ -243,7 +244,7 @@ const EventExplore = () => {
                 <input
                   type="number"
                   value={maxPrice}
-                  onChange={(e) => { setMaxPrice(e.target.value); setPage(1); }}
+                  onChange={(e) => setMaxPrice(e.target.value)}
                   placeholder="Max"
                   className="glass-input w-full px-3 py-2 rounded-lg text-xs"
                 />
@@ -257,13 +258,13 @@ const EventExplore = () => {
                 <input
                   type="date"
                   value={startDate}
-                  onChange={(e) => { setStartDate(e.target.value); setPage(1); }}
+                  onChange={(e) => setStartDate(e.target.value)}
                   className="glass-input w-full px-3 py-2 rounded-lg text-xs"
                 />
                 <input
                   type="date"
                   value={endDate}
-                  onChange={(e) => { setEndDate(e.target.value); setPage(1); }}
+                  onChange={(e) => setEndDate(e.target.value)}
                   className="glass-input w-full px-3 py-2 rounded-lg text-xs"
                 />
               </div>
@@ -279,7 +280,6 @@ const EventExplore = () => {
                 setMaxPrice('');
                 setStartDate('');
                 setEndDate('');
-                setPage(1);
               }}
               className="w-full text-center py-2 text-xs font-semibold border border-white/5 bg-white/5 hover:bg-white/10 rounded-lg transition-colors text-dark-muted hover:text-dark-text"
             >
@@ -301,130 +301,107 @@ const EventExplore = () => {
               <p className="text-dark-muted">No events match your search criteria. Try removing filters!</p>
             </div>
           ) : (
-            <>
-              <div className={`grid grid-cols-1 md:grid-cols-2 ${showFilters ? '' : 'lg:grid-cols-3'} gap-6`}>
-                {events.map((event) => {
-                  const isWishlisted = wishlistedIds.has(event.id);
-                  const remainingTickets = event.tickets_total - event.tickets_sold;
-                  return (
-                    <div key={event.id} className="glass-card rounded-2xl overflow-hidden flex flex-col relative group">
-                      {/* Image Banner */}
-                      <div className="cursor-pointer" onClick={() => setSelectedDetailEvent(event)}>
-                        {event.image ? (
-                          <img
-                            src={event.image.startsWith('http') ? event.image : `${BACKEND_URL}${event.image}`}
-                            alt={event.title}
-                            className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-500"
-                          />
-                        ) : (
-                          <div className="w-full h-48 bg-white/5 flex items-center justify-center text-dark-muted">
-                            <Calendar className="w-10 h-10" />
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Wishlist Heart */}
-                      <button
-                        type="button"
-                        onClick={() => handleWishlistToggle(event.id)}
-                        className={`absolute top-4 right-4 p-2 rounded-full backdrop-blur-md border border-white/10 transition-all ${
-                          isWishlisted ? 'bg-red-500 text-white border-transparent' : 'bg-black/30 text-white hover:bg-black/50'
-                        }`}
-                      >
-                        <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-white' : ''}`} />
-                      </button>
-
-                      {/* Content */}
-                      <div className="p-6 flex flex-col flex-grow">
-                        <div className="flex justify-between items-start mb-2">
-                          <span className="text-[10px] font-bold uppercase tracking-wider bg-white/5 text-dark-muted px-2 py-0.5 rounded">
-                            {event.category_details?.name || 'General'}
-                          </span>
-                          <span className="text-xs font-semibold text-amber-400 flex items-center space-x-0.5">
-                            <Star className="w-3.5 h-3.5 fill-amber-400" />
-                            <span>{event.rating_avg}</span>
-                          </span>
+            <div className={`grid grid-cols-1 md:grid-cols-2 ${showFilters ? '' : 'lg:grid-cols-3'} gap-6`}>
+              {events.map((event) => {
+                const isWishlisted = wishlistedIds.has(event.id);
+                const remainingTickets = event.tickets_total - event.tickets_sold;
+                return (
+                  <div key={event.id} className="glass-card rounded-2xl overflow-hidden flex flex-col relative group">
+                    {/* Image Banner */}
+                    <div className="cursor-pointer" onClick={() => setSelectedDetailEvent(event)}>
+                      {event.image ? (
+                        <img
+                          src={event.image.startsWith('http') ? event.image : `${BACKEND_URL}${event.image}`}
+                          alt={event.title}
+                          className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                      ) : (
+                        <div className="w-full h-48 bg-white/5 flex items-center justify-center text-dark-muted">
+                          <Calendar className="w-10 h-10" />
                         </div>
-                        <h4 
-                          onClick={() => setSelectedDetailEvent(event)}
-                          className="font-bold text-lg text-dark-text leading-tight group-hover:text-brand-primary transition-colors cursor-pointer"
-                        >
-                          {event.title}
-                        </h4>
-                        <p className="text-xs text-dark-muted mt-1 flex items-center space-x-1 cursor-pointer" onClick={() => setSelectedDetailEvent(event)}>
-                          <Calendar className="w-3 h-3 text-brand-primary" />
-                          <span>{event.date} at {event.time}</span>
-                        </p>
-                        <p className="text-xs text-dark-muted mt-0.5 flex items-center space-x-1 cursor-pointer" onClick={() => setSelectedDetailEvent(event)}>
-                          <MapPin className="w-3 h-3 text-brand-primary" />
-                          <span>{event.location}</span>
-                        </p>
+                      )}
+                    </div>
 
-                        <div className="w-full border-t border-white/5 my-4"></div>
+                    {/* Wishlist Heart */}
+                    <button
+                      type="button"
+                      onClick={() => handleWishlistToggle(event.id)}
+                      className={`absolute top-4 right-4 p-2 rounded-full backdrop-blur-md border border-white/10 transition-all ${
+                        isWishlisted ? 'bg-red-500 text-white border-transparent' : 'bg-black/30 text-white hover:bg-black/50'
+                      }`}
+                    >
+                      <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-white' : ''}`} />
+                    </button>
 
-                        {/* Price & Booking CTA */}
-                        <div className="flex items-center justify-between mt-auto">
-                          <div>
-                            <span className="text-[10px] font-semibold text-dark-muted uppercase">Ticket Price</span>
-                            <p className="font-extrabold text-brand-primary text-lg mt-0.5">₹{event.price}</p>
-                          </div>
-                          
-                          <div className="flex items-center space-x-2">
-                            <a
-                              href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(event.location)}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="px-3 py-2 bg-white/5 hover:bg-white/10 text-dark-text border border-white/5 rounded-xl transition-all flex items-center space-x-1 text-[11px] font-semibold"
-                              title="View Directions on Google Maps"
-                            >
-                              <MapPin className="w-3.5 h-3.5 text-brand-primary" />
-                              <span>View Direction</span>
-                            </a>
-                            {remainingTickets <= 0 ? (
-                              <span className="text-xs font-bold text-red-400 bg-red-500/10 px-3 py-1.5 rounded-lg border border-red-500/10">
-                                Sold Out
-                              </span>
-                            ) : (
-                              <button
-                                onClick={() => handleOpenBookingModal(event)}
-                                className="bg-brand-primary hover:bg-emerald-600 text-white text-xs font-semibold px-4 py-2 rounded-xl transition-all transform hover:-translate-y-0.5"
-                              >
-                                Book Now
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                        
-                        <span className="block text-[10px] text-dark-muted text-right mt-2 font-medium">
-                          {remainingTickets} tickets remaining
+                    {/* Content */}
+                    <div className="p-6 flex flex-col flex-grow">
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="text-[10px] font-bold uppercase tracking-wider bg-white/5 text-dark-muted px-2 py-0.5 rounded">
+                          {event.category_details?.name || 'General'}
+                        </span>
+                        <span className="text-xs font-semibold text-amber-400 flex items-center space-x-0.5">
+                          <Star className="w-3.5 h-3.5 fill-amber-400" />
+                          <span>{event.rating_avg}</span>
                         </span>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
+                      <h4 
+                        onClick={() => setSelectedDetailEvent(event)}
+                        className="font-bold text-lg text-dark-text leading-tight group-hover:text-brand-primary transition-colors cursor-pointer"
+                      >
+                        {event.title}
+                      </h4>
+                      <p className="text-xs text-dark-muted mt-1 flex items-center space-x-1 cursor-pointer" onClick={() => setSelectedDetailEvent(event)}>
+                        <Calendar className="w-3 h-3 text-brand-primary" />
+                        <span>{event.date} at {event.time}</span>
+                      </p>
+                      <p className="text-xs text-dark-muted mt-0.5 flex items-center space-x-1 cursor-pointer" onClick={() => setSelectedDetailEvent(event)}>
+                        <MapPin className="w-3 h-3 text-brand-primary" />
+                        <span>{event.location}</span>
+                      </p>
 
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex items-center justify-center space-x-4 mt-12">
-                  <button
-                    onClick={() => setPage(p => Math.max(1, p - 1))}
-                    disabled={page === 1}
-                    className="p-2 border border-white/5 bg-white/5 rounded-lg hover:bg-white/10 transition-colors disabled:opacity-30 disabled:pointer-events-none"
-                  >
-                    <ChevronLeft className="w-5 h-5 text-dark-text" />
-                  </button>
-                  <span className="text-sm font-semibold text-dark-muted">Page {page} of {totalPages}</span>
-                  <button
-                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                    disabled={page === totalPages}
-                    className="p-2 border border-white/5 bg-white/5 rounded-lg hover:bg-white/10 transition-colors disabled:opacity-30 disabled:pointer-events-none"
-                  >
-                    <ChevronRight className="w-5 h-5 text-dark-text" />
-                  </button>
-                </div>
-              )}
-            </>
+                      <div className="w-full border-t border-white/5 my-4"></div>
+
+                      {/* Price & Booking CTA */}
+                      <div className="flex items-center justify-between mt-auto">
+                        <div>
+                          <span className="text-[10px] font-semibold text-dark-muted uppercase">Ticket Price</span>
+                          <p className="font-extrabold text-brand-primary text-lg mt-0.5">₹{event.price}</p>
+                        </div>
+                        
+                        <div className="flex items-center space-x-2">
+                          <a
+                            href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(event.location)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-3 py-2 bg-white/5 hover:bg-white/10 text-dark-text border border-white/5 rounded-xl transition-all flex items-center space-x-1 text-[11px] font-semibold"
+                            title="View Directions on Google Maps"
+                          >
+                            <MapPin className="w-3.5 h-3.5 text-brand-primary" />
+                            <span>View Direction</span>
+                          </a>
+                          {remainingTickets <= 0 ? (
+                            <span className="text-xs font-bold text-red-400 bg-red-500/10 px-3 py-1.5 rounded-lg border border-red-500/10">
+                              Sold Out
+                            </span>
+                          ) : (
+                            <button
+                              onClick={() => handleOpenBookingModal(event)}
+                              className="bg-brand-primary hover:bg-emerald-600 text-white text-xs font-semibold px-4 py-2 rounded-xl transition-all transform hover:-translate-y-0.5"
+                            >
+                              Book Now
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <span className="block text-[10px] text-dark-muted text-right mt-2 font-medium">
+                        {remainingTickets} tickets remaining
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           )}
         </div>
       </div>

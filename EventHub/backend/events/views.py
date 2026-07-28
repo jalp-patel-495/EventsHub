@@ -68,7 +68,10 @@ class EventViewSet(viewsets.ModelViewSet):
         # Filtering by Category
         category = self.request.query_params.get('category')
         if category:
-            queryset = queryset.filter(category_id=category)
+            if str(category).isdigit():
+                queryset = queryset.filter(category_id=category)
+            else:
+                queryset = queryset.filter(category__name__icontains=category)
 
         # Filtering by Organizer
         organizer = self.request.query_params.get('organizer')
