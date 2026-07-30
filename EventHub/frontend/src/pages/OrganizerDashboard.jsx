@@ -31,7 +31,9 @@ const OrganizerDashboard = () => {
           ? 'refunds'
           : routeLocation.pathname === '/organizer/offers'
             ? 'offers'
-            : 'events';
+            : routeLocation.pathname === '/organizer/rentals'
+              ? 'venue_rentals'
+              : 'events';
   const setActiveTab = (tabId) => {
     const paths = {
       events: '/organizer/events',
@@ -39,7 +41,8 @@ const OrganizerDashboard = () => {
       reviews: '/organizer/reviews',
       analytics: '/organizer/analytics',
       refunds: '/organizer/refunds',
-      offers: '/organizer/offers'
+      offers: '/organizer/offers',
+      venue_rentals: '/organizer/rentals'
     };
     navigate(paths[tabId] || '/organizer/events');
   };
@@ -88,9 +91,6 @@ const OrganizerDashboard = () => {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentVenue, setPaymentVenue] = useState(null);
   const [paymentDates, setPaymentDates] = useState({ start: '', end: '' });
-
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 9;
 
   const [pendingEventData, setPendingEventData] = useState(null);
 
@@ -667,6 +667,7 @@ const OrganizerDashboard = () => {
             {activeTab === 'events' && 'Organizer Dashboard'}
             {activeTab === 'bookings' && 'Ticket Sales'}
             {activeTab === 'refunds' && 'Refund Ticket Requests'}
+            {activeTab === 'venue_rentals' && 'Venue Rentals & Plot Bookings'}
             {activeTab === 'reviews' && 'Customer Reviews'}
             {activeTab === 'analytics' && 'Revenue Analytics'}
             {activeTab === 'offers' && 'Event Promotional Offers'}
@@ -675,6 +676,7 @@ const OrganizerDashboard = () => {
             {activeTab === 'events' && 'Host events, review ticketing metrics, and manage customer sales'}
             {activeTab === 'bookings' && 'View and track all event tickets purchased by customers'}
             {activeTab === 'refunds' && 'Manage and approve cancelation refund requests submitted by attendees'}
+            {activeTab === 'venue_rentals' && 'View and manage plot venue rentals reserved for your events'}
             {activeTab === 'reviews' && 'Review feedback and ratings received from event attendees'}
             {activeTab === 'analytics' && 'Detailed overview of organizer income and event performance reports'}
             {activeTab === 'offers' && 'Set promotional discount coupon codes for your events and manage active offers'}
@@ -790,134 +792,85 @@ const OrganizerDashboard = () => {
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 15 }}
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+              className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-6"
             >
-              {(() => {
-                const totalPages = Math.ceil(myEvents.length / itemsPerPage) || 1;
-                const displayedEvents = myEvents.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-
-                return (
-                  <>
-                    {myEvents.length === 0 ? (
-                      <div className="col-span-full glass-panel text-center py-16 rounded-2xl">
-                        <Calendar className="w-12 h-12 text-dark-muted mx-auto mb-4" />
-                        <p className="text-dark-muted">You haven't created any events yet. Click "Create New Event" to get started!</p>
-                      </div>
+              {myEvents.length === 0 ? (
+                <div className="col-span-full glass-panel text-center py-16 rounded-2xl">
+                  <Calendar className="w-12 h-12 text-dark-muted mx-auto mb-4" />
+                  <p className="text-dark-muted">You haven't created any events yet. Click "Create New Event" to get started!</p>
+                </div>
+              ) : (
+                myEvents.map((event) => (
+                  <div key={event.id} className="glass-card rounded-2xl overflow-hidden flex flex-col">
+                    {event.image ? (
+                      <img
+                        src={event.image.startsWith('http') ? event.image : `${BACKEND_URL}${event.image}`}
+                        alt={event.title}
+                        className="w-full h-48 object-cover"
+                      />
                     ) : (
-                      displayedEvents.map((event) => (
-                        <div key={event.id} className="glass-card rounded-2xl overflow-hidden flex flex-col">
-                          {event.image ? (
-                            <img
-                              src={event.image.startsWith('http') ? event.image : `${BACKEND_URL}${event.image}`}
-                              alt={event.title}
-                              className="w-full h-48 object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-48 bg-white/5 flex items-center justify-center text-dark-muted">
-                              <Calendar className="w-10 h-10" />
-                            </div>
-                          )}
-                          
-                          <div className="p-6 flex flex-col flex-grow">
-                            <div className="flex justify-between items-start mb-2">
-                              <span className="text-[10px] font-bold uppercase tracking-wider bg-white/5 text-dark-muted px-2 py-0.5 rounded">
-                                {event.category_details?.name || 'General'}
-                              </span>
-                              <span className="text-sm font-semibold text-amber-400 flex items-center space-x-0.5">
-                                <Star className="w-3.5 h-3.5 fill-amber-400" />
-                                <span>{event.rating_avg}</span>
-                              </span>
-                            </div>
-                            <h4 className="font-bold text-lg text-dark-text">{event.title}</h4>
-                            <p className="text-xs text-dark-muted mt-1">{event.date} | {event.location}</p>
-                            
-                            <div className="grid grid-cols-2 gap-4 mt-6 p-3 bg-white/5 rounded-xl border border-white/5 text-center">
-                              <div>
-                                <span className="text-[10px] font-semibold text-dark-muted uppercase">Sold</span>
-                                <p className="font-bold text-dark-text mt-0.5">{event.tickets_sold} / {event.tickets_total}</p>
-                              </div>
-                              <div>
-                                <span className="text-[10px] font-semibold text-dark-muted uppercase">Ticket Price</span>
-                                <p className="font-bold text-brand-primary mt-0.5">₹{event.price}</p>
-                              </div>
-                            </div>
-
-                            <div className="flex items-center justify-end space-x-3 mt-6 pt-4 border-t border-white/5">
-                              <button
-                                onClick={() => {
-                                  setOfferEventId(event.id);
-                                  setOfferCode('');
-                                  setOfferDiscount('');
-                                  setOfferExpiry('');
-                                  setOfferModalOpen(true);
-                                }}
-                                className="flex items-center space-x-1 text-xs text-emerald-400 hover:text-emerald-300 font-semibold transition-colors"
-                              >
-                                <Tag className="w-3.5 h-3.5" />
-                                <span>Set Offer</span>
-                              </button>
-                              <button
-                                onClick={() => handleOpenEditModal(event)}
-                                className="flex items-center space-x-1 text-xs text-brand-primary hover:text-emerald-400 font-semibold transition-colors"
-                              >
-                                <Edit2 className="w-4 h-4" />
-                                <span>Edit</span>
-                              </button>
-                              <button
-                                onClick={() => handleDeleteEvent(event.id)}
-                                className="flex items-center space-x-1 text-xs text-red-400 hover:text-red-300 font-semibold transition-colors"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                                <span>Delete</span>
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    )}
-
-                    {/* Pagination Controls Bar */}
-                    {totalPages > 1 && (
-                      <div className="col-span-full flex flex-col sm:flex-row items-center justify-between gap-4 mt-8 pt-6 border-t border-white/5">
-                        <span className="text-xs text-dark-muted font-medium">
-                          Showing <span className="text-white font-bold">{Math.min((currentPage - 1) * itemsPerPage + 1, myEvents.length)}</span> to <span className="text-white font-bold">{Math.min(currentPage * itemsPerPage, myEvents.length)}</span> of <span className="text-white font-bold">{myEvents.length}</span> events
-                        </span>
-                        <div className="flex items-center space-x-2">
-                          <button
-                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                            disabled={currentPage === 1}
-                            className="px-3.5 py-2 rounded-xl text-xs font-bold bg-white/5 border border-white/10 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/10 transition-all flex items-center space-x-1"
-                          >
-                            <ChevronLeft className="w-4 h-4" />
-                            <span>Previous</span>
-                          </button>
-                          {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
-                            <button
-                              key={pageNum}
-                              onClick={() => setCurrentPage(pageNum)}
-                              className={`w-9 h-9 rounded-xl text-xs font-bold transition-all border ${
-                                currentPage === pageNum
-                                  ? 'bg-brand-primary text-white border-brand-primary shadow-lg shadow-emerald-500/20'
-                                  : 'bg-white/5 text-dark-muted hover:text-white border-white/10 hover:bg-white/10'
-                              }`}
-                            >
-                              {pageNum}
-                            </button>
-                          ))}
-                          <button
-                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                            disabled={currentPage === totalPages}
-                            className="px-3.5 py-2 rounded-xl text-xs font-bold bg-white/5 border border-white/10 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/10 transition-all flex items-center space-x-1"
-                          >
-                            <span>Next</span>
-                            <ChevronRight className="w-4 h-4" />
-                          </button>
-                        </div>
+                      <div className="w-full h-48 bg-white/5 flex items-center justify-center text-dark-muted">
+                        <Calendar className="w-10 h-10" />
                       </div>
                     )}
-                  </>
-                );
-              })()}
+                    
+                    <div className="p-6 flex flex-col flex-grow">
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="text-[10px] font-bold uppercase tracking-wider bg-white/5 text-dark-muted px-2 py-0.5 rounded">
+                          {event.category_details?.name || 'General'}
+                        </span>
+                        <span className="text-sm font-semibold text-amber-400 flex items-center space-x-0.5">
+                          <Star className="w-3.5 h-3.5 fill-amber-400" />
+                          <span>{event.rating_avg}</span>
+                        </span>
+                      </div>
+                      <h4 className="font-bold text-lg text-dark-text">{event.title}</h4>
+                      <p className="text-xs text-dark-muted mt-1">{event.date} | {event.location}</p>
+                      
+                      <div className="grid grid-cols-2 gap-4 mt-6 p-3 bg-white/5 rounded-xl border border-white/5 text-center">
+                        <div>
+                          <span className="text-[10px] font-semibold text-dark-muted uppercase">Sold</span>
+                          <p className="font-bold text-dark-text mt-0.5">{event.tickets_sold} / {event.tickets_total}</p>
+                        </div>
+                        <div>
+                          <span className="text-[10px] font-semibold text-dark-muted uppercase">Ticket Price</span>
+                          <p className="font-bold text-brand-primary mt-0.5">₹{event.price}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-end space-x-3 mt-6 pt-4 border-t border-white/5">
+                        <button
+                          onClick={() => {
+                            setOfferEventId(event.id);
+                            setOfferCode('');
+                            setOfferDiscount('');
+                            setOfferExpiry('');
+                            setOfferModalOpen(true);
+                          }}
+                          className="flex items-center space-x-1 text-xs text-emerald-400 hover:text-emerald-300 font-semibold transition-colors"
+                        >
+                          <Tag className="w-3.5 h-3.5" />
+                          <span>Set Offer</span>
+                        </button>
+                        <button
+                          onClick={() => handleOpenEditModal(event)}
+                          className="flex items-center space-x-1 text-xs text-brand-primary hover:text-emerald-400 font-semibold transition-colors"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                          <span>Edit</span>
+                        </button>
+                        <button
+                          onClick={() => handleDeleteEvent(event.id)}
+                          className="flex items-center space-x-1 text-xs text-red-400 hover:text-red-300 font-semibold transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          <span>Delete</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
             </motion.div>
           )}
 
