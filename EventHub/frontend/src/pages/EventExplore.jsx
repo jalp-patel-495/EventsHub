@@ -301,7 +301,7 @@ const EventExplore = () => {
               <p className="text-dark-muted">No events match your search criteria. Try removing filters!</p>
             </div>
           ) : (
-            <div className={`grid grid-cols-1 md:grid-cols-2 ${showFilters ? '' : 'lg:grid-cols-3'} gap-6`}>
+            <div className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 ${showFilters ? 'lg:grid-cols-3' : 'lg:grid-cols-4 xl:grid-cols-4'} gap-6`}>
               {events.map((event) => {
                 const isWishlisted = wishlistedIds.has(event.id);
                 const remainingTickets = event.tickets_total - event.tickets_sold;
