@@ -201,7 +201,7 @@ const OrganizerDashboard = () => {
 
   const fetchApprovedVenues = async () => {
     try {
-      const res = await api.get('venues/listings/');
+      const res = await api.get('venues/listings/?page_size=1000');
       setApprovedVenues(res.data.results || res.data);
     } catch (err) {
       console.error("Failed to fetch approved venues:", err);
@@ -1032,89 +1032,173 @@ const OrganizerDashboard = () => {
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 15 }}
-              className="glass-panel rounded-2xl overflow-hidden"
+              className="space-y-10"
             >
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-white/5 bg-white/5 text-xs font-semibold text-dark-muted uppercase tracking-wider">
-                      <th className="px-6 py-4">Venue</th>
-                      <th className="px-6 py-4">Rental Dates</th>
-                      <th className="px-6 py-4">Pricing Details</th>
-                      <th className="px-6 py-4">Status</th>
-                      <th className="px-6 py-4 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="text-sm divide-y divide-white/5">
-                    {venueBookings.length === 0 ? (
-                      <tr>
-                        <td colSpan="5" className="text-center py-12 text-dark-muted">You haven't requested any venue rentals yet.</td>
-                      </tr>
-                    ) : (
-                      venueBookings.map((vb) => (
-                        <tr key={vb.id} className="hover:bg-white/5 transition-colors">
-                          <td className="px-6 py-4">
-                            <p className="font-bold text-dark-text">{vb.venue_details?.name}</p>
-                            <p className="text-xs text-dark-muted mt-0.5">{vb.venue_details?.location}</p>
-                            {(vb.use_catering || vb.use_dj || vb.use_decor) && (
-                              <div className="flex flex-wrap gap-1.5 mt-2">
-                                {vb.use_catering && (
-                                  <span className="text-[9px] font-bold bg-orange-500/10 text-orange-400 px-1.5 py-0.5 rounded" title={`Menu: ${vb.catering_description}`}>
-                                    🍽 Catering ({vb.catering_cuisine}) ×{vb.catering_plates}
-                                  </span>
-                                )}
-                                {vb.use_dj && (
-                                  <span className="text-[9px] font-bold bg-purple-500/10 text-purple-400 px-1.5 py-0.5 rounded" title={`Equipment: ${vb.dj_equipment}`}>
-                                    🎵 DJ ({vb.dj_package})
-                                  </span>
-                                )}
-                                {vb.use_decor && (
-                                  <span className="text-[9px] font-bold bg-pink-500/10 text-pink-400 px-1.5 py-0.5 rounded" title={`Theme: ${vb.decor_theme}`}>
-                                    🎨 Decor ({vb.decor_theme})
-                                  </span>
-                                )}
-                              </div>
-                            )}
-                          </td>
-                          <td className="px-6 py-4 font-semibold text-dark-text">
-                            {vb.start_date} to {vb.end_date}
-                          </td>
-                          <td className="px-6 py-4 font-bold">
-                            {vb.status === 'cancelled' ? (
-                              <div className="text-xs space-y-0.5">
-                                <span className="text-dark-muted block line-through">₹{vb.total_price}</span>
-                                <span className="text-emerald-400 block">Refunded (90%): ₹{(parseFloat(vb.total_price) * 0.9).toFixed(2)}</span>
-                                <span className="text-red-400 block font-normal">Retained (10%): ₹{(parseFloat(vb.total_price) * 0.1).toFixed(2)}</span>
-                              </div>
-                            ) : (
-                              <span className="text-brand-primary">₹{vb.total_price}</span>
-                            )}
-                          </td>
-                          <td className="px-6 py-4">
-                            <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-extrabold ${
-                              vb.status === 'approved' ? 'bg-emerald-500/10 text-emerald-400' :
-                              vb.status === 'cancelled' ? 'bg-red-500/10 text-red-400' :
-                              vb.status === 'pending' ? 'bg-yellow-500/10 text-yellow-400' :
-                              'bg-red-500/10 text-red-400'
-                            }`}>
-                              {vb.status}
+              {/* Available Venues Showcase (4 Cards per row) */}
+              <div>
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h2 className="text-xl font-bold text-dark-text flex items-center gap-2">
+                      <Building className="w-5 h-5 text-brand-primary" />
+                      <span>Available Venue Plots & Locations</span>
+                    </h2>
+                    <p className="text-xs text-dark-muted mt-0.5">Explore registered plot venues available for event hosting and rentals in Ahmedabad</p>
+                  </div>
+                  <span className="text-xs font-semibold px-3 py-1 bg-brand-primary/10 text-brand-primary border border-brand-primary/20 rounded-full">
+                    {approvedVenues.length} Venues Available
+                  </span>
+                </div>
+
+                {approvedVenues.length === 0 ? (
+                  <div className="glass-panel text-center py-12 rounded-2xl">
+                    <Building className="w-10 h-10 text-dark-muted mx-auto mb-3" />
+                    <p className="text-dark-muted text-sm">No venue plots currently available for rental.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                    {approvedVenues.map((venue) => (
+                      <div key={venue.id} className="glass-card rounded-2xl overflow-hidden flex flex-col group">
+                        <div className="relative h-44 overflow-hidden">
+                          {venue.image ? (
+                            <img
+                              src={venue.image.startsWith('http') ? venue.image : `${BACKEND_URL}${venue.image}`}
+                              alt={venue.name}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-white/5 flex items-center justify-center text-dark-muted">
+                              <Building className="w-10 h-10" />
+                            </div>
+                          )}
+                          <span className="absolute top-3 right-3 text-[10px] font-bold uppercase tracking-wider bg-black/60 backdrop-blur-md text-emerald-400 px-2.5 py-1 rounded-full border border-emerald-500/20">
+                            ₹{parseFloat(venue.price_per_day).toLocaleString('en-IN')}/day
+                          </span>
+                        </div>
+
+                        <div className="p-5 flex flex-col flex-grow justify-between">
+                          <div>
+                            <span className="text-[10px] font-bold uppercase tracking-wider bg-white/5 text-dark-muted px-2 py-0.5 rounded">
+                              {venue.category || 'Plot Venue'}
                             </span>
-                          </td>
-                          <td className="px-6 py-4 text-right">
-                            {vb.status !== 'cancelled' && vb.status !== 'rejected' && (
-                              <button
-                                onClick={() => handleCancelVenueBooking(vb.id)}
-                                className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg text-xs font-bold transition-all border border-red-500/5 whitespace-nowrap"
-                              >
-                                Cancel Booking
-                              </button>
-                            )}
-                          </td>
+                            <h4 className="font-bold text-base text-dark-text mt-1.5 line-clamp-1">{venue.name}</h4>
+                            <p className="text-xs text-dark-muted mt-1 line-clamp-1 flex items-center gap-1">
+                              <MapPin className="w-3 h-3 text-brand-primary flex-shrink-0" />
+                              <span>{venue.location}</span>
+                            </p>
+                            <p className="text-xs text-dark-muted mt-1 flex items-center gap-1">
+                              <Users className="w-3 h-3 text-dark-muted flex-shrink-0" />
+                              <span>Capacity: {venue.capacity?.toLocaleString() || 'N/A'} guests</span>
+                            </p>
+                          </div>
+
+                          <div className="mt-5 pt-4 border-t border-white/5">
+                            <button
+                              onClick={() => {
+                                setPaymentVenue(venue);
+                                setPaymentDates({ start: '', end: '' });
+                                setShowPaymentModal(true);
+                              }}
+                              className="w-full py-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-950/20 transition-all flex items-center justify-center space-x-1.5"
+                            >
+                              <Building className="w-3.5 h-3.5" />
+                              <span>Rent / Reserve Venue</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* My Venue Rentals & Bookings */}
+              <div className="glass-panel rounded-2xl overflow-hidden">
+                <div className="p-6 border-b border-white/5">
+                  <h3 className="text-lg font-bold text-dark-text">My Venue Rental Reservations</h3>
+                  <p className="text-xs text-dark-muted mt-0.5">Status of plot venues you have requested or rented</p>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-white/5 bg-white/5 text-xs font-semibold text-dark-muted uppercase tracking-wider">
+                        <th className="px-6 py-4">Venue</th>
+                        <th className="px-6 py-4">Rental Dates</th>
+                        <th className="px-6 py-4">Pricing Details</th>
+                        <th className="px-6 py-4">Status</th>
+                        <th className="px-6 py-4 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="text-sm divide-y divide-white/5">
+                      {venueBookings.length === 0 ? (
+                        <tr>
+                          <td colSpan="5" className="text-center py-12 text-dark-muted">You haven't requested any venue rentals yet. Select a venue above to request a rental.</td>
                         </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
+                      ) : (
+                        venueBookings.map((vb) => (
+                          <tr key={vb.id} className="hover:bg-white/5 transition-colors">
+                            <td className="px-6 py-4">
+                              <p className="font-bold text-dark-text">{vb.venue_details?.name}</p>
+                              <p className="text-xs text-dark-muted mt-0.5">{vb.venue_details?.location}</p>
+                              {(vb.use_catering || vb.use_dj || vb.use_decor) && (
+                                <div className="flex flex-wrap gap-1.5 mt-2">
+                                  {vb.use_catering && (
+                                    <span className="text-[9px] font-bold bg-orange-500/10 text-orange-400 px-1.5 py-0.5 rounded" title={`Menu: ${vb.catering_description}`}>
+                                      🍽 Catering ({vb.catering_cuisine}) ×{vb.catering_plates}
+                                    </span>
+                                  )}
+                                  {vb.use_dj && (
+                                    <span className="text-[9px] font-bold bg-purple-500/10 text-purple-400 px-1.5 py-0.5 rounded" title={`Equipment: ${vb.dj_equipment}`}>
+                                      🎵 DJ ({vb.dj_package})
+                                    </span>
+                                  )}
+                                  {vb.use_decor && (
+                                    <span className="text-[9px] font-bold bg-pink-500/10 text-pink-400 px-1.5 py-0.5 rounded" title={`Theme: ${vb.decor_theme}`}>
+                                      🎨 Decor ({vb.decor_theme})
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                            </td>
+                            <td className="px-6 py-4 font-semibold text-dark-text">
+                              {vb.start_date} to {vb.end_date}
+                            </td>
+                            <td className="px-6 py-4 font-bold">
+                              {vb.status === 'cancelled' ? (
+                                <div className="text-xs space-y-0.5">
+                                  <span className="text-dark-muted block line-through">₹{vb.total_price}</span>
+                                  <span className="text-emerald-400 block">Refunded (90%): ₹{(parseFloat(vb.total_price) * 0.9).toFixed(2)}</span>
+                                  <span className="text-red-400 block font-normal">Retained (10%): ₹{(parseFloat(vb.total_price) * 0.1).toFixed(2)}</span>
+                                </div>
+                              ) : (
+                                <span className="text-brand-primary">₹{vb.total_price}</span>
+                              )}
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-extrabold ${
+                                vb.status === 'approved' ? 'bg-emerald-500/10 text-emerald-400' :
+                                vb.status === 'cancelled' ? 'bg-red-500/10 text-red-400' :
+                                vb.status === 'pending' ? 'bg-yellow-500/10 text-yellow-400' :
+                                'bg-red-500/10 text-red-400'
+                              }`}>
+                                {vb.status}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-right">
+                              {vb.status !== 'cancelled' && vb.status !== 'rejected' && (
+                                <button
+                                  onClick={() => handleCancelVenueBooking(vb.id)}
+                                  className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg text-xs font-bold transition-all border border-red-500/5 whitespace-nowrap"
+                                >
+                                  Cancel Booking
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </motion.div>
           )}
