@@ -793,7 +793,7 @@ const PlotOwnerDashboard = () => {
         <div>
           <h1 className="text-3xl font-black tracking-tight text-dark-text">
             {activeTab === 'dashboard' && 'Plot Owner Dashboard'}
-            {activeTab === 'venues' && 'My Venues'}
+            {/* {activeTab === 'venues' && 'My Venues'} */}
             {activeTab === 'requests' && 'Rental Booking Requests'}
             {activeTab === 'refunds' && 'Refund Ticket Requests'}
             {activeTab === 'reviews' && 'Customer Reviews'}
@@ -902,64 +902,101 @@ const PlotOwnerDashboard = () => {
                 </div>
               </div>
 
-              {/* Rental Request Center Summary */}
-              <div className="glass-panel rounded-2xl p-6">
-                <div className="flex items-center justify-between mb-6 border-b border-white/5 pb-4">
+              {/* Registered Venues Showcase Grid (4 per row) */}
+              <div className="space-y-6">
+                <div className="flex items-center justify-between border-b border-white/5 pb-4">
                   <div>
-                    <h4 className="font-extrabold text-base text-dark-text uppercase tracking-wider">Rental Booking Requests</h4>
-                    <p className="text-xs text-dark-muted mt-1">Pending and active reservation requests from event organizers</p>
+                    <h4 className="font-extrabold text-base text-dark-text uppercase tracking-wider">Registered Venue Plots</h4>
+                    <p className="text-xs text-dark-muted mt-1">Manage and edit your registered party lawns, halls, and rental plots</p>
                   </div>
-                  <button
-                    onClick={() => setActiveTab('requests')}
-                    className="text-xs font-bold text-brand-primary hover:text-brand-primary/80 transition-colors"
-                  >
-                    Manage Requests Center &rarr;
-                  </button>
                 </div>
-                {bookings.length === 0 ? (
-                  <div className="text-center py-12 text-dark-muted">
-                    <Calendar className="w-12 h-12 mx-auto mb-3 opacity-40" />
-                    <p>No booking requests received yet.</p>
+
+                {venues.length === 0 ? (
+                  <div className="glass-panel text-center py-16 rounded-2xl">
+                    <Building className="w-12 h-12 text-dark-muted mx-auto mb-4" />
+                    <p className="text-dark-muted">No plots registered yet. Click "Add New Venue" to get started!</p>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="text-[10px] text-dark-muted uppercase tracking-wider border-b border-white/5">
-                          <th className="px-4 py-3 text-left">Venue</th>
-                          <th className="px-4 py-3 text-left">Organizer</th>
-                          <th className="px-4 py-3 text-left">Dates</th>
-                          <th className="px-4 py-3 text-left">Amount</th>
-                          <th className="px-4 py-3 text-left">Status</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-white/[0.03]">
-                        {bookings.slice(0, 5).map((booking) => (
-                          <tr key={booking.id} className="hover:bg-white/[0.01] transition-colors">
-                            <td className="px-4 py-4 font-semibold text-dark-text text-xs">{booking.venue_details?.name}</td>
-                            <td className="px-4 py-4 text-xs text-dark-muted">
-                              {booking.organizer_details?.first_name} {booking.organizer_details?.last_name}
-                              <span className="block text-[10px] opacity-60">{booking.organizer_details?.email}</span>
-                            </td>
-                            <td className="px-4 py-4 text-xs text-dark-muted">
-                              {new Date(booking.start_date).toLocaleDateString()} to {new Date(booking.end_date).toLocaleDateString()}
-                            </td>
-                            <td className="px-4 py-4 text-xs text-brand-primary font-bold">
-                              ₹{parseFloat(booking.total_price).toLocaleString('en-IN')}
-                            </td>
-                            <td className="px-4 py-4 text-xs">
-                              <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                                booking.status === 'approved' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
-                                booking.status === 'cancelled' ? 'bg-red-500/10 text-red-400 border border-red-500/20' :
-                                'bg-blue-500/10 text-blue-400 border border-blue-500/20 animate-pulse'
-                              }`}>
-                                {booking.status}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                    {venues.map((venue) => (
+                      <div key={venue.id} className="glass-card rounded-2xl overflow-hidden flex flex-col">
+                        {venue.image ? (
+                          <img
+                            src={venue.image.startsWith('http') ? venue.image : `${BACKEND_URL}${venue.image}`}
+                            alt={venue.name}
+                            className="w-full h-48 object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-48 bg-white/5 flex items-center justify-center text-dark-muted">
+                            <Building className="w-10 h-10" />
+                          </div>
+                        )}
+                        
+                        <div className="p-6 flex flex-col flex-grow">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <h4 className="font-bold text-lg text-dark-text line-clamp-1">{venue.name}</h4>
+                              <div className="flex items-center space-x-1 mt-1 text-xs text-amber-400">
+                                <Star className="w-3.5 h-3.5 fill-amber-400" />
+                                <span>{venue.rating_avg || '0.0'} ({venue.rating_count || 0})</span>
+                              </div>
+                            </div>
+                            {venue.is_approved ? (
+                              <span className="text-[9px] font-bold bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded uppercase flex-shrink-0">Approved</span>
+                            ) : (
+                              <span className="text-[9px] font-bold bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded uppercase flex-shrink-0">Pending</span>
+                            )}
+                          </div>
+                          <div className="flex items-center space-x-1.5 text-xs text-dark-muted mt-1">
+                            <MapPin className="w-3.5 h-3.5 text-brand-primary flex-shrink-0" />
+                            <span className="truncate">{venue.location}</span>
+                          </div>
+                          
+                          {/* Service Badges */}
+                          <div className="mt-3 flex flex-wrap gap-1.5">
+                            {(venue.facilities || []).slice(0, 2).map((f, i) => (
+                              <span key={i} className="text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">
+                                {f}
                               </span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                            ))}
+                            {venue.has_catering && (
+                              <span className="text-[10px] font-semibold text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded flex items-center gap-1">
+                                Catering
+                              </span>
+                            )}
+                            {venue.has_dj && (
+                              <span className="text-[10px] font-semibold text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded flex items-center gap-1">
+                                DJ
+                              </span>
+                            )}
+                            {venue.has_decor && (
+                              <span className="text-[10px] font-semibold text-pink-400 bg-pink-500/10 px-2 py-0.5 rounded flex items-center gap-1">
+                                Décor
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="mt-4 flex items-center justify-between">
+                            <span className="text-sm font-bold text-brand-primary">₹{parseFloat(venue.price_per_day).toLocaleString('en-IN')}/day</span>
+                          </div>
+                          
+                          <div className="mt-4 flex space-x-2 pt-4 border-t border-white/5">
+                            <button
+                              onClick={() => handleOpenEditModal(venue)}
+                              className="flex-1 flex items-center justify-center space-x-1.5 bg-white/5 hover:bg-white/10 border border-white/5 text-dark-text py-2 rounded-lg text-xs font-semibold transition-colors"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" /><span>Edit</span>
+                            </button>
+                            <button
+                              onClick={() => handleDeleteVenue(venue.id)}
+                              className="flex-1 flex items-center justify-center space-x-1.5 bg-red-500/5 hover:bg-red-500/15 border border-red-500/10 text-red-400 py-2 rounded-lg text-xs font-semibold transition-colors"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" /><span>Delete</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
@@ -972,7 +1009,7 @@ const PlotOwnerDashboard = () => {
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 15 }}
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+              className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
             >
               {venues.length === 0 ? (
                 <div className="col-span-full glass-panel text-center py-16 rounded-2xl">
