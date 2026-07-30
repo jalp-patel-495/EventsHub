@@ -1045,152 +1045,121 @@ const OrganizerDashboard = () => {
               exit={{ opacity: 0, y: 15 }}
               className="space-y-10"
             >
-              {/* Venue Filter Bar */}
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 bg-white/5 border border-white/10 rounded-2xl">
-                <div className="flex items-center space-x-2">
-                  <Building className="w-5 h-5 text-brand-primary" />
-                  <span className="font-bold text-dark-text text-sm">Filter Venues:</span>
-                </div>
-
-                <div className="relative">
-                  <select
-                    value={venueFilter}
-                    onChange={(e) => setVenueFilter(e.target.value)}
-                    className="bg-slate-900/95 text-white font-bold text-xs px-4 py-2.5 rounded-xl border border-white/15 focus:outline-none focus:border-brand-primary cursor-pointer shadow-md pr-10 appearance-none transition-all"
-                  >
-                    <option value="all" className="bg-slate-900 text-white">Show All Venues ({safeApprovedVenues.length})</option>
-                    <option value="available" className="bg-slate-900 text-white">Available Venues Showcase ({safeApprovedVenues.length})</option>
-                    <option value="booked" className="bg-slate-900 text-white">My Booked Venues ({safeVenueBookings.length})</option>
-                  </select>
-                  <ChevronDown className="w-4 h-4 text-brand-primary absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                </div>
-              </div>
-
               {/* Available Venues Showcase (4 Cards per row) */}
-              {(venueFilter === 'all' || venueFilter === 'available') && (
-                <div>
-                  <div className="flex items-center justify-between mb-6">
-                    <div>
-                      <h2 className="text-xl font-bold text-dark-text flex items-center gap-2">
-                        <Building className="w-5 h-5 text-brand-primary" />
-                        <span>Available Venue Plots & Locations</span>
-                      </h2>
-                      <p className="text-xs text-dark-muted mt-0.5">Explore registered plot venues available for event hosting and rentals in Ahmedabad</p>
-                    </div>
-                    <span className="text-xs font-semibold px-3 py-1 bg-brand-primary/10 text-brand-primary border border-brand-primary/20 rounded-full">
-                      {safeApprovedVenues.length} Venues Available
-                    </span>
+              <div>
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h2 className="text-xl font-bold text-dark-text flex items-center gap-2">
+                      <Building className="w-5 h-5 text-brand-primary" />
+                      <span>Available Venue Plots & Locations</span>
+                    </h2>
+                    <p className="text-xs text-dark-muted mt-0.5">Explore registered plot venues available for event hosting and rentals in Ahmedabad</p>
                   </div>
+                  <span className="text-xs font-semibold px-3 py-1 bg-brand-primary/10 text-brand-primary border border-brand-primary/20 rounded-full">
+                    {safeApprovedVenues.length} Venues Available
+                  </span>
+                </div>
 
-                  {safeApprovedVenues.length === 0 ? (
-                    <div className="glass-panel text-center py-12 rounded-2xl">
-                      <Building className="w-10 h-10 text-dark-muted mx-auto mb-3" />
-                      <p className="text-dark-muted text-sm">No venue plots currently available for rental.</p>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                      {safeApprovedVenues.map((venue) => {
-                        const isBookedByMe = safeVenueBookings.some(vb => (vb.venue === venue.id || vb.venue_details?.id === venue.id) && vb.status !== 'cancelled' && vb.status !== 'rejected');
-                        return (
-                          <div key={venue.id} className="glass-card rounded-2xl overflow-hidden flex flex-col group relative">
-                            {isBookedByMe && (
-                              <div className="absolute top-3 left-3 z-10 text-[9px] font-extrabold uppercase tracking-wider bg-emerald-500 text-slate-950 px-2.5 py-1 rounded-full shadow-lg">
-                                ✓ Rented By You
+                {safeApprovedVenues.length === 0 ? (
+                  <div className="glass-panel text-center py-12 rounded-2xl">
+                    <Building className="w-10 h-10 text-dark-muted mx-auto mb-3" />
+                    <p className="text-dark-muted text-sm">No venue plots currently available for rental.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                    {safeApprovedVenues.map((venue) => {
+                      const isBookedByMe = safeVenueBookings.some(vb => (vb.venue === venue.id || vb.venue_details?.id === venue.id) && vb.status !== 'cancelled' && vb.status !== 'rejected');
+                      return (
+                        <div key={venue.id} className="glass-card rounded-2xl overflow-hidden flex flex-col group relative">
+                          {isBookedByMe && (
+                            <div className="absolute top-3 left-3 z-10 text-[9px] font-extrabold uppercase tracking-wider bg-emerald-500 text-slate-950 px-2.5 py-1 rounded-full shadow-lg">
+                              ✓ Rented By You
+                            </div>
+                          )}
+                          <div className="relative h-44 overflow-hidden">
+                            {venue.image ? (
+                              <img
+                                src={venue.image.startsWith('http') ? venue.image : `${BACKEND_URL}${venue.image}`}
+                                alt={venue.name}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-white/5 flex items-center justify-center text-dark-muted">
+                                  <Building className="w-10 h-10" />
                               </div>
                             )}
-                            <div className="relative h-44 overflow-hidden">
-                              {venue.image ? (
-                                <img
-                                  src={venue.image.startsWith('http') ? venue.image : `${BACKEND_URL}${venue.image}`}
-                                  alt={venue.name}
-                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                />
-                              ) : (
-                                <div className="w-full h-full bg-white/5 flex items-center justify-center text-dark-muted">
-                                  <Building className="w-10 h-10" />
-                                </div>
-                              )}
-                              <span className="absolute top-3 right-3 text-[10px] font-bold uppercase tracking-wider bg-black/60 backdrop-blur-md text-emerald-400 px-2.5 py-1 rounded-full border border-emerald-500/20">
-                                ₹{parseFloat(venue.price_per_day).toLocaleString('en-IN')}/day
+                            <span className="absolute top-3 right-3 text-[10px] font-bold uppercase tracking-wider bg-black/60 backdrop-blur-md text-emerald-400 px-2.5 py-1 rounded-full border border-emerald-500/20">
+                              ₹{parseFloat(venue.price_per_day).toLocaleString('en-IN')}/day
+                            </span>
+                          </div>
+
+                          <div className="p-5 flex flex-col flex-grow justify-between">
+                            <div>
+                              <span className="text-[10px] font-bold uppercase tracking-wider bg-white/5 text-dark-muted px-2 py-0.5 rounded">
+                                {venue.category || 'Plot Venue'}
                               </span>
+                              <h4 className="font-bold text-base text-dark-text mt-1.5 line-clamp-1">{venue.name}</h4>
+                              <p className="text-xs text-dark-muted mt-1 line-clamp-1 flex items-center gap-1">
+                                <MapPin className="w-3 h-3 text-brand-primary flex-shrink-0" />
+                                <span>{venue.location}</span>
+                              </p>
+                              <p className="text-xs text-dark-muted mt-1 flex items-center gap-1">
+                                <Users className="w-3 h-3 text-dark-muted flex-shrink-0" />
+                                <span>Capacity: {venue.capacity?.toLocaleString() || 'N/A'} guests</span>
+                              </p>
                             </div>
 
-                            <div className="p-5 flex flex-col flex-grow justify-between">
-                              <div>
-                                <span className="text-[10px] font-bold uppercase tracking-wider bg-white/5 text-dark-muted px-2 py-0.5 rounded">
-                                  {venue.category || 'Plot Venue'}
-                                </span>
-                                <h4 className="font-bold text-base text-dark-text mt-1.5 line-clamp-1">{venue.name}</h4>
-                                <p className="text-xs text-dark-muted mt-1 line-clamp-1 flex items-center gap-1">
-                                  <MapPin className="w-3 h-3 text-brand-primary flex-shrink-0" />
-                                  <span>{venue.location}</span>
-                                </p>
-                                <p className="text-xs text-dark-muted mt-1 flex items-center gap-1">
-                                  <Users className="w-3 h-3 text-dark-muted flex-shrink-0" />
-                                  <span>Capacity: {venue.capacity?.toLocaleString() || 'N/A'} guests</span>
-                                </p>
-                              </div>
-
-                              <div className="mt-5 pt-4 border-t border-white/5">
-                                <button
-                                  onClick={() => {
-                                    setPaymentVenue(venue);
-                                    setPaymentDates({ start: '', end: '' });
-                                    setShowPaymentModal(true);
-                                  }}
-                                  className="w-full py-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-950/20 transition-all flex items-center justify-center space-x-1.5"
-                                >
-                                  <Building className="w-3.5 h-3.5" />
-                                  <span>Rent / Reserve Venue</span>
-                                </button>
-                              </div>
+                            <div className="mt-5 pt-4 border-t border-white/5">
+                              <button
+                                onClick={() => {
+                                  setPaymentVenue(venue);
+                                  setPaymentDates({ start: '', end: '' });
+                                  setShowPaymentModal(true);
+                                }}
+                                className="w-full py-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-950/20 transition-all flex items-center justify-center space-x-1.5"
+                              >
+                                <Building className="w-3.5 h-3.5" />
+                                <span>Rent / Reserve Venue</span>
+                              </button>
                             </div>
                           </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
 
               {/* My Venue Rentals & Bookings */}
-              {(venueFilter === 'all' || venueFilter === 'booked') && (
-                <div className="glass-panel rounded-2xl overflow-hidden">
-                  <div className="p-6 border-b border-white/5 flex items-center justify-between">
-                    <div>
-                      <h3 className="text-lg font-bold text-dark-text">My Venue Rental Reservations</h3>
-                      <p className="text-xs text-dark-muted mt-0.5">Status of plot venues you have requested or rented</p>
-                    </div>
-                    <span className="text-xs font-semibold px-3 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full">
-                      {safeVenueBookings.length} Bookings
-                    </span>
+              <div className="glass-panel rounded-2xl overflow-hidden">
+                <div className="p-6 border-b border-white/5 flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-bold text-dark-text">My Venue Rental Reservations</h3>
+                    <p className="text-xs text-dark-muted mt-0.5">Status of plot venues you have requested or rented</p>
                   </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                      <thead>
-                        <tr className="border-b border-white/5 bg-white/5 text-xs font-semibold text-dark-muted uppercase tracking-wider">
-                          <th className="px-6 py-4">Venue</th>
-                          <th className="px-6 py-4">Rental Dates</th>
-                          <th className="px-6 py-4">Pricing Details</th>
-                          <th className="px-6 py-4">Status</th>
-                          <th className="px-6 py-4 text-right">Actions</th>
+                  <span className="text-xs font-semibold px-3 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full">
+                    {safeVenueBookings.length} Bookings
+                  </span>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-white/5 bg-white/5 text-xs font-semibold text-dark-muted uppercase tracking-wider">
+                        <th className="px-6 py-4">Venue</th>
+                        <th className="px-6 py-4">Rental Dates</th>
+                        <th className="px-6 py-4">Pricing Details</th>
+                        <th className="px-6 py-4">Status</th>
+                        <th className="px-6 py-4 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="text-sm divide-y divide-white/5">
+                      {safeVenueBookings.length === 0 ? (
+                        <tr>
+                          <td colSpan="5" className="text-center py-12 text-dark-muted">
+                            You haven't requested any venue rentals yet. Select a venue above to request a rental.
+                          </td>
                         </tr>
-                      </thead>
-                      <tbody className="text-sm divide-y divide-white/5">
-                        {safeVenueBookings.length === 0 ? (
-                          <tr>
-                            <td colSpan="5" className="text-center py-12 text-dark-muted">
-                              <p className="mb-3">You haven't requested any venue rentals yet.</p>
-                              <button
-                                onClick={() => setVenueFilter('all')}
-                                className="px-4 py-2 bg-brand-primary text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-500/20 hover:bg-emerald-600 transition-all inline-flex items-center space-x-1.5"
-                              >
-                                <Building className="w-4 h-4" />
-                                <span>Browse All Available Venues</span>
-                              </button>
-                            </td>
-                          </tr>
-                        ) : (
+                      ) : (
                           safeVenueBookings.map((vb) => (
                             <tr key={vb.id} className="hover:bg-white/5 transition-colors">
                               <td className="px-6 py-4">
