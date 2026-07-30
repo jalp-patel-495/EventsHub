@@ -588,10 +588,16 @@ const OrganizerDashboard = () => {
   };
 
 
+  // Safe array fallbacks
+  const safeEvents = Array.isArray(events) ? events : (events?.results && Array.isArray(events.results) ? events.results : []);
+  const safeBookings = Array.isArray(bookings) ? bookings : (bookings?.results && Array.isArray(bookings.results) ? bookings.results : []);
+  const safeVenueBookings = Array.isArray(venueBookings) ? venueBookings : (venueBookings?.results && Array.isArray(venueBookings.results) ? venueBookings.results : []);
+  const safeApprovedVenues = Array.isArray(approvedVenues) ? approvedVenues : (approvedVenues?.results && Array.isArray(approvedVenues.results) ? approvedVenues.results : []);
+
   // Stats calculation
-  const myEvents = events.filter(e => e.organizer === user?.id || e.organizer_details?.id === user?.id);
-  const confirmedBookings = bookings.filter(b => b.status === 'confirmed');
-  const refundedBookings = bookings.filter(b => b.status === 'cancelled');
+  const myEvents = safeEvents.filter(e => e.organizer === user?.id || e.organizer_details?.id === user?.id);
+  const confirmedBookings = safeBookings.filter(b => b.status === 'confirmed');
+  const refundedBookings = safeBookings.filter(b => b.status === 'cancelled');
 
   const totalTicketsSold = confirmedBookings.reduce((sum, b) => sum + b.tickets_count, 0);
 
@@ -620,8 +626,8 @@ const OrganizerDashboard = () => {
   }, []).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
   // Venue stats calculations for organizer
-  const activeVenues = venueBookings.filter(vb => vb.status === 'approved');
-  const cancelledVenues = venueBookings.filter(vb => vb.status === 'cancelled');
+  const activeVenues = safeVenueBookings.filter(vb => vb.status === 'approved');
+  const cancelledVenues = safeVenueBookings.filter(vb => vb.status === 'cancelled');
 
   const totalVenueSpent = activeVenues.reduce((sum, vb) => sum + parseFloat(vb.total_price), 0);
   const totalVenueRefunded = cancelledVenues.reduce((sum, vb) => sum + parseFloat(vb.total_price) * 0.9, 0);
@@ -1052,9 +1058,9 @@ const OrganizerDashboard = () => {
                     onChange={(e) => setVenueFilter(e.target.value)}
                     className="bg-slate-900/95 text-white font-bold text-xs px-4 py-2.5 rounded-xl border border-white/15 focus:outline-none focus:border-brand-primary cursor-pointer shadow-md pr-10 appearance-none transition-all"
                   >
-                    <option value="all" className="bg-slate-900 text-white">Show All Venues ({approvedVenues.length})</option>
-                    <option value="available" className="bg-slate-900 text-white">Available Venues Showcase ({approvedVenues.length})</option>
-                    <option value="booked" className="bg-slate-900 text-white">My Booked Venues ({venueBookings.length})</option>
+                    <option value="all" className="bg-slate-900 text-white">Show All Venues ({safeApprovedVenues.length})</option>
+                    <option value="available" className="bg-slate-900 text-white">Available Venues Showcase ({safeApprovedVenues.length})</option>
+                    <option value="booked" className="bg-slate-900 text-white">My Booked Venues ({safeVenueBookings.length})</option>
                   </select>
                   <ChevronDown className="w-4 h-4 text-brand-primary absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 </div>
@@ -1072,19 +1078,19 @@ const OrganizerDashboard = () => {
                       <p className="text-xs text-dark-muted mt-0.5">Explore registered plot venues available for event hosting and rentals in Ahmedabad</p>
                     </div>
                     <span className="text-xs font-semibold px-3 py-1 bg-brand-primary/10 text-brand-primary border border-brand-primary/20 rounded-full">
-                      {approvedVenues.length} Venues Available
+                      {safeApprovedVenues.length} Venues Available
                     </span>
                   </div>
 
-                  {approvedVenues.length === 0 ? (
+                  {safeApprovedVenues.length === 0 ? (
                     <div className="glass-panel text-center py-12 rounded-2xl">
                       <Building className="w-10 h-10 text-dark-muted mx-auto mb-3" />
                       <p className="text-dark-muted text-sm">No venue plots currently available for rental.</p>
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                      {approvedVenues.map((venue) => {
-                        const isBookedByMe = venueBookings.some(vb => (vb.venue === venue.id || vb.venue_details?.id === venue.id) && vb.status !== 'cancelled' && vb.status !== 'rejected');
+                      {safeApprovedVenues.map((venue) => {
+                        const isBookedByMe = safeVenueBookings.some(vb => (vb.venue === venue.id || vb.venue_details?.id === venue.id) && vb.status !== 'cancelled' && vb.status !== 'rejected');
                         return (
                           <div key={venue.id} className="glass-card rounded-2xl overflow-hidden flex flex-col group relative">
                             {isBookedByMe && (
@@ -1156,7 +1162,7 @@ const OrganizerDashboard = () => {
                       <p className="text-xs text-dark-muted mt-0.5">Status of plot venues you have requested or rented</p>
                     </div>
                     <span className="text-xs font-semibold px-3 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full">
-                      {venueBookings.length} Bookings
+                      {safeVenueBookings.length} Bookings
                     </span>
                   </div>
                   <div className="overflow-x-auto">
@@ -1171,7 +1177,7 @@ const OrganizerDashboard = () => {
                         </tr>
                       </thead>
                       <tbody className="text-sm divide-y divide-white/5">
-                        {venueBookings.length === 0 ? (
+                        {safeVenueBookings.length === 0 ? (
                           <tr>
                             <td colSpan="5" className="text-center py-12 text-dark-muted">
                               <p className="mb-3">You haven't requested any venue rentals yet.</p>
@@ -1185,7 +1191,7 @@ const OrganizerDashboard = () => {
                             </td>
                           </tr>
                         ) : (
-                          venueBookings.map((vb) => (
+                          safeVenueBookings.map((vb) => (
                             <tr key={vb.id} className="hover:bg-white/5 transition-colors">
                               <td className="px-6 py-4">
                                 <p className="font-bold text-dark-text">{vb.venue_details?.name}</p>
