@@ -223,10 +223,12 @@ const OrganizerDashboard = () => {
   };
 
   useEffect(() => {
-    fetchDashboardData();
-    fetchApprovedVenues();
-    fetchCoupons();
-  }, []);
+    if (user && user.id) {
+      fetchDashboardData();
+      fetchApprovedVenues();
+      fetchCoupons();
+    }
+  }, [user]);
 
   const handleCreateOffer = async (e) => {
     e.preventDefault();
@@ -288,6 +290,7 @@ const OrganizerDashboard = () => {
   };
 
   const fetchDashboardData = async () => {
+    if (!user || !user.id) return;
     setLoading(true);
     try {
       // Fetch organizer's listings, categories, booking purchases, and venue rentals
