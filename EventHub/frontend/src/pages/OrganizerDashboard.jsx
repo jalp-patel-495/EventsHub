@@ -21,17 +21,18 @@ const OrganizerDashboard = () => {
   
   const routeLocation = useLocation();
   const navigate = useNavigate();
-  const activeTab = routeLocation.pathname === '/organizer/sales'
+  const path = routeLocation.pathname;
+  const activeTab = path.includes('/sales')
     ? 'bookings'
-    : routeLocation.pathname === '/organizer/reviews'
+    : path.includes('/reviews')
       ? 'reviews'
-      : routeLocation.pathname === '/organizer/analytics'
+      : path.includes('/analytics')
         ? 'analytics'
-        : routeLocation.pathname === '/organizer/refunds'
+        : path.includes('/refunds')
           ? 'refunds'
-          : routeLocation.pathname === '/organizer/offers'
+          : path.includes('/offers')
             ? 'offers'
-            : routeLocation.pathname === '/organizer/rentals'
+            : path.includes('/rentals')
               ? 'venue_rentals'
               : 'events';
   const setActiveTab = (tabId) => {
