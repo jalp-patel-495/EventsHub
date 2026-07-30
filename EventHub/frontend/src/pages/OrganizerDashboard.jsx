@@ -1226,7 +1226,6 @@ const OrganizerDashboard = () => {
                     </table>
                   </div>
                 </div>
-              )}
             </motion.div>
           )}
 
