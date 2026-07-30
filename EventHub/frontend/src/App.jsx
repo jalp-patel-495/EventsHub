@@ -168,6 +168,22 @@ function App() {
                 } 
               />
               <Route 
+                path="/organizer/venues" 
+                element={
+                  <ProtectedRoute allowedRoles={['organizer']}>
+                    <OrganizerDashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/organizer/venue-rentals" 
+                element={
+                  <ProtectedRoute allowedRoles={['organizer']}>
+                    <OrganizerDashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
                 path="/organizer/reviews" 
                 element={
                   <ProtectedRoute allowedRoles={['organizer']}>

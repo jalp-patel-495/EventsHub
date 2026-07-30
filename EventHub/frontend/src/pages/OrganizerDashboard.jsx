@@ -32,7 +32,7 @@ const OrganizerDashboard = () => {
           ? 'refunds'
           : path.includes('/offers')
             ? 'offers'
-            : path.includes('/rentals')
+            : (path.includes('/rentals') || path.includes('/venues') || path.includes('/venue-rentals'))
               ? 'venue_rentals'
               : 'events';
   const setActiveTab = (tabId) => {
