@@ -1042,37 +1042,17 @@ const OrganizerDashboard = () => {
                   <span className="font-bold text-dark-text text-sm">Filter Venues:</span>
                 </div>
 
-                <div className="flex items-center space-x-2 bg-slate-900/80 p-1.5 rounded-xl border border-white/10 flex-wrap gap-1">
-                  <button
-                    onClick={() => setVenueFilter('all')}
-                    className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
-                      venueFilter === 'all'
-                        ? 'bg-brand-primary text-white shadow-md shadow-emerald-500/20'
-                        : 'text-dark-muted hover:text-white hover:bg-white/5'
-                    }`}
+                <div className="relative">
+                  <select
+                    value={venueFilter}
+                    onChange={(e) => setVenueFilter(e.target.value)}
+                    className="bg-slate-900/95 text-white font-bold text-xs px-4 py-2.5 rounded-xl border border-white/15 focus:outline-none focus:border-brand-primary cursor-pointer shadow-md pr-10 appearance-none transition-all"
                   >
-                    Show All Venues ({approvedVenues.length})
-                  </button>
-                  <button
-                    onClick={() => setVenueFilter('available')}
-                    className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
-                      venueFilter === 'available'
-                        ? 'bg-brand-primary text-white shadow-md shadow-emerald-500/20'
-                        : 'text-dark-muted hover:text-white hover:bg-white/5'
-                    }`}
-                  >
-                    Available Venues Showcase
-                  </button>
-                  <button
-                    onClick={() => setVenueFilter('booked')}
-                    className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
-                      venueFilter === 'booked'
-                        ? 'bg-brand-primary text-white shadow-md shadow-emerald-500/20'
-                        : 'text-dark-muted hover:text-white hover:bg-white/5'
-                    }`}
-                  >
-                    My Booked Venues ({venueBookings.length})
-                  </button>
+                    <option value="all" className="bg-slate-900 text-white">Show All Venues ({approvedVenues.length})</option>
+                    <option value="available" className="bg-slate-900 text-white">Available Venues Showcase ({approvedVenues.length})</option>
+                    <option value="booked" className="bg-slate-900 text-white">My Booked Venues ({venueBookings.length})</option>
+                  </select>
+                  <ChevronDown className="w-4 h-4 text-brand-primary absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 </div>
               </div>
 
