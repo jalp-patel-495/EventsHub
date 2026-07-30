@@ -174,7 +174,6 @@ const Navbar = () => {
     ? user?.role === 'plot_owner'
       ? [
           { name: 'Dashboard', path: '/venues/dashboard' },
-          { name: 'My Venues', path: '/venues/manage' },
           { name: 'Rental Requests', path: '/venues/requests' },
           { name: 'Refund Requests', path: '/venues/refunds' },
           { name: 'Manage Services', path: '/venues/services' },
