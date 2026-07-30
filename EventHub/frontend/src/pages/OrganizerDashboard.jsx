@@ -1173,7 +1173,16 @@ const OrganizerDashboard = () => {
                       <tbody className="text-sm divide-y divide-white/5">
                         {venueBookings.length === 0 ? (
                           <tr>
-                            <td colSpan="5" className="text-center py-12 text-dark-muted">You haven't requested any venue rentals yet. Select a venue above to request a rental.</td>
+                            <td colSpan="5" className="text-center py-12 text-dark-muted">
+                              <p className="mb-3">You haven't requested any venue rentals yet.</p>
+                              <button
+                                onClick={() => setVenueFilter('all')}
+                                className="px-4 py-2 bg-brand-primary text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-500/20 hover:bg-emerald-600 transition-all inline-flex items-center space-x-1.5"
+                              >
+                                <Building className="w-4 h-4" />
+                                <span>Browse All Available Venues</span>
+                              </button>
+                            </td>
                           </tr>
                         ) : (
                           venueBookings.map((vb) => (
