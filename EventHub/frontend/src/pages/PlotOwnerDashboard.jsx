@@ -802,7 +802,7 @@ const PlotOwnerDashboard = () => {
           </h1>
           <p className="text-dark-muted mt-1">
             {activeTab === 'dashboard' && 'Overview of rental earnings, pending booking requests, and venue performance statistics'}
-            {activeTab === 'venues' && 'Register and manage your lawns, halls, and party spaces'}
+            {/* {activeTab === 'venues' && 'Register and manage your lawns, halls, and party spaces'} */}
             {activeTab === 'requests' && 'Review, approve, or cancel booking requests from event organizers'}
             {activeTab === 'refunds' && 'Manage and approve cancellation refund requests submitted by event organizers'}
             {activeTab === 'reviews' && 'View feedback, ratings, and customer reviews left for your venues'}
