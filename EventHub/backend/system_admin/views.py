@@ -15,6 +15,7 @@ from events.serializers import EventSerializer, BookingSerializer, ContactQueryS
 from venues.models import Venue
 from venues.serializers import VenueSerializer
 from notifications.models import Notification
+from notifications.serializers import NotificationSerializer
 
 User = get_user_model()
 
@@ -293,6 +294,43 @@ class ApproveUserView(views.APIView):
         )
         
         return Response({"message": f"User {user.email} approved successfully.", "is_approved": user.is_approved})
+
+class SendMessageToUserView(views.APIView):
+    permission_classes = (IsPlatformAdmin,)
+
+    def get(self, request, pk):
+        user = get_object_or_404(User, pk=pk)
+        notifications = Notification.objects.filter(user=user).order_by('-created_at')
+        serializer = NotificationSerializer(notifications, many=True)
+        return Response(serializer.data)
+
+    def post(self, request, pk):
+        user = get_object_or_404(User, pk=pk)
+        title = request.data.get('title', 'Direct Message from EventHub Administrator').strip()
+        message = request.data.get('message', '').strip()
+
+        if not message:
+            return Response({"error": "Message content cannot be empty."}, status=status.HTTP_400_BAD_REQUEST)
+
+        notif = Notification.objects.create(
+            user=user,
+            title=title if title else "Direct Message from EventHub Administrator",
+            message=message
+        )
+
+        log_audit(
+            user=request.user,
+            action="DIRECT_MESSAGE_SENT",
+            resource="User",
+            resource_id=user.id,
+            request=request,
+            details={"recipient_email": user.email, "title": title}
+        )
+
+        return Response({
+            "message": f"Direct message sent successfully to {user.email}.",
+            "notification_id": notif.id
+        }, status=status.HTTP_201_CREATED)
 
 class EventApprovalListView(views.APIView):
     permission_classes = (IsPlatformAdmin,)

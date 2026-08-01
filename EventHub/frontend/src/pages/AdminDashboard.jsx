@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Users, Calendar, Shield, IndianRupee, Activity, FileText, Send, 
   Check, X, Search, Filter, ShieldAlert, Award, Home, Lock, Unlock, 
-  RefreshCw, AlertCircle, Eye, CornerDownRight, Landmark, MessageSquare, Trash, Building, Ticket
+  RefreshCw, AlertCircle, Eye, CornerDownRight, Landmark, MessageSquare, Trash, Building, Ticket, Mail, History
 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { WS_URL, BACKEND_URL } from '../api/api';
@@ -16,21 +16,22 @@ const AdminDashboard = () => {
   const { user } = useAuth();
   const routeLocation = useLocation();
   const navigate = useNavigate();
-  const activeTab = routeLocation.pathname === '/admin/approvals'
+  const currentPath = (routeLocation.pathname || '').replace(/\/+$/, '').toLowerCase();
+  const activeTab = currentPath.includes('approvals')
     ? 'approvals'
-    : routeLocation.pathname === '/admin/events'
+    : currentPath.includes('events')
       ? 'all_events'
-      : routeLocation.pathname === '/admin/venues'
+      : currentPath.includes('venues')
         ? 'all_venues'
-        : routeLocation.pathname === '/admin/revenue'
+        : currentPath.includes('revenue')
           ? 'platform_revenue'
-          : routeLocation.pathname === '/admin/users'
+          : currentPath.includes('users')
             ? 'users'
-            : routeLocation.pathname === '/admin/finance'
+            : currentPath.includes('finance')
               ? 'finance'
-              : routeLocation.pathname === '/admin/complaints'
+              : currentPath.includes('complaints')
                 ? 'complaints'
-                : routeLocation.pathname === '/admin/broadcast'
+                : currentPath.includes('broadcast')
                   ? 'broadcast'
                   : 'overview';
   const setActiveTab = (tabId) => {
@@ -135,6 +136,66 @@ const AdminDashboard = () => {
     onConfirm: null
   });
 
+  // Direct Message Modal State
+  const [messageUserModal, setMessageUserModal] = useState({
+    show: false,
+    user: null,
+    title: '',
+    message: '',
+    loading: false,
+    error: '',
+    success: ''
+  });
+
+  const [userMessageHistory, setUserMessageHistory] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+
+  const openMessageModal = async (u) => {
+    setMessageUserModal({
+      show: true,
+      user: u,
+      title: '',
+      message: '',
+      loading: false,
+      error: '',
+      success: ''
+    });
+    setUserMessageHistory([]);
+    setLoadingHistory(true);
+    try {
+      const res = await api.get(`admin/users/${u.id}/message/`);
+      setUserMessageHistory(res.data || []);
+    } catch (err) {
+      console.error("Failed to load message history:", err);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  const handleSendDirectMessage = async (e) => {
+    e.preventDefault();
+    if (!messageUserModal.user || !messageUserModal.message.trim()) return;
+
+    setMessageUserModal(prev => ({ ...prev, loading: true, error: '', success: '' }));
+    try {
+      const res = await api.post(`admin/users/${messageUserModal.user.id}/message/`, {
+        title: messageUserModal.title.trim() || 'Direct Message from EventHub Administrator',
+        message: messageUserModal.message.trim()
+      });
+      setMessageUserModal(prev => ({ ...prev, success: res.data.message || 'Direct message sent successfully!', loading: false, title: '', message: '' }));
+      // Fetch the updated history
+      try {
+        const historyRes = await api.get(`admin/users/${messageUserModal.user.id}/message/`);
+        setUserMessageHistory(historyRes.data || []);
+      } catch (err) {
+        console.error("Failed to refresh message history:", err);
+      }
+    } catch (err) {
+      console.error("Failed to send direct message:", err);
+      setMessageUserModal(prev => ({ ...prev, error: err.response?.data?.error || 'Failed to send message.', loading: false }));
+    }
+  };
+
   const fetchSummary = async () => {
     try {
       const res = await api.get('admin/summary/');
@@ -157,9 +218,11 @@ const AdminDashboard = () => {
       if (params.length) url += `?${params.join('&')}`;
       
       const res = await api.get(url);
-      setUsersList(res.data);
+      const data = Array.isArray(res.data) ? res.data : (res.data?.results || []);
+      setUsersList(data);
     } catch (err) {
       console.error("Failed to load users:", err);
+      setUsersList([]);
     }
   };
 
@@ -169,8 +232,8 @@ const AdminDashboard = () => {
         api.get('admin/events/'),
         api.get('admin/venues/')
       ]);
-      setPendingEvents(eventsRes.data);
-      setPendingVenues(venuesRes.data);
+      setPendingEvents(Array.isArray(eventsRes.data) ? eventsRes.data : (eventsRes.data?.results || []));
+      setPendingVenues(Array.isArray(venuesRes.data) ? venuesRes.data : (venuesRes.data?.results || []));
     } catch (err) {
       console.error("Failed to load pending approvals:", err);
     }
@@ -183,7 +246,7 @@ const AdminDashboard = () => {
         url += `&search=${eventSearch}`;
       }
       const res = await api.get(url);
-      const data = Array.isArray(res.data) ? res.data : (res.data.results || []);
+      const data = Array.isArray(res.data) ? res.data : (res.data?.results || []);
       setAllEvents(data);
     } catch (err) {
       console.error("Failed to load all events:", err);
@@ -197,7 +260,7 @@ const AdminDashboard = () => {
         url += `?search=${venueSearch}`;
       }
       const res = await api.get(url);
-      const data = Array.isArray(res.data) ? res.data : (res.data.results || []);
+      const data = Array.isArray(res.data) ? res.data : (res.data?.results || []);
       setAllVenues(data);
     } catch (err) {
       console.error("Failed to load all venues:", err);
@@ -213,9 +276,11 @@ const AdminDashboard = () => {
       if (params.length) url += `?${params.join('&')}`;
       
       const res = await api.get(url);
-      setBookingsList(res.data);
+      const data = Array.isArray(res.data) ? res.data : (res.data?.results || []);
+      setBookingsList(data);
     } catch (err) {
       console.error("Failed to load bookings list:", err);
+      setBookingsList([]);
     }
   };
 
@@ -228,9 +293,11 @@ const AdminDashboard = () => {
       if (params.length) url += `?${params.join('&')}`;
       
       const res = await api.get(url);
-      setAuditLogs(res.data);
+      const data = Array.isArray(res.data) ? res.data : (res.data?.results || []);
+      setAuditLogs(data);
     } catch (err) {
       console.error("Failed to load audit logs:", err);
+      setAuditLogs([]);
     }
   };
 
@@ -243,9 +310,11 @@ const AdminDashboard = () => {
       if (params.length) url += `?${params.join('&')}`;
       
       const res = await api.get(url);
-      setComplaintsList(res.data);
+      const data = Array.isArray(res.data) ? res.data : (res.data?.results || []);
+      setComplaintsList(data);
     } catch (err) {
       console.error("Failed to load complaints:", err);
+      setComplaintsList([]);
     }
   };
 
@@ -651,73 +720,8 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* Grid Tabs Navigation & Views */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-        
-        {/* Navigation Panel */}
-        {sidebarOpen && (
-          <div className="lg:col-span-1 flex flex-col space-y-2">
-            <div className="flex items-center justify-between px-2 py-1.5 mb-2 border-b border-white/5 pb-2">
-              <span className="text-[10px] font-bold text-dark-muted uppercase tracking-wider">Control Menu</span>
-              <button 
-                onClick={() => setSidebarOpen(false)}
-                className="text-dark-muted hover:text-red-400 p-1 hover:bg-white/5 rounded transition-all"
-                title="Close Sidebar"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-            {[
-              { id: 'approvals', label: 'Pending Approvals', icon: ShieldAlert, countKey: 'approvals' },
-              { id: 'users', label: 'User Control', icon: Users },
-              { id: 'finance', label: 'Transactions & Refunds', icon: IndianRupee },
-              { id: 'complaints', label: 'Complaints Panel', icon: MessageSquare },
-              { id: 'broadcast', label: 'Broadcast Alerts', icon: Send }
-            ].map(tab => {
-              const Icon = tab.icon;
-              const hasBadge = tab.countKey && summary && (
-                (tab.countKey === 'approvals' && (summary.pending.organizers + summary.pending.plot_owners + summary.pending.events + summary.pending.venues) > 0)
-              );
-              const badgeCount = hasBadge && (
-                summary.pending.organizers + summary.pending.plot_owners + summary.pending.events + summary.pending.venues
-              );
-              
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center justify-between px-4 py-3 rounded-xl border text-sm font-bold transition-all ${
-                    activeTab === tab.id
-                      ? 'bg-red-500/10 border-red-500/20 text-red-400 shadow-md shadow-red-950/10'
-                      : 'bg-white/5 hover:bg-white/10 text-dark-muted hover:text-dark-text border-white/5'
-                  }`}
-                >
-                  <div className="flex items-center space-x-2.5">
-                    <Icon className="w-4 h-4" />
-                    <span>{tab.label}</span>
-                  </div>
-                  {hasBadge && (
-                    <span className="bg-red-500/20 text-red-400 text-[10px] font-extrabold px-2 py-0.5 rounded-full border border-red-500/30">
-                      {badgeCount}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Viewport Panels */}
-        <div className={`${sidebarOpen ? 'lg:col-span-4' : 'lg:col-span-5'} min-h-[500px]`}>
-          {!sidebarOpen && (
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="flex items-center space-x-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 px-3.5 py-2 rounded-xl text-xs font-bold mb-6 transition-all shadow-md shadow-red-950/10"
-            >
-              <Users className="w-3.5 h-3.5" />
-              <span>Show Control Menu</span>
-            </button>
-          )}
+      {/* Viewport Panels */}
+      <div className="w-full min-h-[500px]">
           
           {loading ? (
             <div className="glass-panel border border-white/10 rounded-2xl p-16 flex flex-col items-center justify-center space-y-4">
@@ -1281,7 +1285,7 @@ const AdminDashboard = () => {
                           </tr>
                         </thead>
                         <tbody>
-                          {usersList.length === 0 ? (
+                          {!Array.isArray(usersList) || usersList.length === 0 ? (
                             <tr>
                               <td colSpan="4" className="text-center py-6 text-dark-muted">No users found.</td>
                             </tr>
@@ -1289,7 +1293,7 @@ const AdminDashboard = () => {
                             usersList.map(u => (
                               <tr key={u.id} className="border-b border-white/5 hover:bg-white/[0.01]">
                                 <td className="py-4">
-                                  <p className="font-bold text-dark-text">{u.first_name} {u.last_name}</p>
+                                  <p className="font-bold text-dark-text">{(u.first_name || u.last_name) ? `${u.first_name || ''} ${u.last_name || ''}`.trim() : (u.username || u.email)}</p>
                                   <p className="text-[10px] text-dark-muted mt-0.5">{u.email}</p>
                                 </td>
                                 <td className="py-4">
@@ -1324,6 +1328,14 @@ const AdminDashboard = () => {
                                         <span>Approve</span>
                                       </button>
                                     )}
+                                    {/* Action: Direct Message User */}
+                                    <button
+                                      onClick={() => openMessageModal(u)}
+                                      className="bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 px-2.5 py-1.5 rounded-lg font-bold text-[9px] flex items-center space-x-1 transition-colors"
+                                    >
+                                      <Mail className="w-3 h-3" />
+                                      <span>Message</span>
+                                    </button>
                                     {/* Action: Block/Unblock */}
                                     <button
                                       onClick={() => handleUserBlockToggle(u.id)}
@@ -1826,8 +1838,6 @@ const AdminDashboard = () => {
             </AnimatePresence>
           )}
 
-        </div>
-
       </div>
 
       {/* Reply Modal */}
@@ -2222,13 +2232,124 @@ const AdminDashboard = () => {
         />
       )}
 
-      {/* Venue Detail Modal Preview */}
-      {previewVenue && (
-        <VenueDetailModal
-          venue={previewVenue}
-          onClose={() => setPreviewVenue(null)}
-        />
-      )}
+      {/* Direct Message User Modal */}
+      <AnimatePresence>
+        {messageUserModal.show && messageUserModal.user && (
+          <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="glass-panel w-full max-w-2xl rounded-2xl p-6 shadow-2xl relative border border-white/10 space-y-4"
+            >
+              <div className="flex justify-between items-center border-b border-white/10 pb-3">
+                <div className="flex items-center space-x-2">
+                  <Mail className="w-5 h-5 text-blue-400" />
+                  <h3 className="text-sm font-bold text-dark-text uppercase tracking-wider">Send Direct Message</h3>
+                </div>
+                <button
+                  onClick={() => setMessageUserModal({ show: false, user: null, title: '', message: '', loading: false, error: '', success: '' })}
+                  className="text-dark-muted hover:text-dark-text"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="bg-white/5 border border-white/5 p-3.5 rounded-xl space-y-1">
+                <p className="text-[10px] text-dark-muted uppercase font-bold tracking-wider">Recipient User:</p>
+                <p className="text-xs font-bold text-white">{(messageUserModal.user.first_name || messageUserModal.user.last_name) ? `${messageUserModal.user.first_name || ''} ${messageUserModal.user.last_name || ''}`.trim() : (messageUserModal.user.username || messageUserModal.user.email)}</p>
+                <p className="text-[10px] text-blue-400 font-mono">{messageUserModal.user.email} • ({messageUserModal.user.role})</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                {/* Left Column: Send Form */}
+                <form onSubmit={handleSendDirectMessage} className="space-y-4">
+                  <div>
+                    <label className="block text-[10px] font-bold text-dark-muted uppercase tracking-wider mb-1.5">Subject / Title</label>
+                    <input
+                      type="text"
+                      value={messageUserModal.title}
+                      onChange={(e) => setMessageUserModal(prev => ({ ...prev, title: e.target.value }))}
+                      placeholder="Message Subject (e.g. Account Notice)"
+                      className="glass-input w-full px-3.5 py-2.5 rounded-xl text-xs text-white bg-dark-bg"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-dark-muted uppercase tracking-wider mb-1.5">Message Content *</label>
+                    <textarea
+                      required
+                      rows={4}
+                      value={messageUserModal.message}
+                      onChange={(e) => setMessageUserModal(prev => ({ ...prev, message: e.target.value }))}
+                      placeholder="Enter message to send directly to this user..."
+                      className="glass-input w-full px-3.5 py-2.5 rounded-xl text-xs text-white bg-dark-bg resize-none"
+                    />
+                  </div>
+
+                  {messageUserModal.error && (
+                    <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-xl text-xs font-semibold">
+                      {messageUserModal.error}
+                    </div>
+                  )}
+
+                  {messageUserModal.success && (
+                    <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 p-3 rounded-xl text-xs font-semibold">
+                      {messageUserModal.success}
+                    </div>
+                  )}
+
+                  <div className="flex space-x-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setMessageUserModal({ show: false, user: null, title: '', message: '', loading: false, error: '', success: '' })}
+                      className="flex-1 bg-white/5 border border-white/10 hover:bg-white/10 text-dark-text py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={messageUserModal.loading}
+                      className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-colors disabled:opacity-50 flex items-center justify-center space-x-1.5"
+                    >
+                      {messageUserModal.loading ? 'Sending...' : 'Send Message'}
+                    </button>
+                  </div>
+                </form>
+
+                {/* Right Column: Sent Message History */}
+                <div className="flex flex-col h-full border-t md:border-t-0 md:border-l border-white/10 pt-4 md:pt-0 md:pl-6 space-y-3">
+                  <h4 className="text-xs font-bold text-dark-text uppercase tracking-wider flex items-center gap-1.5 pb-2 border-b border-white/5">
+                    <History className="w-4 h-4 text-emerald-400" />
+                    Sent Messages History ({userMessageHistory.length})
+                  </h4>
+                  <div className="overflow-y-auto max-h-[290px] space-y-2 pr-1 custom-scrollbar">
+                    {loadingHistory ? (
+                      <div className="flex items-center justify-center py-12">
+                        <span className="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></span>
+                      </div>
+                    ) : userMessageHistory.length === 0 ? (
+                      <p className="text-[10px] text-dark-muted text-center py-12">No previous direct messages sent to this user.</p>
+                    ) : (
+                      userMessageHistory.map((h) => (
+                        <div key={h.id} className="p-3 bg-white/[0.02] border border-white/5 rounded-xl space-y-1 text-left">
+                          <div className="flex justify-between items-start">
+                            <span className="text-[10px] font-bold text-emerald-400 font-sans line-clamp-1">{h.title}</span>
+                            <span className="text-[9px] text-dark-muted font-medium flex-shrink-0 ml-2">
+                              {new Date(h.created_at).toLocaleDateString()}
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-dark-muted leading-relaxed whitespace-pre-wrap">{h.message}</p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
     </div>
   );

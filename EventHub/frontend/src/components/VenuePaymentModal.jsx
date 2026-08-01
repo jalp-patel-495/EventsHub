@@ -43,6 +43,10 @@ const VenuePaymentModal = ({ venue, startDate, endDate, onClose, onPaymentSucces
   const [isCardFlipped, setIsCardFlipped] = useState(false);
   const [upiId, setUpiId] = useState('');
   const [selectedBank, setSelectedBank] = useState('');
+  const [netbankUser, setNetbankUser] = useState('');
+  const [netbankAccount, setNetbankAccount] = useState('');
+  const [netbankIfsc, setNetbankIfsc] = useState('');
+  const [netbankError, setNetbankError] = useState('');
   const [processingMsg, setProcessingMsg] = useState('');
   const [bookingLoading, setBookingLoading] = useState(false);
   const [bookingError, setBookingError] = useState('');
@@ -223,17 +227,42 @@ const VenuePaymentModal = ({ venue, startDate, endDate, onClose, onPaymentSucces
         return;
       }
       if (!cleanUpi.includes('@')) {
-        setCardError("Invalid UPI ID. UPI ID must include '@' followed by your bank name (e.g. amit@okhdfcbank, user@paytm).");
+        setCardError("Invalid UPI ID. UPI ID must include '@' followed by your bank name (e.g. name@okhdfcbank, user@paytm).");
         return;
       }
       const parts = cleanUpi.split('@');
       if (!parts[0] || !parts[1]) {
-        setCardError("Invalid UPI ID format. Please specify username and bank name after '@' (e.g. amit@okhdfcbank).");
+        setCardError("Invalid UPI ID format. Please specify username and bank name after '@' (e.g. name@okhdfcbank).");
         return;
       }
       const upiRegex = /^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z0-9]{2,64}$/;
       if (!upiRegex.test(cleanUpi)) {
-        setCardError("Invalid UPI ID format. Must be 'username@bankname' (e.g. amit@okhdfcbank, 9876543210@paytm, user@okaxis).");
+        setCardError("Invalid UPI ID format. Must be 'username@bankname' (e.g. name@okhdfcbank, phone@paytm, user@okaxis).");
+        return;
+      }
+    }
+
+    if (selectedMethod === 'netbanking') {
+      if (netbankUser.trim().length < 3) {
+        setNetbankError('User Name must be at least 3 characters.');
+        return;
+      }
+      if (!/^[a-zA-Z\s]+$/.test(netbankUser.trim())) {
+        setNetbankError('User Name must contain only letters and spaces.');
+        return;
+      }
+      const cleanedAcc = netbankAccount.replace(/\s/g, '');
+      if (!/^\d+$/.test(cleanedAcc)) {
+        setNetbankError('Account Number must contain only numbers.');
+        return;
+      }
+      if (cleanedAcc.length < 9 || cleanedAcc.length > 18) {
+        setNetbankError('Account Number must be between 9 and 18 digits.');
+        return;
+      }
+      const cleanedIfsc = netbankIfsc.trim().toUpperCase();
+      if (cleanedIfsc.length !== 11 || !/^[A-Z0-9]{11}$/.test(cleanedIfsc)) {
+        setNetbankError('IFSC Code must be exactly 11 alphanumeric characters.');
         return;
       }
     }
@@ -766,7 +795,9 @@ const VenuePaymentModal = ({ venue, startDate, endDate, onClose, onPaymentSucces
 
         {/* ─── UPI CHECKOUT ─── */}
         {paymentStep === 'upi' && (() => {
-          const qrUrl = `${window.location.protocol}//${window.location.host}/pay-simulate?token=${paymentToken}&amount=${grandTotal}&label=${encodeURIComponent('Venue booking for ' + venue.name)}`;
+          const baseUrl = window.location.origin + window.location.pathname;
+          const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+          const qrUrl = `${cleanBaseUrl}/#/pay-simulate?token=${paymentToken}&amount=${grandTotal}&label=${encodeURIComponent('Venue booking for ' + venue.name)}`;
           return (
             <div className="w-full text-left space-y-4">
               <h3 className="text-sm font-bold text-dark-text border-b border-white/5 pb-2">Scan QR Code or Enter UPI ID</h3>
@@ -957,7 +988,7 @@ const VenuePaymentModal = ({ venue, startDate, endDate, onClose, onPaymentSucces
                     setCardNumber(val);
                     setCardError('');
                   }}
-                  placeholder="4111 2222 3333 4444"
+                  placeholder="Enter Card Number"
                   maxLength="19"
                   className="glass-input w-full px-3 py-2.5 text-xs"
                 />
@@ -973,7 +1004,7 @@ const VenuePaymentModal = ({ venue, startDate, endDate, onClose, onPaymentSucces
                     setCardHolder(val);
                     setCardError('');
                   }}
-                  placeholder="Amit Patel"
+                  placeholder="Enter Your Name"
                   className="glass-input w-full px-3 py-2.5 text-xs"
                 />
               </div>
@@ -1039,14 +1070,23 @@ const VenuePaymentModal = ({ venue, startDate, endDate, onClose, onPaymentSucces
           <div className="w-full text-left space-y-4">
             <h3 className="text-sm font-bold text-dark-text border-b border-white/5 pb-2">Select Net Banking Option</h3>
             
-            <form onSubmit={handleSecurePaymentSubmit} className="space-y-4">
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              if (!selectedBank) {
+                setCardError('Please select a bank to proceed.');
+                return;
+              }
+              setCardError('');
+              setNetbankError('');
+              setPaymentStep('netbanking-credentials');
+            }} className="space-y-4">
               <div>
                 <label className="block text-[10px] text-dark-muted uppercase font-bold mb-1">Select Bank *</label>
                 <select
                   required
                   value={selectedBank}
                   onChange={(e) => { setSelectedBank(e.target.value); setCardError(''); }}
-                  className="glass-input w-full px-3 py-2.5 text-xs bg-dark-bg text-dark-text"
+                  className="glass-input w-full px-3 py-2.5 text-xs bg-dark-bg text-dark-text cursor-pointer"
                 >
                   <option value="">Choose Bank...</option>
                   <option value="sbi">State Bank of India</option>
@@ -1060,7 +1100,7 @@ const VenuePaymentModal = ({ venue, startDate, endDate, onClose, onPaymentSucces
               </div>
 
               {cardError && (
-                <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-2.5 rounded-lg text-xs flex items-center gap-2">
+                <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-2.5 rounded-lg text-xs font-semibold flex items-center gap-2">
                   <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
                   <span>{cardError}</span>
                 </div>
@@ -1076,9 +1116,107 @@ const VenuePaymentModal = ({ venue, startDate, endDate, onClose, onPaymentSucces
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 bg-brand-primary text-white py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider"
+                  className="flex-1 bg-brand-primary hover:bg-emerald-600 text-white py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all"
                 >
-                  Proceed to Bank
+                  Proceed to Bank Details
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {/* ─── NETBANKING CREDENTIALS ─── */}
+        {paymentStep === 'netbanking-credentials' && (
+          <div className="w-full text-left space-y-4">
+            <h3 className="text-sm font-bold text-dark-text border-b border-white/5 pb-2">
+              Net Banking Transfer Details
+            </h3>
+
+            {/* Bank Portal Badge */}
+            <div className="bg-emerald-500/10 border border-emerald-500/20 p-2.5 rounded-xl flex items-center justify-between text-xs">
+              <span className="text-[10px] text-dark-muted font-bold uppercase tracking-wider">Selected Bank:</span>
+              <span className="font-extrabold text-emerald-400 text-xs">
+                {selectedBank === 'sbi' ? 'State Bank of India' :
+                 selectedBank === 'hdfc' ? 'HDFC Bank' :
+                 selectedBank === 'icici' ? 'ICICI Bank' :
+                 selectedBank === 'axis' ? 'Axis Bank' :
+                 selectedBank === 'kotak' ? 'Kotak Mahindra Bank' :
+                 selectedBank === 'bob' ? 'Bank of Baroda' :
+                 selectedBank === 'pnb' ? 'Punjab National Bank' : selectedBank.toUpperCase()}
+              </span>
+            </div>
+            
+            <form onSubmit={handleSecurePaymentSubmit} className="space-y-4">
+              {netbankError && (
+                <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-2.5 rounded-lg text-xs font-semibold flex items-center gap-2">
+                  <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                  <span>{netbankError}</span>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-[10px] text-dark-muted uppercase font-bold mb-1">User Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={netbankUser}
+                  onChange={(e) => { 
+                    const val = e.target.value.replace(/[^A-Za-z\s]/g, '');
+                    setNetbankUser(val); 
+                    setNetbankError(''); 
+                  }}
+                  placeholder="Enter User Name"
+                  className="glass-input w-full px-3 py-2.5 text-xs bg-dark-bg text-dark-text"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] text-dark-muted uppercase font-bold mb-1">Account Number *</label>
+                <input
+                  type="text"
+                  required
+                  value={netbankAccount}
+                  onChange={(e) => { 
+                    const val = e.target.value.replace(/\D/g, '').slice(0, 18);
+                    setNetbankAccount(val); 
+                    setNetbankError(''); 
+                  }}
+                  placeholder="Enter Account Number"
+                  maxLength="18"
+                  className="glass-input w-full px-3 py-2.5 text-xs bg-dark-bg text-dark-text"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] text-dark-muted uppercase font-bold mb-1">IFSC Code *</label>
+                <input
+                  type="text"
+                  required
+                  value={netbankIfsc}
+                  onChange={(e) => { 
+                    const val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 11);
+                    setNetbankIfsc(val); 
+                    setNetbankError(''); 
+                  }}
+                  placeholder="e.g. SBIN0001234"
+                  maxLength="11"
+                  className="glass-input w-full px-3 py-2.5 text-xs bg-dark-bg text-dark-text uppercase"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setPaymentStep('netbanking')}
+                  className="flex-1 bg-white/5 border border-white/10 text-dark-text py-2.5 rounded-xl text-xs font-semibold"
+                >
+                  Back
+                </button>
+                <button
+                  type="submit"
+                  className="flex-grow bg-[#10B981] hover:bg-[#059669] text-white py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all"
+                >
+                  Pay ₹{grandTotal.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
                 </button>
               </div>
             </form>

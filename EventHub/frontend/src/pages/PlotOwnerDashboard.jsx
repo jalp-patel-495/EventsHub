@@ -736,7 +736,7 @@ const PlotOwnerDashboard = () => {
                        cancelledBookings.reduce((sum, b) => sum + parseFloat(b.total_price) * 0.05, 0);
   const adminVenueCut = approvedBookings.reduce((sum, b) => sum + parseFloat(b.total_price) * 0.2, 0) +
                         cancelledBookings.reduce((sum, b) => sum + parseFloat(b.total_price) * 0.05, 0);
-  const totalRefundedToOrg = cancelledBookings.reduce((sum, b) => sum + parseFloat(b.total_price) * 0.9, 0);
+  const totalRefundedToOrg = cancelledBookings.reduce((sum, b) => sum + parseFloat(b.total_price), 0);
   const cancellationRetainedProfit = cancelledBookings.reduce((sum, b) => sum + parseFloat(b.total_price) * 0.05, 0);
 
   const allReviews = venues.reduce((arr, v) => {
@@ -1196,6 +1196,11 @@ const PlotOwnerDashboard = () => {
                                 <span className="text-emerald-400 block">Owner Profit (5%): ₹{(parseFloat(booking.total_price) * 0.05).toFixed(2)}</span>
                                 <span className="text-blue-400 block font-normal">Admin Commission (5%): ₹{(parseFloat(booking.total_price) * 0.05).toFixed(2)}</span>
                               </div>
+                            ) : (booking.status === 'rejected' || booking.payment_status === 'refunded') && booking.payment_status === 'refunded' ? (
+                              <div className="text-xs space-y-0.5">
+                                <span className="text-dark-muted block line-through">₹{booking.total_price}</span>
+                                <span className="text-emerald-400 block font-bold">100% Full Refund Sent to Customer</span>
+                              </div>
                             ) : (
                               <span className="text-brand-primary">₹{booking.total_price}</span>
                             )}
@@ -1207,11 +1212,12 @@ const PlotOwnerDashboard = () => {
                               </span>
                             ) : (
                               <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${
+                                booking.payment_status === 'refunded' ? 'bg-emerald-500/10 text-emerald-400' :
                                 booking.status === 'approved' ? 'bg-emerald-500/10 text-emerald-400' :
-                                booking.status === 'cancelled' ? 'bg-red-500/10 text-red-400' :
-                                booking.status === 'rejected' ? 'bg-red-500/10 text-red-400' : 'bg-amber-500/10 text-amber-400'
+                                booking.status === 'pending' ? 'bg-yellow-500/10 text-yellow-400' :
+                                'bg-red-500/10 text-red-400'
                               }`}>
-                                {booking.status}
+                                {booking.payment_status === 'refunded' ? 'Rejected (100% Refunded)' : booking.status}
                               </span>
                             )}
                           </td>
@@ -1290,7 +1296,7 @@ const PlotOwnerDashboard = () => {
                     </thead>
                     <tbody className="divide-y divide-white/[0.03]">
                       {bookings.filter(b => b.cancel_requested || b.status === 'cancelled').map((booking) => {
-                        const refundAmount = (parseFloat(booking.total_price) * 0.9).toFixed(2);
+                        const refundAmount = parseFloat(booking.total_price).toFixed(2);
                         const ownerProfit = (parseFloat(booking.total_price) * 0.05).toFixed(2);
                         return (
                           <tr key={booking.id} className="hover:bg-white/[0.01] transition-colors">

@@ -632,9 +632,9 @@ const OrganizerDashboard = () => {
   const cancelledVenues = safeVenueBookings.filter(vb => vb.status === 'cancelled');
 
   const totalVenueSpent = activeVenues.reduce((sum, vb) => sum + parseFloat(vb.total_price), 0);
-  const totalVenueRefunded = cancelledVenues.reduce((sum, vb) => sum + parseFloat(vb.total_price) * 0.9, 0);
-  const totalVenueLoss = cancelledVenues.reduce((sum, vb) => sum + parseFloat(vb.total_price) * 0.1, 0);
-  const netVenueExpenses = totalVenueSpent + totalVenueLoss;
+  const totalVenueRefunded = cancelledVenues.reduce((sum, vb) => sum + parseFloat(vb.total_price), 0);
+  const totalVenueLoss = 0;
+  const netVenueExpenses = totalVenueSpent;
 
   if (loading) {
     return (
@@ -1208,8 +1208,7 @@ const OrganizerDashboard = () => {
                                 {vb.status === 'cancelled' ? (
                                   <div className="text-xs space-y-0.5">
                                     <span className="text-dark-muted block line-through">₹{vb.total_price}</span>
-                                    <span className="text-emerald-400 block">Refunded (90%): ₹{(parseFloat(vb.total_price) * 0.9).toFixed(2)}</span>
-                                    <span className="text-red-400 block font-normal">Retained (10%): ₹{(parseFloat(vb.total_price) * 0.1).toFixed(2)}</span>
+                                    <span className="text-emerald-400 block font-bold">100% Full Refund: ₹{parseFloat(vb.total_price).toFixed(2)}</span>
                                   </div>
                                 ) : (
                                   <span className="text-brand-primary">₹{vb.total_price}</span>

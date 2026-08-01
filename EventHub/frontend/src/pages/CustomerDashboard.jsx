@@ -6,6 +6,7 @@ import { Calendar, Heart, Bell, Trash2, ShieldAlert, CheckCircle, Ticket, XCircl
 import { useAuth } from '../context/AuthContext';
 import VenuePaymentModal from '../components/VenuePaymentModal';
 import VenueDetailModal from '../components/VenueDetailModal';
+import EventDetailModal from '../components/EventDetailModal';
 
 const CustomerDashboard = () => {
   const { user } = useAuth();
@@ -19,6 +20,9 @@ const CustomerDashboard = () => {
   const [message, setMessage] = useState('');
   const [recommendations, setRecommendations] = useState(null);
   const [loadingRecommendations, setLoadingRecommendations] = useState(false);
+
+  // Detail Modal States
+  const [selectedDetailEvent, setSelectedDetailEvent] = useState(null);
 
   // Review & Rating Modal States
   const [showReviewModal, setShowReviewModal] = useState(false);
@@ -364,7 +368,7 @@ const CustomerDashboard = () => {
       setBookingActionLoading(false);
     }
   };
-  const handleBookVenueSubmit = (e) => {
+  const handleBookVenueSubmit = async (e) => {
     e.preventDefault();
     setBookingError('');
     
@@ -378,11 +382,38 @@ const CustomerDashboard = () => {
       return;
     }
 
-    setPaymentVenue(rentModal.venue);
-    setPaymentDates({ start: bookingDates.start, end: bookingDates.end });
-    setRentModal({ show: false, venue: null });
-    setBookingDates({ start: '', end: '' });
-    setShowPaymentModal(true);
+    setBookingActionLoading(true);
+    try {
+      const selectedVenueId = rentModal.venue.id;
+      const reqStart = bookingDates.start;
+      const reqEnd = bookingDates.end;
+
+      // Real-time backend query for all active/pending bookings of this venue plot
+      const checkRes = await api.get(`venues/bookings/?venue=${selectedVenueId}`);
+      const activeBookings = checkRes.data || [];
+
+      const isOverlap = activeBookings.some(vb => {
+        if (vb.status !== 'approved' && vb.status !== 'pending') return false;
+        return (vb.start_date <= reqEnd && vb.end_date >= reqStart);
+      });
+
+      if (isOverlap) {
+        setBookingError("Venue is not available on this date. Please select another date.");
+        setBookingActionLoading(false);
+        return;
+      }
+
+      setPaymentVenue(rentModal.venue);
+      setPaymentDates({ start: bookingDates.start, end: bookingDates.end });
+      setRentModal({ show: false, venue: null });
+      setBookingDates({ start: '', end: '' });
+      setShowPaymentModal(true);
+    } catch (err) {
+      console.error("Error checking date availability:", err);
+      setBookingError(err.response?.data?.error || "Venue is not available on this date. Please select another date.");
+    } finally {
+      setBookingActionLoading(false);
+    }
   };
 
   const handleRemoveWishlist = async (eventId) => {
@@ -411,7 +442,7 @@ const CustomerDashboard = () => {
 
   const unreadNotificationsCount = notifications.filter(n => !n.is_read).length;
   const ticketRefunds = bookings.filter(b => b.payment_status === 'refunded').reduce((sum, b) => sum + (parseFloat(b.total_price) * 0.5), 0);
-  const venueRefunds = venueBookings.filter(vb => vb.payment_status === 'refunded').reduce((sum, vb) => sum + (parseFloat(vb.total_price) * 0.9), 0);
+  const venueRefunds = venueBookings.filter(vb => vb.payment_status === 'refunded').reduce((sum, vb) => sum + parseFloat(vb.total_price || 0), 0);
   const totalRefundedAmount = ticketRefunds + venueRefunds;
   const totalVenuesBooked = venueBookings.filter(vb => vb.status === 'approved').length;
 
@@ -604,20 +635,26 @@ const CustomerDashboard = () => {
                 ) : (
                   bookings.map((booking) => (
                     <div key={booking.id} className="glass-card rounded-2xl p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-                      <div className="flex items-center space-x-4">
+                      <div 
+                        onClick={() => setSelectedDetailEvent(booking.event_details)}
+                        className="flex items-center space-x-4 cursor-pointer group flex-grow"
+                      >
                         {booking.event_details.image ? (
                           <img
                             src={booking.event_details.image.startsWith('http') ? booking.event_details.image : `${BACKEND_URL}${booking.event_details.image}`}
                             alt={booking.event_details.title}
-                            className="w-16 h-16 rounded-xl object-cover"
+                            className="w-16 h-16 rounded-xl object-cover group-hover:scale-105 transition-transform"
                           />
                         ) : (
-                          <div className="w-16 h-16 rounded-xl bg-white/5 flex items-center justify-center text-dark-muted">
+                          <div className="w-16 h-16 rounded-xl bg-white/5 flex items-center justify-center text-dark-muted group-hover:scale-105 transition-transform">
                             <Calendar className="w-6 h-6" />
                           </div>
                         )}
                         <div>
-                          <h4 className="font-bold text-lg text-dark-text">{booking.event_details.title}</h4>
+                          <h4 className="font-bold text-lg text-dark-text group-hover:text-brand-primary transition-colors flex items-center gap-2">
+                            <span>{booking.event_details.title}</span>
+                            <span className="text-[10px] text-blue-400 font-bold bg-blue-500/10 px-2 py-0.5 rounded uppercase">View Details ↗</span>
+                          </h4>
                           <p className="text-xs text-dark-muted mt-1">{booking.event_details.date} at {booking.event_details.time}</p>
                           <p className="text-xs text-dark-muted">{booking.event_details.location}</p>
                           <div className="flex items-center space-x-1.5 mt-1 text-[11px] text-amber-400 font-semibold">
@@ -671,7 +708,7 @@ const CustomerDashboard = () => {
                           </span>
                         </div>
                         {booking.status === 'confirmed' && (
-                          <div className="flex space-x-2">
+                          <div className="flex space-x-2" onClick={(e) => e.stopPropagation()}>
                             <a
                               href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(booking.event_details.location)}`}
                               target="_blank"
@@ -682,7 +719,7 @@ const CustomerDashboard = () => {
                               <MapPin className="w-4 h-4" />
                             </a>
                             <button
-                              onClick={() => handleOpenReviewModal('event', booking.event_details)}
+                              onClick={(e) => { e.stopPropagation(); handleOpenReviewModal('event', booking.event_details); }}
                               className={`p-2 rounded-xl transition-all ${
                                 booking.event_details.reviews?.some(r => r.user === user?.id)
                                   ? 'text-dark-muted bg-white/5 cursor-not-allowed border border-white/5'
@@ -694,14 +731,15 @@ const CustomerDashboard = () => {
                               <Star className={`w-4 h-4 ${booking.event_details.reviews?.some(r => r.user === user?.id) ? '' : 'fill-amber-400'}`} />
                             </button>
                             <button
-                              onClick={() => handleDownloadTicket(booking)}
+                              onClick={(e) => { e.stopPropagation(); handleDownloadTicket(booking); }}
                               className="p-2 text-brand-primary hover:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-xl transition-all"
                               title="Download PDF Ticket"
                             >
                               <Download className="w-4 h-4" />
                             </button>
                             <button
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 setSelectedCancelBooking(booking);
                                 setTicketsToCancel(1);
                                 setCancelModalOpen(true);
@@ -735,20 +773,26 @@ const CustomerDashboard = () => {
                   <div className="space-y-4">
                     {venueBookings.map((vb) => (
                       <div key={vb.id} className="glass-card rounded-2xl p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 border border-white/5 bg-dark-bg/25">
-                        <div className="flex items-center space-x-4">
+                        <div 
+                          onClick={() => setSelectedDetailVenue(vb.venue_details)}
+                          className="flex items-center space-x-4 cursor-pointer group flex-grow"
+                        >
                           {vb.venue_details?.image ? (
                             <img
                               src={vb.venue_details.image.startsWith('http') ? vb.venue_details.image : `${BACKEND_URL}${vb.venue_details.image}`}
                               alt={vb.venue_details.name}
-                              className="w-16 h-16 rounded-xl object-cover border border-white/10"
+                              className="w-16 h-16 rounded-xl object-cover border border-white/10 group-hover:scale-105 transition-transform"
                             />
                           ) : (
-                            <div className="w-16 h-16 rounded-xl bg-white/5 flex items-center justify-center text-dark-muted">
+                            <div className="w-16 h-16 rounded-xl bg-white/5 flex items-center justify-center text-dark-muted group-hover:scale-105 transition-transform">
                               <Building className="w-6 h-6" />
                             </div>
                           )}
                           <div>
-                            <h4 className="font-bold text-lg text-dark-text">{vb.venue_details?.name}</h4>
+                            <h4 className="font-bold text-lg text-dark-text group-hover:text-emerald-400 transition-colors flex items-center gap-2">
+                              <span>{vb.venue_details?.name}</span>
+                              <span className="text-[10px] text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded uppercase">View Details ↗</span>
+                            </h4>
                             <p className="text-xs text-emerald-400 font-semibold mt-0.5">{vb.start_date} to {vb.end_date}</p>
                             <p className="text-xs text-dark-muted">{vb.venue_details?.location}</p>
 
@@ -778,25 +822,37 @@ const CustomerDashboard = () => {
                         <div className="flex items-center space-x-6 w-full md:w-auto justify-between border-t md:border-t-0 border-white/5 pt-4 md:pt-0">
                           <div>
                             <span className="text-xs font-semibold text-dark-muted uppercase">Total Price</span>
-                            <p className="font-extrabold text-emerald-400 mt-0.5 font-mono">
+                            <p className={`font-extrabold mt-0.5 font-mono ${vb.payment_status === 'refunded' ? 'text-red-400 line-through' : 'text-emerald-400'}`}>
                               ₹{parseFloat(vb.total_price || 0).toLocaleString('en-IN')}
                             </p>
                           </div>
+
+                          {vb.payment_status === 'refunded' && (
+                            <div>
+                              <span className="text-xs font-semibold text-emerald-400 uppercase">100% Refunded</span>
+                              <p className="font-extrabold text-emerald-400 mt-0.5 font-mono">
+                                ₹{parseFloat(vb.total_price || 0).toLocaleString('en-IN')}
+                              </p>
+                            </div>
+                          )}
+
                           <div>
                             <span className="text-xs font-semibold text-dark-muted uppercase">Status</span>
                             <span className={`block text-xs font-bold px-2 py-0.5 rounded mt-0.5 uppercase ${
+                              vb.payment_status === 'refunded' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
                               vb.status === 'approved' ? (vb.cancel_requested ? 'bg-yellow-500/10 text-yellow-400' : 'bg-emerald-500/10 text-emerald-400') :
                               vb.status === 'pending' ? 'bg-yellow-500/10 text-yellow-400' :
                               'bg-red-500/10 text-red-400'
                             }`}>
-                              {vb.cancel_requested && vb.status === 'approved' ? 'Cancel Requested' : vb.status}
+                              {vb.payment_status === 'refunded' ? 'Rejected (100% Refunded)' :
+                               vb.cancel_requested && vb.status === 'approved' ? 'Cancel Requested' : vb.status}
                             </span>
                           </div>
 
-                          <div className="flex items-center space-x-2">
+                          <div className="flex items-center space-x-2" onClick={(e) => e.stopPropagation()}>
                             {vb.status === 'pending' && vb.payment_status !== 'paid' && (
                               <button
-                                onClick={() => setPaymentModalVenueBooking(vb)}
+                                onClick={(e) => { e.stopPropagation(); setPaymentModalVenueBooking(vb); }}
                                 className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-extrabold text-xs shadow-md uppercase tracking-wider"
                               >
                                 Pay Now
@@ -817,7 +873,7 @@ const CustomerDashboard = () => {
 
                             {vb.status === 'approved' && !vb.cancel_requested && (
                               <button
-                                onClick={() => handleOpenReviewModal('venue', vb.venue_details)}
+                                onClick={(e) => { e.stopPropagation(); handleOpenReviewModal('venue', vb.venue_details); }}
                                 className="p-2 text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 rounded-xl transition-all border border-amber-500/20"
                                 title="Rate & Review Venue Plot"
                               >
@@ -827,7 +883,8 @@ const CustomerDashboard = () => {
 
                             {!vb.cancel_requested && vb.status !== 'rejected' && vb.status !== 'cancelled' && (
                               <button
-                                onClick={() => {
+                                onClick={(e) => {
+                                  e.stopPropagation();
                                   setSelectedCancelBooking(vb);
                                   setCancelType('venue');
                                   setCancelModalOpen(true);
@@ -862,22 +919,29 @@ const CustomerDashboard = () => {
                 </div>
               ) : (
                 wishlist.map((item) => (
-                  <div key={item.id} className="glass-card rounded-2xl overflow-hidden flex flex-col">
+                  <div 
+                    key={item.id} 
+                    onClick={() => setSelectedDetailEvent(item.event_details)}
+                    className="glass-card rounded-2xl overflow-hidden flex flex-col cursor-pointer group hover:border-brand-primary/40 transition-all"
+                  >
                     {item.event_details.image && (
                       <img
                         src={item.event_details.image.startsWith('http') ? item.event_details.image : `${BACKEND_URL}${item.event_details.image}`}
                         alt={item.event_details.title}
-                        className="w-full h-48 object-cover"
+                        className="w-full h-48 object-cover group-hover:scale-105 transition-transform"
                       />
                     )}
                     <div className="p-6 flex flex-col flex-grow">
-                      <h4 className="font-bold text-lg text-dark-text">{item.event_details.title}</h4>
+                      <h4 className="font-bold text-lg text-dark-text group-hover:text-brand-primary transition-colors flex items-center justify-between">
+                        <span>{item.event_details.title}</span>
+                        <span className="text-[10px] text-blue-400 font-bold bg-blue-500/10 px-2 py-0.5 rounded uppercase">Details ↗</span>
+                      </h4>
                       <p className="text-xs text-dark-muted mt-1">{item.event_details.date} | {item.event_details.location}</p>
                       <p className="text-sm font-bold text-brand-primary mt-3">₹{item.event_details.price}</p>
                       
-                      <div className="flex items-center justify-between mt-6 pt-4 border-t border-white/5">
+                      <div className="flex items-center justify-between mt-6 pt-4 border-t border-white/5" onClick={(e) => e.stopPropagation()}>
                         <button
-                          onClick={() => handleRemoveWishlist(item.event)}
+                          onClick={(e) => { e.stopPropagation(); handleRemoveWishlist(item.event); }}
                           className="flex items-center space-x-1.5 text-xs text-red-400 hover:text-red-300 font-semibold"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -1452,7 +1516,7 @@ const CustomerDashboard = () => {
                   {cancelType === 'venue' ? (
                     <div className="space-y-4">
                       <p className="text-xs text-dark-muted leading-relaxed">
-                        Cancelling will request a refund of 90% (₹{(parseFloat(selectedCancelBooking.total_price) * 0.9).toFixed(2)}), subject to plot owner approval.
+                        Cancelling will request a 100% full refund of ₹{(parseFloat(selectedCancelBooking.total_price)).toFixed(2)}, subject to plot owner approval.
                       </p>
                     </div>
                   ) : selectedCancelBooking.tickets_count > 1 ? (
@@ -1527,8 +1591,8 @@ const CustomerDashboard = () => {
                 <div className="space-y-4">
                   {cancelType === 'venue' ? (
                     <div className="bg-blue-500/10 border border-blue-500/20 text-blue-400 p-3 rounded-xl text-[10px] leading-relaxed">
-                      <strong>Refund Account:</strong> Please enter your card details below. A 90% refund of ₹{(
-                        parseFloat(selectedCancelBooking.total_price) * 0.9
+                      <strong>Refund Account:</strong> Please enter your card details below. A 100% full refund of ₹{(
+                        parseFloat(selectedCancelBooking.total_price)
                       ).toFixed(2)} will be credited to this card within 5-7 days after owner approval.
                     </div>
                   ) : (
@@ -1778,6 +1842,15 @@ const CustomerDashboard = () => {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Event Detail Modal */}
+      {selectedDetailEvent && (
+        <EventDetailModal
+          event={selectedDetailEvent}
+          onClose={() => setSelectedDetailEvent(null)}
+          showHostBox={true}
+        />
+      )}
 
       {/* Venue Detail Modal */}
       {selectedDetailVenue && (

@@ -1,14 +1,27 @@
-import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useSearchParams, Link } from 'react-router-dom';
 import api from '../api/api';
 import { motion } from 'framer-motion';
-import { ShieldCheck, CheckCircle2, Lock, Landmark, AlertCircle } from 'lucide-react';
+import { ShieldCheck, CheckCircle2, Landmark, AlertCircle } from 'lucide-react';
 
 const PaySimulate = () => {
   const [searchParams] = useSearchParams();
-  const token = searchParams.get('token');
-  const amount = searchParams.get('amount') || '0.00';
-  const label = searchParams.get('label') || 'EventHub Checkout';
+  
+  let token = searchParams.get('token');
+  let amount = searchParams.get('amount');
+  let label = searchParams.get('label');
+
+  // Fallback if accessed directly via URL without React Router state
+  if (!token && typeof window !== 'undefined') {
+    const rawSearch = window.location.search || (window.location.hash.includes('?') ? window.location.hash.split('?')[1] : '');
+    const params = new URLSearchParams(rawSearch);
+    token = params.get('token');
+    amount = params.get('amount');
+    label = params.get('label');
+  }
+
+  amount = amount || '0.00';
+  label = label || 'EventHub Checkout';
 
   const [status, setStatus] = useState('ready'); // ready, loading, success, error
   const [errorMessage, setErrorMessage] = useState('');
@@ -163,18 +176,18 @@ const PaySimulate = () => {
 
             {/* Navigation / Back Buttons */}
             <div className="flex flex-col gap-2 pt-2">
-              <a
-                href="/bookings"
+              <Link
+                to="/bookings"
                 className="w-full bg-[#3B82F6] hover:bg-[#1D4ED8] text-white py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all text-center"
               >
                 Go to My Bookings
-              </a>
-              <a
-                href="/"
+              </Link>
+              <Link
+                to="/"
                 className="w-full bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 py-3 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all text-center"
               >
                 Back to Homepage
-              </a>
+              </Link>
             </div>
           </motion.div>
         )}

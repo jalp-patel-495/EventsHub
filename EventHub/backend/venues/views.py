@@ -116,9 +116,14 @@ class VenueBookingCreateListView(APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request):
-        if request.user.role == 'plot_owner':
+        venue_id = request.query_params.get('venue')
+        if venue_id:
+            bookings = VenueBooking.objects.filter(venue_id=venue_id, status__in=['approved', 'pending']).order_by('-created_at')
+        elif request.user.role == 'plot_owner':
             # Venue owners see requests for their venues
             bookings = VenueBooking.objects.filter(venue__owner=request.user).order_by('-created_at')
+        elif request.user.role == 'admin':
+            bookings = VenueBooking.objects.all().order_by('-created_at')
         else:
             # Organizers see their requests
             bookings = VenueBooking.objects.filter(organizer=request.user).order_by('-created_at')
@@ -139,16 +144,19 @@ class VenueBookingCreateListView(APIView):
         start_date = serializer.validated_data['start_date']
         end_date = serializer.validated_data['end_date']
         
-        # Check date overlap with already approved bookings
+        # Check date overlap with already approved or pending bookings
         overlap = VenueBooking.objects.filter(
             venue=venue,
-            status='approved',
+            status__in=['approved', 'pending'],
             start_date__lte=end_date,
             end_date__gte=start_date
         ).exists()
         
         if overlap:
-            return Response({"error": "This venue is already booked for the selected dates."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "Venue is not available on this date. Please select another date."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
             
         use_catering = serializer.validated_data.get('use_catering', False)
         catering_plates = serializer.validated_data.get('catering_plates', 0)
@@ -253,18 +261,16 @@ class VenueBookingActionView(APIView):
             booking.save()
             
             # Notify owner & organizer
-            refund_amount = float(booking.total_price) * 0.90
-            owner_retained = float(booking.total_price) * 0.05
-            admin_retained = float(booking.total_price) * 0.05
+            refund_amount = float(booking.total_price)
             Notification.objects.create(
                 user=booking.venue.owner,
                 title="Venue Booking Cancellation Approved",
-                message=f"The cancellation request for {booking.venue.name} was approved. 5% (₹{owner_retained:.2f}) retained as owner profit."
+                message=f"The cancellation request for {booking.venue.name} was approved. Full 100% refund (₹{refund_amount:.2f}) processed to customer."
             )
             Notification.objects.create(
                 user=booking.organizer,
                 title="Venue Booking Cancellation Approved",
-                message=f"Your booking cancellation for {booking.venue.name} has been approved. A 90% refund of ₹{refund_amount:.2f} has been processed."
+                message=f"Your booking cancellation for {booking.venue.name} has been approved. A 100% full refund of ₹{refund_amount:.2f} has been processed."
             )
             
             return Response(VenueBookingSerializer(booking).data, status=status.HTTP_200_OK)
@@ -298,13 +304,27 @@ class VenueBookingActionView(APIView):
                 date=booking.start_date
             ).update(is_approved=True)
             
-            # Reject other overlapping pending bookings automatically
-            VenueBooking.objects.filter(
+            # Reject other overlapping pending bookings automatically and process 100% full refund if paid
+            overlapping_pending = VenueBooking.objects.filter(
                 venue=booking.venue,
                 status='pending',
                 start_date__lte=booking.end_date,
-                end_date__gte=booking.start_date
-            ).exclude(pk=booking.pk).update(status='rejected')
+                end_date__gte=start_date
+            ).exclude(pk=booking.pk)
+
+            for ov in overlapping_pending:
+                ov.status = 'rejected'
+                refund_txt = ""
+                if ov.payment_status == 'paid':
+                    ov.payment_status = 'refunded'
+                    refund_txt = f" Full 100% refund of ₹{float(ov.total_price):.2f} has been credited back to your account."
+                ov.save()
+
+                Notification.objects.create(
+                    user=ov.organizer,
+                    title="Venue Booking Request Rejected & Refunded" if ov.payment_status == 'refunded' else "Venue Booking Rejected",
+                    message=f"Your pending booking request for {booking.venue.name} ({ov.start_date} to {ov.end_date}) was rejected as another request was approved for these dates.{refund_txt}"
+                )
 
             # Notify organizer
             Notification.objects.create(
@@ -314,13 +334,17 @@ class VenueBookingActionView(APIView):
             )
         else:
             booking.status = 'rejected'
+            refund_txt = ""
+            if booking.payment_status == 'paid':
+                booking.payment_status = 'refunded'
+                refund_txt = f" Full 100% refund of ₹{float(booking.total_price):.2f} has been credited back to your account."
             booking.save()
             
             # Notify organizer
             Notification.objects.create(
                 user=booking.organizer,
-                title="Venue Booking Rejected",
-                message=f"Your request to book {booking.venue.name} from {booking.start_date} to {booking.end_date} has been rejected."
+                title="Venue Booking Request Rejected & Refunded" if booking.payment_status == 'refunded' else "Venue Booking Rejected",
+                message=f"Your request to book {booking.venue.name} from {booking.start_date} to {booking.end_date} was rejected by the venue owner.{refund_txt}"
             )
 
         return Response(VenueBookingSerializer(booking).data, status=status.HTTP_200_OK)
@@ -354,15 +378,10 @@ class VenueReviewCreateView(APIView):
     def post(self, request, venue_id):
         venue = get_object_or_404(Venue, pk=venue_id)
         
-        # 1. Enforce that customer has booked this venue (status='approved')
-        has_booked = VenueBooking.objects.filter(organizer=request.user, venue=venue, status='approved').exists()
-        if not has_booked:
-            return Response({"error": "You can only review venues you have booked and rented."}, status=status.HTTP_400_BAD_REQUEST)
-            
-        # 2. Check duplicate review
+        # Check duplicate review
         already_reviewed = VenueReview.objects.filter(user=request.user, venue=venue).exists()
         if already_reviewed:
-            return Response({"error": "You have already reviewed this venue."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "You have already submitted a review for this venue."}, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = VenueReviewSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)

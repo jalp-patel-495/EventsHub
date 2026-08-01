@@ -98,6 +98,12 @@ const TestimonialsAboveFooter = () => {
 };
 
 function App() {
+  // Direct pathname fallback for HashRouter compatibility
+  if (typeof window !== 'undefined' && window.location.pathname.includes('/pay-simulate') && !window.location.hash.includes('/pay-simulate')) {
+    const cleanPath = window.location.pathname.replace('/pay-simulate', '');
+    const baseUrl = (window.location.origin + cleanPath).replace(/\/+$/, '');
+    window.location.replace(`${baseUrl}/#/pay-simulate${window.location.search}`);
+  }
 
   return (
     <Router>

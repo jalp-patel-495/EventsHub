@@ -76,7 +76,10 @@ class EventViewSet(viewsets.ModelViewSet):
         # Filtering by Organizer
         organizer = self.request.query_params.get('organizer')
         if organizer:
-            queryset = queryset.filter(organizer_id=organizer)
+            if str(organizer).isdigit():
+                queryset = queryset.filter(organizer_id=organizer)
+            else:
+                queryset = queryset.filter(organizer__email=organizer)
 
         # Filtering by Min Price
         min_price = self.request.query_params.get('min_price')
@@ -131,6 +134,9 @@ class BookingCreateListView(APIView):
         if request.user.role == 'organizer':
             # Organizers see bookings on their events
             bookings = Booking.objects.filter(event__organizer=request.user).order_by('-created_at')
+        elif request.user.role == 'admin':
+            # Admins see all bookings across platform
+            bookings = Booking.objects.all().order_by('-created_at')
         else:
             # Customers see their own bookings
             bookings = Booking.objects.filter(user=request.user).order_by('-created_at')
@@ -437,15 +443,10 @@ class ReviewCreateView(APIView):
     def post(self, request, event_id):
         event = get_object_or_404(Event, pk=event_id)
         
-        # 1. Enforce that customer has booked and confirmed tickets to this event
-        has_booked = Booking.objects.filter(user=request.user, event=event, status='confirmed').exists()
-        if not has_booked:
-            return Response({"error": "You can only review events you have booked tickets for."}, status=status.HTTP_400_BAD_REQUEST)
-            
-        # 2. Check duplicate review
+        # 1. Check duplicate review
         already_reviewed = Review.objects.filter(user=request.user, event=event).exists()
         if already_reviewed:
-            return Response({"error": "You have already reviewed this event."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "You have already submitted a review for this event."}, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = ReviewSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)

@@ -216,7 +216,7 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
         return;
       }
       if (!/^[a-zA-Z\s]+$/.test(netbankUser.trim())) {
-        setNetbankError('User Name must contain only letters.');
+        setNetbankError('User Name must contain only letters and spaces.');
         return;
       }
       const cleanedAcc = netbankAccount.replace(/\s/g, '');
@@ -798,7 +798,7 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
 
               {/* NetBanking */}
               <button
-                onClick={() => { setSelectedMethod('netbanking'); setPaymentStep('netbanking-details'); }}
+                onClick={() => { setSelectedMethod('netbanking'); setPaymentStep('netbanking'); setSelectedBank(''); setCardError(''); }}
                 className="w-full p-3.5 rounded-xl bg-white/5 border border-white/5 hover:border-[#3B82F6]/30 flex items-center justify-between text-left group transition-all"
               >
                 <div className="flex items-center space-x-3">
@@ -807,7 +807,7 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
                   </div>
                   <div>
                     <p className="text-xs font-semibold text-dark-text group-hover:text-[#3B82F6] transition-colors">Net Banking</p>
-                    <p className="text-[9px] text-dark-muted mt-0.5">Secure direct bank account transfer</p>
+                    <p className="text-[9px] text-dark-muted mt-0.5">Direct login transfer from top Indian banks</p>
                   </div>
                 </div>
                 <ChevronRight className="w-4 h-4 text-dark-muted group-hover:text-dark-text" />
@@ -988,7 +988,9 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
             </form>
           </div>
         ) : paymentStep === 'upi-details' ? (() => {
-          const qrUrl = `${window.location.protocol}//${window.location.host}/pay-simulate?token=${paymentToken}&amount=${finalPrice}&label=${encodeURIComponent('Tickets for ' + event.title)}`;
+          const baseUrl = window.location.origin + window.location.pathname;
+          const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+          const qrUrl = `${cleanBaseUrl}/#/pay-simulate?token=${paymentToken}&amount=${finalPrice}&label=${encodeURIComponent('Tickets for ' + event.title)}`;
           return (
             <div className="w-full">
               {/* Combined QR Scanner & VPA input panel */}
@@ -1127,9 +1129,10 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
               </form>
             </div>
           );
-        })() : paymentStep === 'netbanking-details' ? (
-          <div className="w-full">
-            <h3 className="text-lg font-bold text-dark-text mb-4 text-left border-b border-white/5 pb-2">Choose your Bank</h3>
+        })() : paymentStep === 'netbanking' ? (
+          <div className="w-full text-left space-y-4">
+            <h3 className="text-sm font-bold text-dark-text border-b border-white/5 pb-2">Select Net Banking Option</h3>
+            
             {/* Purchase Summary */}
             <div className="w-full bg-white/5 border border-white/5 rounded-xl p-3.5 mb-5 flex justify-between items-center text-xs text-left">
               <div>
@@ -1143,22 +1146,24 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
                 <p className="text-sm font-black text-emerald-400 mt-0.5">₹{finalPrice.toFixed(2)}</p>
               </div>
             </div>
-            <form 
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (selectedBank) {
-                  setPaymentStep('netbanking-credentials');
-                }
-              }} 
-              className="space-y-4 text-left"
-            >
+
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              if (!selectedBank) {
+                setCardError('Please select a bank to proceed.');
+                return;
+              }
+              setCardError('');
+              setNetbankError('');
+              setPaymentStep('netbanking-credentials');
+            }} className="space-y-4 text-left">
               <div>
-                <label className="block text-[10px] text-dark-muted uppercase font-bold mb-1">Select Bank</label>
+                <label className="block text-[10px] text-dark-muted uppercase font-bold mb-1">Select Bank *</label>
                 <select
                   required
                   value={selectedBank}
-                  onChange={(e) => setSelectedBank(e.target.value)}
-                  className="glass-input w-full px-3 py-2.5 text-xs bg-dark-bg text-dark-text"
+                  onChange={(e) => { setSelectedBank(e.target.value); setCardError(''); }}
+                  className="glass-input w-full px-3 py-2.5 text-xs bg-dark-bg text-dark-text cursor-pointer"
                 >
                   <option value="">Choose Bank...</option>
                   <option value="sbi">State Bank of India</option>
@@ -1166,8 +1171,17 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
                   <option value="icici">ICICI Bank</option>
                   <option value="axis">Axis Bank</option>
                   <option value="kotak">Kotak Mahindra Bank</option>
+                  <option value="bob">Bank of Baroda</option>
+                  <option value="pnb">Punjab National Bank</option>
                 </select>
               </div>
+
+              {cardError && (
+                <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-2.5 rounded-lg text-xs font-semibold flex items-center gap-2">
+                  <ShieldCheck className="w-3.5 h-3.5 flex-shrink-0" />
+                  <span>{cardError}</span>
+                </div>
+              )}
 
               <div className="flex gap-3 pt-3">
                 <button
@@ -1175,20 +1189,37 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
                   onClick={() => setPaymentStep('options')}
                   className="flex-1 bg-white/5 border border-white/10 text-dark-text py-3 rounded-xl text-xs font-semibold"
                 >
-                  Cancel
+                  Back
                 </button>
                 <button
                   type="submit"
-                  className="flex-grow bg-[#3B82F6] text-white py-3 rounded-xl text-xs font-bold uppercase tracking-wider"
+                  className="flex-grow bg-[#3B82F6] hover:bg-[#1D4ED8] text-white py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all"
                 >
-                  Proceed
+                  Proceed to Bank Details
                 </button>
               </div>
             </form>
           </div>
         ) : paymentStep === 'netbanking-credentials' ? (
-          <div className="w-full">
-            <h3 className="text-lg font-bold text-dark-text mb-4 text-left border-b border-white/5 pb-2">Net Banking Details</h3>
+          <div className="w-full text-left space-y-4">
+            <h3 className="text-sm font-bold text-dark-text border-b border-white/5 pb-2">
+              Net Banking Transfer Details
+            </h3>
+            
+            {/* Bank Portal Badge */}
+            <div className="bg-[#3B82F6]/10 border border-[#3B82F6]/20 p-2.5 rounded-xl flex items-center justify-between text-xs">
+              <span className="text-[10px] text-dark-muted font-bold uppercase tracking-wider">Selected Bank:</span>
+              <span className="font-extrabold text-[#3B82F6] text-xs">
+                {selectedBank === 'sbi' ? 'State Bank of India' :
+                 selectedBank === 'hdfc' ? 'HDFC Bank' :
+                 selectedBank === 'icici' ? 'ICICI Bank' :
+                 selectedBank === 'axis' ? 'Axis Bank' :
+                 selectedBank === 'kotak' ? 'Kotak Mahindra Bank' :
+                 selectedBank === 'bob' ? 'Bank of Baroda' :
+                 selectedBank === 'pnb' ? 'Punjab National Bank' : selectedBank.toUpperCase()}
+              </span>
+            </div>
+
             {/* Purchase Summary */}
             <div className="w-full bg-white/5 border border-white/5 rounded-xl p-3.5 mb-5 flex justify-between items-center text-xs text-left">
               <div>
@@ -1202,45 +1233,61 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
                 <p className="text-sm font-black text-emerald-400 mt-0.5">₹{finalPrice.toFixed(2)}</p>
               </div>
             </div>
+
             <form onSubmit={handleSecurePaymentSubmit} className="space-y-4 text-left">
               {netbankError && (
-                <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-[11px] font-semibold leading-relaxed">
-                  {netbankError}
+                <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-2.5 rounded-lg text-xs font-semibold flex items-center gap-2">
+                  <ShieldCheck className="w-3.5 h-3.5 flex-shrink-0 text-red-400" />
+                  <span>{netbankError}</span>
                 </div>
               )}
               
               <div>
-                <label className="block text-[10px] text-dark-muted uppercase font-bold mb-1">User Name</label>
+                <label className="block text-[10px] text-dark-muted uppercase font-bold mb-1">User Name *</label>
                 <input
                   type="text"
                   required
                   value={netbankUser}
-                  onChange={(e) => setNetbankUser(e.target.value)}
+                  onChange={(e) => { 
+                    const val = e.target.value.replace(/[^A-Za-z\s]/g, '');
+                    setNetbankUser(val); 
+                    setNetbankError(''); 
+                  }}
                   placeholder="Enter User Name"
                   className="glass-input w-full px-3 py-2.5 text-xs bg-dark-bg text-dark-text"
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] text-dark-muted uppercase font-bold mb-1">Account Number</label>
+                <label className="block text-[10px] text-dark-muted uppercase font-bold mb-1">Account Number *</label>
                 <input
                   type="text"
                   required
                   value={netbankAccount}
-                  onChange={(e) => setNetbankAccount(e.target.value)}
+                  onChange={(e) => { 
+                    const val = e.target.value.replace(/\D/g, '').slice(0, 18);
+                    setNetbankAccount(val); 
+                    setNetbankError(''); 
+                  }}
                   placeholder="Enter Account Number"
+                  maxLength="18"
                   className="glass-input w-full px-3 py-2.5 text-xs bg-dark-bg text-dark-text"
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] text-dark-muted uppercase font-bold mb-1">IFSC Code</label>
+                <label className="block text-[10px] text-dark-muted uppercase font-bold mb-1">IFSC Code *</label>
                 <input
                   type="text"
                   required
                   value={netbankIfsc}
-                  onChange={(e) => setNetbankIfsc(e.target.value)}
+                  onChange={(e) => { 
+                    const val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 11);
+                    setNetbankIfsc(val); 
+                    setNetbankError(''); 
+                  }}
                   placeholder="e.g. SBIN0001234"
+                  maxLength="11"
                   className="glass-input w-full px-3 py-2.5 text-xs bg-dark-bg text-dark-text uppercase"
                 />
               </div>
@@ -1248,14 +1295,14 @@ const BookingModal = ({ event, onClose, onBookingSuccess }) => {
               <div className="flex gap-3 pt-3">
                 <button
                   type="button"
-                  onClick={() => setPaymentStep('netbanking-details')}
+                  onClick={() => setPaymentStep('netbanking')}
                   className="flex-1 bg-white/5 border border-white/10 text-dark-text py-3 rounded-xl text-xs font-semibold"
                 >
                   Back
                 </button>
                 <button
                   type="submit"
-                  className="flex-grow bg-[#3B82F6] text-white py-3 rounded-xl text-xs font-bold uppercase tracking-wider"
+                  className="flex-grow bg-[#3B82F6] hover:bg-[#1D4ED8] text-white py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all"
                 >
                   Pay ₹{finalPrice.toFixed(2)}
                 </button>

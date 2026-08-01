@@ -26,6 +26,7 @@ const Navbar = () => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [pendingApprovalsCount, setPendingApprovalsCount] = useState(0);
+  const [pendingRefundsCount, setPendingRefundsCount] = useState(0);
   const [toast, setToast] = useState({ show: false, title: '', message: '' });
   const navigate = useNavigate();
   const location = useLocation();
@@ -50,6 +51,7 @@ const Navbar = () => {
   useEffect(() => {
     if (!isAuthenticated || !user) {
       setPendingApprovalsCount(0);
+      setPendingRefundsCount(0);
       return;
     }
 
@@ -63,15 +65,21 @@ const Navbar = () => {
                           (res.data.pending.events || 0) +
                           (res.data.pending.venues || 0);
             setPendingApprovalsCount(total);
+            setPendingRefundsCount(0);
           }
         } else if (user.role === 'plot_owner') {
           const res = await api.get('venues/bookings/');
-          const pending = (res.data || []).filter(b => b.status === 'pending').length;
-          setPendingApprovalsCount(pending);
+          const bookings = res.data || [];
+          const pendingRental = bookings.filter(b => b.status === 'pending' && !b.cancel_requested).length;
+          const pendingRefund = bookings.filter(b => b.cancel_requested).length;
+          setPendingApprovalsCount(pendingRental);
+          setPendingRefundsCount(pendingRefund);
         } else if (user.role === 'organizer') {
           const res = await api.get('events/refund-requests/');
-          const pending = (res.data || []).filter(r => r.status === 'pending').length;
-          setPendingApprovalsCount(pending);
+          const refunds = res.data || [];
+          const pendingRefund = refunds.filter(r => r.status === 'pending').length;
+          setPendingApprovalsCount(0);
+          setPendingRefundsCount(pendingRefund);
         }
       } catch (err) {
         // silent catch
@@ -198,6 +206,10 @@ const Navbar = () => {
               { name: 'Approvals', path: '/admin/approvals' },
               { name: 'All Events', path: '/admin/events' },
               { name: 'All Venues', path: '/admin/venues' },
+              { name: 'User Directory', path: '/admin/users' },
+              { name: 'Transactions', path: '/admin/finance' },
+              { name: 'User Queries', path: '/admin/complaints' },
+              { name: 'Broadcast Alerts', path: '/admin/broadcast' },
             ]
           : []
     : [
@@ -289,8 +301,10 @@ const Navbar = () => {
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-6">
               {navLinks.map((link) => {
-                const isApprovalsLink = link.name === 'Approvals' || link.name === 'Rental Requests' || link.name === 'Refund Requests' || link.name === 'Refund Ticket Requests';
-                const showBadge = isApprovalsLink && pendingApprovalsCount > 0;
+                const isRentalLink = link.name === 'Rental Requests' || link.name === 'Approvals';
+                const isRefundLink = link.name === 'Refund Requests' || link.name === 'Refund Ticket Requests';
+                const badgeCount = isRentalLink ? pendingApprovalsCount : isRefundLink ? pendingRefundsCount : 0;
+                const showBadge = badgeCount > 0;
                 return (
                   <Link
                     key={link.name}
@@ -302,7 +316,7 @@ const Navbar = () => {
                     <span>{link.name}</span>
                     {showBadge && (
                       <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full border border-dark-bg animate-pulse shadow-lg shadow-red-500/30">
-                        {pendingApprovalsCount}
+                        {badgeCount}
                       </span>
                     )}
                   </Link>
@@ -389,13 +403,13 @@ const Navbar = () => {
                                   <div
                                     key={n.id}
                                     className={`p-4 transition-colors flex items-start justify-between space-x-2 ${
-                                      n.is_read ? 'opacity-60 bg-transparent' : 'bg-brand-primary/[0.02] hover:bg-brand-primary/[0.04]'
+                                      n.is_read ? 'opacity-85 hover:bg-white/[0.01]' : 'bg-white/[0.02] hover:bg-white/[0.04]'
                                     }`}
                                   >
                                     <div className="min-w-0">
                                       <h5 className="text-xs font-bold text-dark-text leading-tight">{n.title}</h5>
-                                      <p className="text-[11px] text-dark-muted mt-1 leading-normal">{n.message}</p>
-                                      <span className="text-[9px] text-dark-muted mt-2 block font-medium">
+                                      <p className="text-[11px] text-dark-text mt-1 leading-normal opacity-85">{n.message}</p>
+                                      <span className="text-[9px] text-dark-muted mt-2 block font-medium opacity-90">
                                         {new Date(n.created_at).toLocaleDateString()} at {new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                       </span>
                                     </div>
@@ -557,8 +571,10 @@ const Navbar = () => {
                 </div>
 
                 {navLinks.map((link) => {
-                  const isApprovalsLink = link.name === 'Approvals' || link.name === 'Rental Requests' || link.name === 'Refund Requests' || link.name === 'Refund Ticket Requests';
-                  const showBadge = isApprovalsLink && pendingApprovalsCount > 0;
+                  const isRentalLink = link.name === 'Rental Requests' || link.name === 'Approvals';
+                  const isRefundLink = link.name === 'Refund Requests' || link.name === 'Refund Ticket Requests';
+                  const badgeCount = isRentalLink ? pendingApprovalsCount : isRefundLink ? pendingRefundsCount : 0;
+                  const showBadge = badgeCount > 0;
                   return (
                     <Link
                       key={link.name}
@@ -571,7 +587,7 @@ const Navbar = () => {
                       <span>{link.name}</span>
                       {showBadge && (
                         <span className="bg-red-500 text-white text-xs font-black px-2 py-0.5 rounded-full border border-dark-bg animate-pulse">
-                          {pendingApprovalsCount} Pending
+                          {badgeCount} Pending
                         </span>
                       )}
                     </Link>
