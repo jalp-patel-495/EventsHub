@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import api, { BACKEND_URL } from '../api/api';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, Trash2, Edit2, Plus, Sparkles, Building, CheckCircle, XCircle, IndianRupee, Calendar, Upload, X, ShieldAlert, BadgeCheck, MapPin, UtensilsCrossed, Music2, Palette, Star, ClipboardList, LayoutDashboard, AlertCircle } from 'lucide-react';
+import { Home, Trash2, Edit2, Plus, Sparkles, Building, CheckCircle, XCircle, IndianRupee, Calendar, Upload, X, ShieldAlert, BadgeCheck, MapPin, UtensilsCrossed, Music2, Palette, Star, ClipboardList, LayoutDashboard, AlertCircle, Eye } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLocation, useNavigate } from 'react-router-dom';
+import VenueDetailModal from '../components/VenueDetailModal';
 const CUISINE_TEMPLATES = {
   'Gujarati Thali': '2 Sabzis (Paneer & Potato/Green), Dal/Kadhi, Rice/Khichdi, Roti/Puri, 2 Farsan, 1 Sweet, Butter Milk, Papad, Salad',
   'Punjabi': 'Paneer Tikka Masala, Veg Jaipuri, Dal Makhani, Jeera Rice, Butter Naan/Tandoori Roti, 1 Starter, Sweet, Raita, Salad',
@@ -64,6 +65,7 @@ const PlotOwnerDashboard = () => {
   const [venues, setVenues] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [selectedDetailVenue, setSelectedDetailVenue] = useState(null);
 
   const routeLocation = useLocation();
   const navigate = useNavigate();
@@ -919,15 +921,22 @@ const PlotOwnerDashboard = () => {
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                     {venues.map((venue) => (
-                      <div key={venue.id} className="glass-card rounded-2xl overflow-hidden flex flex-col">
+                      <div key={venue.id} className="glass-card rounded-2xl overflow-hidden flex flex-col group">
                         {venue.image ? (
-                          <img
-                            src={venue.image.startsWith('http') ? venue.image : `${BACKEND_URL}${venue.image}`}
-                            alt={venue.name}
-                            className="w-full h-48 object-cover"
-                          />
+                          <div className="relative overflow-hidden cursor-pointer" onClick={() => setSelectedDetailVenue(venue)}>
+                            <img
+                              src={venue.image.startsWith('http') ? venue.image : `${BACKEND_URL}${venue.image}`}
+                              alt={venue.name}
+                              className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                            />
+                            <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <span className="bg-black/60 backdrop-blur-md text-white text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5 border border-white/20">
+                                <Eye className="w-3.5 h-3.5" /> View Details
+                              </span>
+                            </div>
+                          </div>
                         ) : (
-                          <div className="w-full h-48 bg-white/5 flex items-center justify-center text-dark-muted">
+                          <div className="w-full h-48 bg-white/5 flex items-center justify-center text-dark-muted cursor-pointer" onClick={() => setSelectedDetailVenue(venue)}>
                             <Building className="w-10 h-10" />
                           </div>
                         )}
@@ -935,7 +944,7 @@ const PlotOwnerDashboard = () => {
                         <div className="p-6 flex flex-col flex-grow">
                           <div className="flex items-start justify-between gap-2">
                             <div>
-                              <h4 className="font-bold text-lg text-dark-text line-clamp-1">{venue.name}</h4>
+                              <h4 className="font-bold text-lg text-dark-text line-clamp-1 cursor-pointer hover:text-brand-primary transition-colors" onClick={() => setSelectedDetailVenue(venue)}>{venue.name}</h4>
                               <div className="flex items-center space-x-1 mt-1 text-xs text-amber-400">
                                 <Star className="w-3.5 h-3.5 fill-amber-400" />
                                 <span>{venue.rating_avg || '0.0'} ({venue.rating_count || 0})</span>
@@ -982,6 +991,12 @@ const PlotOwnerDashboard = () => {
                           
                           <div className="mt-4 flex space-x-2 pt-4 border-t border-white/5">
                             <button
+                              onClick={() => setSelectedDetailVenue(venue)}
+                              className="flex-1 flex items-center justify-center space-x-1 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 text-blue-400 py-2 rounded-lg text-xs font-semibold transition-colors"
+                            >
+                              <Eye className="w-3.5 h-3.5" /><span>Details</span>
+                            </button>
+                            <button
                               onClick={() => handleOpenEditModal(venue)}
                               className="flex-1 flex items-center justify-center space-x-1.5 bg-white/5 hover:bg-white/10 border border-white/5 text-dark-text py-2 rounded-lg text-xs font-semibold transition-colors"
                             >
@@ -1018,15 +1033,22 @@ const PlotOwnerDashboard = () => {
                 </div>
               ) : (
                 venues.map((venue) => (
-                  <div key={venue.id} className="glass-card rounded-2xl overflow-hidden flex flex-col">
+                  <div key={venue.id} className="glass-card rounded-2xl overflow-hidden flex flex-col group">
                     {venue.image ? (
-                      <img
-                        src={venue.image.startsWith('http') ? venue.image : `${BACKEND_URL}${venue.image}`}
-                        alt={venue.name}
-                        className="w-full h-48 object-cover"
-                      />
+                      <div className="relative overflow-hidden cursor-pointer" onClick={() => setSelectedDetailVenue(venue)}>
+                        <img
+                          src={venue.image.startsWith('http') ? venue.image : `${BACKEND_URL}${venue.image}`}
+                          alt={venue.name}
+                          className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                        <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <span className="bg-black/60 backdrop-blur-md text-white text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5 border border-white/20">
+                            <Eye className="w-3.5 h-3.5" /> View Details
+                          </span>
+                        </div>
+                      </div>
                     ) : (
-                      <div className="w-full h-48 bg-white/5 flex items-center justify-center text-dark-muted">
+                      <div className="w-full h-48 bg-white/5 flex items-center justify-center text-dark-muted cursor-pointer" onClick={() => setSelectedDetailVenue(venue)}>
                         <Building className="w-10 h-10" />
                       </div>
                     )}
@@ -1034,7 +1056,7 @@ const PlotOwnerDashboard = () => {
                     <div className="p-6 flex flex-col flex-grow">
                       <div className="flex items-start justify-between gap-2">
                         <div>
-                          <h4 className="font-bold text-lg text-dark-text">{venue.name}</h4>
+                          <h4 className="font-bold text-lg text-dark-text cursor-pointer hover:text-brand-primary transition-colors" onClick={() => setSelectedDetailVenue(venue)}>{venue.name}</h4>
                           <div className="flex items-center space-x-1 mt-1 text-xs text-amber-400">
                             <Star className="w-3.5 h-3.5 fill-amber-400" />
                             <span>{venue.rating_avg || '0.0'} ({venue.rating_count || 0})</span>
@@ -1080,6 +1102,12 @@ const PlotOwnerDashboard = () => {
                       </div>
                       
                       <div className="mt-4 flex space-x-2 pt-4 border-t border-white/5">
+                        <button
+                          onClick={() => setSelectedDetailVenue(venue)}
+                          className="flex-1 flex items-center justify-center space-x-1 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 text-blue-400 py-2 rounded-lg text-xs font-semibold transition-colors"
+                        >
+                          <Eye className="w-3.5 h-3.5" /><span>Details</span>
+                        </button>
                         <button
                           onClick={() => handleOpenEditModal(venue)}
                           className="flex-1 flex items-center justify-center space-x-1.5 bg-white/5 hover:bg-white/10 border border-white/5 text-dark-text py-2 rounded-lg text-xs font-semibold transition-colors"
@@ -2520,6 +2548,13 @@ const PlotOwnerDashboard = () => {
           </div>
         )}
       </AnimatePresence>
+
+      {selectedDetailVenue && (
+        <VenueDetailModal
+          venue={selectedDetailVenue}
+          onClose={() => setSelectedDetailVenue(null)}
+        />
+      )}
     </div>
   );
 };

@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import api, { BACKEND_URL } from '../api/api';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, Trash2, Edit2, Plus, Sparkles, TrendingUp, Users, IndianRupee, Star, FileText, Upload, X, ShieldAlert, MapPin, Building, CheckCircle, XCircle, LayoutDashboard, Ticket, Tag, Percent, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
+import { Calendar, Trash2, Edit2, Plus, Sparkles, TrendingUp, Users, IndianRupee, Star, FileText, Upload, X, ShieldAlert, MapPin, Building, CheckCircle, XCircle, LayoutDashboard, Ticket, Tag, Percent, ChevronLeft, ChevronRight, ChevronDown, Eye } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import VenuePaymentModal from '../components/VenuePaymentModal';
+import EventDetailModal from '../components/EventDetailModal';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 const OrganizerDashboard = () => {
@@ -56,9 +57,10 @@ const OrganizerDashboard = () => {
   const [offerEventId, setOfferEventId] = useState('');
   const [offerLoading, setOfferLoading] = useState(false);
 
-  // Modal states (Create/Edit)
+  // Modal states (Create/Edit/Detail)
   const [modalOpen, setModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
+  const [selectedDetailEvent, setSelectedDetailEvent] = useState(null);
   
   // Form states
   const [title, setTitle] = useState('');
@@ -812,15 +814,22 @@ const OrganizerDashboard = () => {
                 </div>
               ) : (
                 myEvents.map((event) => (
-                  <div key={event.id} className="glass-card rounded-2xl overflow-hidden flex flex-col">
+                  <div key={event.id} className="glass-card rounded-2xl overflow-hidden flex flex-col group">
                     {event.image ? (
-                      <img
-                        src={event.image.startsWith('http') ? event.image : `${BACKEND_URL}${event.image}`}
-                        alt={event.title}
-                        className="w-full h-48 object-cover"
-                      />
+                      <div className="relative overflow-hidden cursor-pointer" onClick={() => setSelectedDetailEvent(event)}>
+                        <img
+                          src={event.image.startsWith('http') ? event.image : `${BACKEND_URL}${event.image}`}
+                          alt={event.title}
+                          className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                        <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <span className="bg-black/60 backdrop-blur-md text-white text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5 border border-white/20">
+                            <Eye className="w-3.5 h-3.5" /> View Details
+                          </span>
+                        </div>
+                      </div>
                     ) : (
-                      <div className="w-full h-48 bg-white/5 flex items-center justify-center text-dark-muted">
+                      <div className="w-full h-48 bg-white/5 flex items-center justify-center text-dark-muted cursor-pointer" onClick={() => setSelectedDetailEvent(event)}>
                         <Calendar className="w-10 h-10" />
                       </div>
                     )}
@@ -835,7 +844,7 @@ const OrganizerDashboard = () => {
                           <span>{event.rating_avg}</span>
                         </span>
                       </div>
-                      <h4 className="font-bold text-lg text-dark-text">{event.title}</h4>
+                      <h4 className="font-bold text-lg text-dark-text cursor-pointer hover:text-brand-primary transition-colors" onClick={() => setSelectedDetailEvent(event)}>{event.title}</h4>
                       <p className="text-xs text-dark-muted mt-1">{event.date} | {event.location}</p>
                       
                       <div className="grid grid-cols-2 gap-4 mt-6 p-3 bg-white/5 rounded-xl border border-white/5 text-center">
@@ -850,6 +859,13 @@ const OrganizerDashboard = () => {
                       </div>
 
                       <div className="flex items-center justify-end space-x-3 mt-6 pt-4 border-t border-white/5">
+                        <button
+                          onClick={() => setSelectedDetailEvent(event)}
+                          className="flex items-center space-x-1 text-xs text-blue-400 hover:text-blue-300 font-semibold transition-colors"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>Details</span>
+                        </button>
                         <button
                           onClick={() => {
                             setOfferEventId(event.id);
@@ -2033,6 +2049,14 @@ const OrganizerDashboard = () => {
             setPaymentVenue(null);
             handlePendingEventCreation();
           }}
+        />
+      )}
+
+      {selectedDetailEvent && (
+        <EventDetailModal
+          event={selectedDetailEvent}
+          onClose={() => setSelectedDetailEvent(null)}
+          showHostBox={true}
         />
       )}
     </div>
