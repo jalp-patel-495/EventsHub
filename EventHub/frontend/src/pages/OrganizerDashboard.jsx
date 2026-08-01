@@ -94,6 +94,10 @@ const OrganizerDashboard = () => {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentVenue, setPaymentVenue] = useState(null);
   const [paymentDates, setPaymentDates] = useState({ start: '', end: '' });
+  const [rentModal, setRentModal] = useState({ show: false, venue: null });
+  const [bookingDates, setBookingDates] = useState({ start: '', end: '' });
+  const [bookingError, setBookingError] = useState('');
+  const [bookingActionLoading, setBookingActionLoading] = useState(false);
   const [venueFilter, setVenueFilter] = useState('all'); // 'all' | 'available' | 'booked'
 
   const [pendingEventData, setPendingEventData] = useState(null);
@@ -476,6 +480,24 @@ const OrganizerDashboard = () => {
 
         // If creating a new event, intercept and prompt for payment first
         if (!editingEvent) {
+          try {
+            const checkRes = await api.get(`venues/bookings/?venue=${venueId}`);
+            const activeBookings = checkRes.data || [];
+            const isOverlap = activeBookings.some(vb => {
+              const status = (vb.status || '').toLowerCase();
+              if (status !== 'approved' && status !== 'pending') return false;
+              return (vb.start_date <= date && vb.end_date >= date);
+            });
+
+            if (isOverlap) {
+              setFormError("This venue is already booked on the selected date. Please select another date.");
+              setFormLoading(false);
+              return;
+            }
+          } catch (err) {
+            console.error("Error checking date availability:", err);
+          }
+
           setPendingEventData({
             title: title.trim(),
             description: description.trim(),
@@ -586,6 +608,55 @@ const OrganizerDashboard = () => {
       showFeedback("Venue booked but event listing creation failed: " + (err.response?.data?.detail || "Connection error"), "error");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleBookVenueSubmit = async (e) => {
+    e.preventDefault();
+    setBookingError('');
+    
+    if (!bookingDates.start || !bookingDates.end) {
+      setBookingError("Please select both start and end dates.");
+      return;
+    }
+
+    if (new Date(bookingDates.start) > new Date(bookingDates.end)) {
+      setBookingError("Start date cannot be after end date.");
+      return;
+    }
+
+    setBookingActionLoading(true);
+    try {
+      const selectedVenueId = rentModal.venue.id;
+      const reqStart = bookingDates.start;
+      const reqEnd = bookingDates.end;
+
+      // Real-time backend query for all active/pending bookings of this venue plot
+      const checkRes = await api.get(`venues/bookings/?venue=${selectedVenueId}`);
+      const activeBookings = checkRes.data || [];
+
+      const isOverlap = activeBookings.some(vb => {
+        const status = (vb.status || '').toLowerCase();
+        if (status !== 'approved' && status !== 'pending') return false;
+        return (vb.start_date <= reqEnd && vb.end_date >= reqStart);
+      });
+
+      if (isOverlap) {
+        setBookingError("This venue is already booked on this date. Please select another date.");
+        setBookingActionLoading(false);
+        return;
+      }
+
+      setPaymentVenue(rentModal.venue);
+      setPaymentDates({ start: bookingDates.start, end: bookingDates.end });
+      setRentModal({ show: false, venue: null });
+      setBookingDates({ start: '', end: '' });
+      setShowPaymentModal(true);
+    } catch (err) {
+      console.error("Error checking date availability:", err);
+      setBookingError(err.response?.data?.error || "This venue is already booked on this date. Please select another date.");
+    } finally {
+      setBookingActionLoading(false);
     }
   };
 
@@ -1128,9 +1199,7 @@ const OrganizerDashboard = () => {
                             <div className="mt-5 pt-4 border-t border-white/5">
                               <button
                                 onClick={() => {
-                                  setPaymentVenue(venue);
-                                  setPaymentDates({ start: '', end: '' });
-                                  setShowPaymentModal(true);
+                                  setRentModal({ show: true, venue });
                                 }}
                                 className="w-full py-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-950/20 transition-all flex items-center justify-center space-x-1.5"
                               >
@@ -2037,6 +2106,97 @@ const OrganizerDashboard = () => {
         )}
       </AnimatePresence>
 
+      {rentModal.show && rentModal.venue && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="glass-panel w-full max-w-md rounded-2xl p-6 shadow-2xl relative border border-white/10 space-y-6"
+          >
+            <div className="flex justify-between items-center border-b border-white/5 pb-3">
+              <h3 className="text-base font-bold text-dark-text uppercase tracking-wider">Book Venue Plot</h3>
+              <button
+                onClick={() => { setRentModal({ show: false, venue: null }); setBookingError(''); }}
+                className="text-dark-muted hover:text-dark-text"
+              >
+                <XCircle className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              <span className="text-[10px] font-bold text-dark-muted uppercase tracking-wider">Selected Venue:</span>
+              <div className="bg-white/5 border border-white/5 p-4 rounded-xl flex items-center space-x-3">
+                <Building className="w-6 h-6 text-brand-primary" />
+                <div>
+                  <h4 className="font-bold text-sm text-dark-text">{rentModal.venue.name}</h4>
+                  <p className="text-[10px] text-dark-muted mt-0.5">{rentModal.venue.location}</p>
+                </div>
+              </div>
+            </div>
+
+            <form onSubmit={handleBookVenueSubmit} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-bold text-dark-muted uppercase tracking-wider mb-1.5">Start Date</label>
+                  <input
+                    type="date"
+                    required
+                    value={bookingDates.start}
+                    onChange={(e) => setBookingDates({ ...bookingDates, start: e.target.value })}
+                    className="glass-input w-full px-3 py-2 rounded-xl text-xs bg-dark-bg text-dark-text"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-dark-muted uppercase tracking-wider mb-1.5">End Date</label>
+                  <input
+                    type="date"
+                    required
+                    value={bookingDates.end}
+                    onChange={(e) => setBookingDates({ ...bookingDates, end: e.target.value })}
+                    className="glass-input w-full px-3 py-2 rounded-xl text-xs bg-dark-bg text-dark-text"
+                  />
+                </div>
+              </div>
+
+              {bookingDates.start && bookingDates.end && new Date(bookingDates.start) <= new Date(bookingDates.end) && (
+                <div className="bg-white/5 p-3 rounded-xl flex justify-between items-center text-xs">
+                  <span className="text-dark-muted">Estimated Total Cost:</span>
+                  <span className="font-bold text-brand-primary">
+                    ₹{((Math.max(1, (new Date(bookingDates.end) - new Date(bookingDates.start)) / (1000 * 60 * 60 * 24) + 1)) * rentModal.venue.price_per_day).toLocaleString('en-IN')}
+                    <span className="text-[9px] text-dark-muted font-normal ml-1">
+                      ({Math.max(1, (new Date(bookingDates.end) - new Date(bookingDates.start)) / (1000 * 60 * 60 * 24) + 1)} days)
+                    </span>
+                  </span>
+                </div>
+              )}
+
+              {bookingError && (
+                <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-xl text-xs font-semibold">
+                  {bookingError}
+                </div>
+              )}
+
+              <div className="flex space-x-3 pt-3 border-t border-white/5">
+                <button
+                  type="button"
+                  onClick={() => { setRentModal({ show: false, venue: null }); setBookingError(''); }}
+                  className="flex-1 bg-white/5 border border-white/10 hover:bg-white/10 text-dark-text py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={bookingActionLoading}
+                  className="flex-1 bg-brand-primary hover:bg-[#0ea5e9] text-white py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-colors disabled:opacity-50 flex items-center justify-center space-x-1.5"
+                >
+                  {bookingActionLoading ? 'Booking...' : 'Book Venue'}
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
+
       {showPaymentModal && paymentVenue && (
         <VenuePaymentModal
           venue={paymentVenue}
@@ -2046,7 +2206,12 @@ const OrganizerDashboard = () => {
           onPaymentSuccess={() => {
             setShowPaymentModal(false);
             setPaymentVenue(null);
-            handlePendingEventCreation();
+            if (pendingEventData) {
+              handlePendingEventCreation();
+            } else {
+              showFeedback("Venue booked and paid successfully! Pending Owner approval.", "success");
+              fetchDashboardData();
+            }
           }}
         />
       )}

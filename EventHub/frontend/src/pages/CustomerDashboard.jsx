@@ -393,12 +393,13 @@ const CustomerDashboard = () => {
       const activeBookings = checkRes.data || [];
 
       const isOverlap = activeBookings.some(vb => {
-        if (vb.status !== 'approved' && vb.status !== 'pending') return false;
+        const status = (vb.status || '').toLowerCase();
+        if (status !== 'approved' && status !== 'pending') return false;
         return (vb.start_date <= reqEnd && vb.end_date >= reqStart);
       });
 
       if (isOverlap) {
-        setBookingError("Venue is not available on this date. Please select another date.");
+        setBookingError("This venue is already booked on this date. Please select another date.");
         setBookingActionLoading(false);
         return;
       }
@@ -410,7 +411,7 @@ const CustomerDashboard = () => {
       setShowPaymentModal(true);
     } catch (err) {
       console.error("Error checking date availability:", err);
-      setBookingError(err.response?.data?.error || "Venue is not available on this date. Please select another date.");
+      setBookingError(err.response?.data?.error || "This venue is already booked on this date. Please select another date.");
     } finally {
       setBookingActionLoading(false);
     }
@@ -852,7 +853,12 @@ const CustomerDashboard = () => {
                           <div className="flex items-center space-x-2" onClick={(e) => e.stopPropagation()}>
                             {vb.status === 'pending' && vb.payment_status !== 'paid' && (
                               <button
-                                onClick={(e) => { e.stopPropagation(); setPaymentModalVenueBooking(vb); }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setPaymentVenue(vb.venue_details);
+                                  setPaymentDates({ start: vb.start_date, end: vb.end_date });
+                                  setShowPaymentModal(true);
+                                }}
                                 className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-extrabold text-xs shadow-md uppercase tracking-wider"
                               >
                                 Pay Now
