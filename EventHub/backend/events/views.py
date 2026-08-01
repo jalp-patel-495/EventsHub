@@ -81,12 +81,18 @@ class EventViewSet(viewsets.ModelViewSet):
         # Filtering by Min Price
         min_price = self.request.query_params.get('min_price')
         if min_price:
-            queryset = queryset.filter(price__gte=Decimal(min_price))
+            try:
+                queryset = queryset.filter(price__gte=Decimal(str(min_price)))
+            except Exception:
+                pass
 
         # Filtering by Max Price
         max_price = self.request.query_params.get('max_price')
         if max_price:
-            queryset = queryset.filter(price__lte=Decimal(max_price))
+            try:
+                queryset = queryset.filter(price__lte=Decimal(str(max_price)))
+            except Exception:
+                pass
 
         # Filtering by Date Range
         start_date = self.request.query_params.get('start_date')
