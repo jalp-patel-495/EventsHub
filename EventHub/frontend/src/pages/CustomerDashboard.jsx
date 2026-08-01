@@ -4,8 +4,6 @@ import api, { BACKEND_URL } from '../api/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar, Heart, Bell, Trash2, ShieldAlert, CheckCircle, Ticket, XCircle, Download, Sparkles, MapPin, Building, Star, X, Coins, Search } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { jsPDF } from 'jspdf';
-import html2canvas from 'html2canvas';
 import VenuePaymentModal from '../components/VenuePaymentModal';
 import VenueDetailModal from '../components/VenueDetailModal';
 

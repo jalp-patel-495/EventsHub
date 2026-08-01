@@ -302,8 +302,10 @@ class BookingCancelView(APIView):
         is_partial = cancel_count < booking.tickets_count
 
         if is_partial:
+            if booking.tickets_count <= 0:
+                return Response({"error": "Invalid ticket count for booking."}, status=status.HTTP_400_BAD_REQUEST)
             # Calculate price per ticket
-            price_per_ticket = float(booking.total_price) / booking.tickets_count
+            price_per_ticket = float(booking.total_price) / float(booking.tickets_count)
             cancelled_amount = Decimal(f"{price_per_ticket * cancel_count:.2f}")
             
             # Deduct from original booking
