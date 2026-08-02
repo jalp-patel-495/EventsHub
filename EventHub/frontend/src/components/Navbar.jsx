@@ -406,9 +406,9 @@ const Navbar = () => {
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: 10 }}
                             transition={{ duration: 0.15 }}
-                            className="notif-dropdown absolute right-0 mt-2 w-80 rounded-2xl shadow-2xl focus:outline-none z-25 overflow-hidden flex flex-col max-h-96"
+                            className="glass-panel absolute right-0 mt-2 w-80 rounded-2xl shadow-2xl focus:outline-none z-25 overflow-hidden flex flex-col max-h-96"
                           >
-                            <div className="px-4 py-3 bg-white/[0.04] border-b border-white/10 flex items-center justify-between">
+                            <div className="px-4 py-3 bg-white/[0.02] border-b border-white/5 flex items-center justify-between">
                               <span className="text-xs font-bold text-dark-text uppercase tracking-wider">Notifications</span>
                               {unreadCount > 0 && (
                                 <button

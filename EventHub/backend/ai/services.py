@@ -2,85 +2,55 @@ import os
 import json
 import logging
 import re
+from openai import OpenAI
+import google.generativeai as genai
 
 logger = logging.getLogger(__name__)
 
 def call_ai_api(prompt, system_instruction="You are a helpful AI assistant for Ahmedabad Event Hub."):
+    gemini_key = os.environ.get("GEMINI_API_KEY")
     openai_key = os.environ.get("OPENAI_API_KEY")
 
-    # 1. Try OpenAI API (Primary - GPT-4o-mini)
+    # 1. Try Gemini API if key is present and is not a default placeholder
+    if gemini_key and gemini_key.strip() and not gemini_key.startswith("your-") and gemini_key != "placeholder":
+        try:
+            genai.configure(api_key=gemini_key)
+            model = genai.GenerativeModel(
+                model_name="gemini-1.5-flash",
+                system_instruction=system_instruction
+            )
+            response = model.generate_content(prompt, request_options={"timeout": 5.0})
+            return response.text
+        except Exception as e:
+            logger.error(f"Gemini API error: {e}. Trying OpenAI fallback.")
+
+    # 2. Try OpenAI API if key is present, valid, and not a placeholder
     if (
-        openai_key
-        and openai_key.strip()
-        and not openai_key.startswith("your-")
+        openai_key 
+        and openai_key.strip() 
+        and not openai_key.startswith("your-") 
         and openai_key != "placeholder"
         and "..." not in openai_key
         and len(openai_key.strip()) > 20
     ):
         try:
-            from openai import OpenAI
-            client = OpenAI(api_key=openai_key.strip())
-
-            # Build a strong system prompt that answers ANY question
-            full_system = (
-                "You are an intelligent, friendly AI assistant for 'Ahmedabad Event Hub' — "
-                "a platform for discovering events, booking tickets, and renting party plots/venues in Ahmedabad, India.\n\n"
-                "You MUST answer ANY question the user asks — whether it is about the platform, profile settings, "
-                "payment methods, events, venues, general knowledge, or anything else.\n\n"
-                "Rules:\n"
-                "- Use the provided database context (user bookings, events, venues) to give accurate answers.\n"
-                "- Format responses in clean Markdown with bullet points or numbered steps where helpful.\n"
-                "- Keep answers concise and friendly.\n"
-                "- If question is about platform features like profile settings, navigation, bookings, payments — answer specifically.\n"
-                "- If you don't know something specific to this platform, give a helpful general answer.\n"
-                "- NEVER say 'I cannot answer that' — always provide a useful response.\n"
-                "- Do NOT reveal raw user IDs or passwords."
-            )
-
+            client = OpenAI(api_key=openai_key)
             response = client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
-                    {"role": "system", "content": full_system},
+                    {"role": "system", "content": system_instruction},
                     {"role": "user", "content": prompt}
                 ],
-                max_tokens=600,
-                temperature=0.7,
-                timeout=8.0
+                timeout=4.0
             )
-            answer = response.choices[0].message.content
-            if answer and answer.strip():
-                logger.info("OpenAI GPT-4o-mini responded successfully.")
-                return answer.strip()
+            return response.choices[0].message.content
         except Exception as e:
-            logger.warning(f"OpenAI API error: {e}. Trying Pollinations fallback.")
+            logger.warning(f"OpenAI API error: {e}. Resorting to Free Live AI fallback.")
 
-    # 2. Try Gemini API
-    gemini_key = os.environ.get("GEMINI_API_KEY")
-    if gemini_key and gemini_key.strip() and not gemini_key.startswith("your-") and gemini_key != "placeholder":
-        try:
-            import google.generativeai as genai
-            genai.configure(api_key=gemini_key.strip())
-            model = genai.GenerativeModel(
-                model_name="gemini-1.5-flash",
-                system_instruction=(
-                    "You are an intelligent AI assistant for Ahmedabad Event Hub. "
-                    "Answer ANY question the user asks — platform features, profile settings, "
-                    "theme changes, payments, events, venues, or general help. "
-                    "Always give a complete, helpful answer in clean Markdown. "
-                    "NEVER refuse to answer."
-                )
-            )
-            response = model.generate_content(prompt)
-            if response.text and response.text.strip():
-                logger.info("Gemini API responded successfully.")
-                return response.text.strip()
-        except Exception as e:
-            logger.error(f"Gemini API error: {e}. Trying Pollinations fallback.")
-
-    # 3. Try Pollinations AI (Free, No API Key Required)
+    # 3. Try Pollinations AI (Free Live AI Engine - No API Key Required)
     try:
-        import requests as req
-        response = req.post(
+        import requests
+        response = requests.post(
             "https://text.pollinations.ai/",
             json={
                 "messages": [
@@ -89,13 +59,12 @@ def call_ai_api(prompt, system_instruction="You are a helpful AI assistant for A
                 ],
                 "model": "openai"
             },
-            timeout=6.0
+            timeout=3.0
         )
         if response.status_code == 200 and response.text.strip():
-            logger.info("Pollinations AI responded successfully.")
-            return response.text.strip()
+            return response.text
     except Exception as e:
-        logger.info(f"Pollinations AI unavailable ({e}). Using local fallback.")
+        logger.info(f"Free Live AI engine unavailable ({e}). Resorting to Local Fallback.")
 
     # 4. Local Smart Heuristics Fallback Engine
     return call_local_fallback(prompt, system_instruction)
@@ -251,10 +220,8 @@ def call_local_fallback(prompt, system_instruction):
 
     # --- DYNAMIC TEXT MATCHERS FOR LIVE CHATBOT ---
 
-    # --- DYNAMIC TEXT MATCHERS FOR LIVE CHATBOT ---
-
-    # 1. Greetings (Requires exact word boundary and short query length)
-    if re.search(r'\b(hi|hello|hey|hola|greetings|good morning|good evening)\b', user_question_lower) and len(user_question_lower.split()) <= 4:
+    # 1. Greetings
+    if any(greet in user_question_lower for greet in ["hi", "hello", "hey", "hola", "greetings"]):
         greet_msg = f"### Hello {user_name}!\n\nWelcome to **Ahmedabad Event Hub AI Assistant**."
         if user_role != "Guest":
             greet_msg += f" I see you are logged in as an **{user_role.capitalize()}**."
@@ -262,52 +229,15 @@ def call_local_fallback(prompt, system_instruction):
             greet_msg += " How can I assist you today?"
         
         greet_msg += "\n\nFeel free to ask me about:\n"
-        greet_msg += "- **Payment Methods & Ticket Purchasing** (e.g., 'Which payment method to buy ticket?')\n"
         greet_msg += "- **Your Booking Status** (e.g., 'What is my booking status?')\n"
         greet_msg += "- **Upcoming Events** in Ahmedabad\n"
         greet_msg += "- **Party Plots & Venues** (e.g., 'Suggest some party plots')\n"
-        greet_msg += "- **Catering & Menu Planners**"
+        greet_msg += "- **Catering & Menu Planners**\n"
+        greet_msg += "- **Platform Guide** for Admins/Organizers/Plot Owners"
         return greet_msg
 
-    # 1.5 Payment Methods & Ticket Purchasing Enquiries
-    if any(keyword in user_question_lower for keyword in ["payment", "pay", "buy ticket", "purchase ticket", "payment method", "how to pay", "card", "upi", "netbanking", "payment options", "method"]):
-        return (
-            f"### Payment Methods for Buying Tickets & Booking Venues\n\n"
-            f"Ahmedabad Event Hub supports multiple secure payment options:\n\n"
-            f"1. **Credit / Debit Cards**: Visa, MasterCard, RuPay, and American Express.\n"
-            f"2. **UPI & QR Code Payments**: Instant payment via Google Pay, PhonePe, Paytm, and BHIM UPI.\n"
-            f"3. **ESCROW Payment Simulator**: Instant authorization for quick ticket and venue ground bookings.\n"
-            f"4. **Net Banking**: All major Indian commercial banks.\n\n"
-            f"### How to Buy Tickets:\n"
-            f"1. Go to the **Explore** page in the navigation bar.\n"
-            f"2. Choose your preferred event.\n"
-            f"3. Click **Book Ticket**, select the number of seats, and proceed to the Payment Checkout window!"
-        )
-
-    # 1.8 Refund & Cancellation Enquiries
-    if any(keyword in user_question_lower for keyword in ["refund", "cancel ticket", "cancellation", "cancel booking"]):
-        return (
-            f"### Refund & Cancellation Policy\n\n"
-            f"Here are the rules for ticket and venue cancellations on EventHub:\n\n"
-            f"- **Event Ticket Cancellations**: If you cancel an event ticket before entry gate check-in, a **50% refund** is issued to your account.\n"
-            f"- **Scanned / Checked-In Tickets**: Tickets that have already been scanned at the event entry gate cannot be cancelled.\n"
-            f"- **Venue Rental Cancellations**: If the Venue Owner approves your cancellation request, a **100% full refund** is credited back to you.\n"
-            f"- **Processing Time**: Approved refunds are credited within **5 to 7 working days**."
-        )
-
-    # 1.9 Direct Messaging & Contact Enquiries
-    if any(keyword in user_question_lower for keyword in ["message owner", "contact owner", "chat owner", "direct message", "send message"]):
-        return (
-            f"### Direct Messaging with Venue Owners\n\n"
-            f"You can message venue owners directly for approved bookings:\n\n"
-            f"1. Go to **My Bookings** under your Dashboard.\n"
-            f"2. Find your approved venue booking.\n"
-            f"3. Click the blue **'Message Owner'** button under the Action column.\n"
-            f"4. You can also reply directly from your **Notifications** tab when you receive a new message!"
-        )
-
     # 2. Bookings check
-    if any(keyword in user_question_lower for keyword in ["booking status", "my status", "my booking", "my tickets"]):
+    if any(keyword in user_question_lower for keyword in ["booking", "ticket", "my status", "my booking"]):
         if not bookings:
             return (
                 f"### Booking Status for {user_name}\n\n"
@@ -346,28 +276,30 @@ def call_local_fallback(prompt, system_instruction):
             )
 
     # 3.5 Create Event / Add Event Guide
-    if any(keyword in user_question_lower for keyword in ["create event", "add event", "new event", "host event", "post event", "how to create"]):
+    if any(keyword in user_question_lower for keyword in ["create event", "add event", "new event", "host event", "post event", "how to create", "steps to create", "step in create"]):
         return (
             "### Step-by-Step Guide to Create a New Event\n\n"
             "Follow these simple steps to list and publish your event on Ahmedabad Event Hub:\n\n"
             "1. **Log In as an Organizer**:\n"
-            "   - Sign in with an **Organizer** account credentials.\n\n"
+            "   - Sign in with an **Organizer** account credentials.\n"
+            "   - If you are a new user, register as an Organizer.\n\n"
             "2. **Navigate to Organizer Dashboard**:\n"
             "   - Click on your avatar menu at top right and select **My Dashboard** (or go to `/organizer/events`).\n\n"
             "3. **Click '+ Create New Event'**:\n"
             "   - On your dashboard header, click the blue **'+ Create New Event'** button.\n\n"
             "4. **Fill in Event Details**:\n"
-            "   - **Title & Category**: Enter event name and select category (Music, Tech, Garba, Comedy, etc.).\n"
-            "   - **Date, Time & Venue**: Set event start date, time, and select location.\n"
-            "   - **Ticket Pricing**: Set ticket price, available seat count, and discount codes.\n"
+            "   - **Title & Category**: Enter event name and select category (Music, Tech, Garba, Business, etc.).\n"
+            "   - **Date, Time & Venue**: Set event start date, time, and select an approved party plot or location.\n"
+            "   - **Ticket Pricing**: Set ticket price, available seat count, and early-bird discount codes.\n"
             "   - **Banner & Media**: Upload your event poster image.\n"
-            "   - **AI Description**: Click **'Generate AI Description'** to auto-generate a description.\n\n"
+            "   - **AI Description**: Click **'Generate AI Description'** to auto-generate a professional SEO description.\n\n"
             "5. **Publish Event**:\n"
-            "   - Click **Submit Event**. Once published, attendees can instantly book tickets!"
+            "   - Click **Submit Event**. Once published, attendees can instantly discover and book tickets on the **Explore** page!"
         )
 
     # 4. Events
-    if any(keyword in user_question_lower for keyword in ["upcoming event", "show", "concert", "what is on"]):
+    if any(keyword in user_question_lower for keyword in ["event", "upcoming", "show", "play", "concert", "what is on"]):
+
         if events:
             events_list = "\n".join([f"- **{e}**" for e in events])
             return (
@@ -393,8 +325,8 @@ def call_local_fallback(prompt, system_instruction):
             "- **AI Catering Tools:** You can generate raw ingredient estimates, budgets, and menus in the catering dashboard tab."
         )
 
-    # 6. Roles guide
-    if any(keyword in user_question_lower for keyword in ["role", "privilege", "what can i do"]):
+    # 6. Admin, Organizer, Plot Owner specific guide
+    if any(keyword in user_question_lower for keyword in ["role", "organizer", "plot owner", "admin", "privilege", "what can i do"]):
         return (
             f"### Platform Guide - Current Role: **{user_role.capitalize()}**\n\n"
             f"Here is what your account type can do on Ahmedabad Event Hub:\n\n"
@@ -404,107 +336,14 @@ def call_local_fallback(prompt, system_instruction):
             f"- **Admins**: Approve or reject newly registered Organizers and Plot Owners to maintain platform security."
         )
 
-    # 7. Profile & Account Settings
-    if any(kw in user_question_lower for kw in ["profile", "account setting", "my account", "edit profile", "update profile", "see profile", "show profile", "view profile", "account info"]):
-        return (
-            f"### How to View & Edit Your Profile\n\n"
-            f"Here is how to access your profile and account settings on Ahmedabad Event Hub:\n\n"
-            f"1. **Click your Avatar/Name** in the top-right corner of the navigation bar.\n"
-            f"2. Select **'My Profile'** from the dropdown menu.\n"
-            f"3. On the Profile page you can:\n"
-            f"   - ✏️ **Edit Name, Phone, Bio** — Click 'Edit Profile' button.\n"
-            f"   - 📧 **Change Email** — Update and re-verify via OTP.\n"
-            f"   - 🔒 **Change Password** — Use the 'Change Password' section.\n"
-            f"   - 🖼️ **Upload Profile Photo** — Click the camera icon on your avatar.\n\n"
-            f"You can also go directly to: `http://localhost:5173/profile`"
-        )
-
-    # 8. Theme / Dark Mode / Appearance
-    if any(kw in user_question_lower for kw in ["theme", "dark mode", "light mode", "change theme", "dark theme", "appearance", "color mode", "switch theme"]):
-        return (
-            f"### How to Change Theme (Dark / Light Mode)\n\n"
-            f"Ahmedabad Event Hub supports **Dark Mode** by default with a premium dark aesthetic.\n\n"
-            f"To toggle the theme:\n"
-            f"1. Click your **Avatar** in the top-right navigation bar.\n"
-            f"2. Look for the **🌙 Theme Toggle** or **Dark/Light Mode** switch in the dropdown menu.\n\n"
-            f"💡 **Tip:** The platform uses a dark glassmorphism design by default. If theme toggle is not visible, the current version uses a fixed dark theme for the best visual experience."
-        )
-
-    # 9. Password Change
-    if any(kw in user_question_lower for kw in ["password", "change password", "forgot password", "reset password", "update password"]):
-        return (
-            f"### How to Change Your Password\n\n"
-            f"1. Go to your **Profile Page** (click Avatar → My Profile).\n"
-            f"2. Scroll down to the **'Security'** or **'Change Password'** section.\n"
-            f"3. Enter your **Current Password**, then enter a **New Password** and confirm it.\n"
-            f"4. Click **Save Changes**.\n\n"
-            f"If you forgot your password, use the **'Forgot Password'** link on the Login page to receive a reset OTP on your email."
-        )
-
-    # 10. Notifications
-    if any(kw in user_question_lower for kw in ["notification", "alert", "bell", "message alert"]):
-        return (
-            f"### How to View Notifications\n\n"
-            f"1. Click the **🔔 Bell icon** in the top navigation bar.\n"
-            f"2. A dropdown will show all your latest notifications including:\n"
-            f"   - Booking confirmations & approvals\n"
-            f"   - New messages from venue owners\n"
-            f"   - Refund & cancellation updates\n"
-            f"   - Admin approvals for your events or venue listings\n\n"
-            f"You can reply to messages directly from the Notifications panel!"
-        )
-
-    # 11. Dashboard Navigation
-    if any(kw in user_question_lower for kw in ["dashboard", "my dashboard", "go to dashboard", "where is dashboard", "navigate", "navigation", "how to go", "how to open", "find"]):
-        role_dashboard = "/venues/dashboard" if user_role == "plot_owner" else ("/organizer/events" if user_role == "organizer" else "/bookings")
-        role_label = "Venue Owner" if user_role == "plot_owner" else ("Organizer" if user_role == "organizer" else "Customer")
-        return (
-            f"### Navigation Guide for {role_label}\n\n"
-            f"Here are the main pages you can navigate to on Ahmedabad Event Hub:\n\n"
-            f"- 🏠 **Home/Landing**: Click the **EventHub logo** in the top-left.\n"
-            f"- 🔍 **Explore Events**: Click **'Explore'** in the navigation bar.\n"
-            f"- 📋 **My Dashboard**: Click your **Avatar** → **'Dashboard'** (or go to `{role_dashboard}`).\n"
-            f"- 👤 **My Profile**: Click your **Avatar** → **'My Profile'**.\n"
-            f"- 🔔 **Notifications**: Click the **Bell icon** in the top bar.\n"
-            f"- 💬 **Messages**: Open any approved venue booking → Click **'Message Owner'**."
-        )
-
-    # 12. Register / Login / Logout
-    if any(kw in user_question_lower for kw in ["register", "sign up", "signup", "login", "sign in", "logout", "sign out", "log out"]):
-        return (
-            f"### Account Access Guide\n\n"
-            f"**Login:** Go to the Login page (`/login`) and enter your Email + Password.\n\n"
-            f"**Register:** Click **'Register'** on the Login page, choose your role (Customer / Organizer / Plot Owner), fill in your details, and verify your email via OTP.\n\n"
-            f"**Logout:** Click your **Avatar** in the top-right → Select **'Logout'** from the dropdown."
-        )
-
-    # 13. Default fallback - smart keyword-based reply
-    # Try to identify topic from question and give a relevant answer
-    q = user_question_lower
-    if any(w in q for w in ["how", "what", "where", "when", "why", "which", "show", "see", "open", "find", "get", "view", "check"]):
-        return (
-            f"### Help for: \"{user_question}\"\n\n"
-            f"Hi {user_name}! Here is a quick guide to common actions on **Ahmedabad Event Hub**:\n\n"
-            f"| What you want | How to do it |\n"
-            f"|---|---|\n"
-            f"| View Profile | Avatar (top-right) → My Profile |\n"
-            f"| Change Password | Profile Page → Security section |\n"
-            f"| View Bookings | Avatar → Dashboard → My Bookings tab |\n"
-            f"| Buy Tickets | Explore → Select Event → Book Now |\n"
-            f"| Message Venue Owner | My Bookings → Click 'Message Owner' |\n"
-            f"| View Notifications | Bell 🔔 icon in navigation bar |\n"
-            f"| Change Theme | Avatar → Theme Toggle (Dark/Light) |\n\n"
-            f"If you need more specific help, please re-phrase your question or describe exactly what you are trying to do!"
-        )
-
+    # 7. Default rich dynamic FAQ reply using context
     return (
-        f"### Ahmedabad Event Hub - AI Assistant\n\n"
-        f"Hi {user_name}! I'm here to help. Here are the most common things you can ask me:\n\n"
-        f"- 'How to view my profile?'\n"
-        f"- 'How to change theme or dark mode?'\n"
-        f"- 'Which payment methods are available?'\n"
-        f"- 'How to cancel my ticket and get a refund?'\n"
-        f"- 'Show me upcoming events'\n"
-        f"- 'How to create a new event?'\n"
-        f"- 'How to book a party plot or venue?'"
+        f"### Ahmedabad Event Hub - Help Center ({user_name})\n\n"
+        f"I received your question: *\"{user_question}\"*\n\n"
+        f"As your AI assistant, here is general information based on your **{user_role}** role:\n\n"
+        f"- **To Discover Events:** Go to the **Explore** page to see real-time listings.\n"
+        f"- **Booking Support:** All ticket bookings generate a unique QR code pass that you can find under **My Bookings**.\n"
+        f"- **Cancellation & Refunds:** Go to your booking details page to request a cancellation. Refunds are initiated within 3-5 working days.\n"
+        f"- **AI Descriptions:** Organizers can generate professional event descriptions automatically in their dashboard.\n\n"
+        f"How can I help you further? Please ask about events, party plots, or bookings!"
     )
