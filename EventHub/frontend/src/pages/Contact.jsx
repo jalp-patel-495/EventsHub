@@ -14,6 +14,8 @@ import {
   Clock
 } from 'lucide-react';
 
+import { validateName, validateEmail } from '../utils/validation';
+
 const Contact = () => {
   const { user, isAuthenticated } = useAuth();
   const [formData, setFormData] = useState({
@@ -74,15 +76,18 @@ const Contact = () => {
     e.preventDefault();
     setErrorMsg('');
 
-    if (!formData.name.trim() || formData.name.trim().length < 2) {
-      setErrorMsg('Please enter your full name (at least 2 characters).');
+    const nameErr = validateName(formData.name, 'Full Name');
+    if (nameErr) {
+      setErrorMsg(nameErr);
       return;
     }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email.trim())) {
-      setErrorMsg('Please enter a valid email address.');
+
+    const emailErr = validateEmail(formData.email);
+    if (emailErr) {
+      setErrorMsg(emailErr);
       return;
     }
+
     if (!formData.message.trim() || formData.message.trim().length < 20) {
       setErrorMsg('Message must be at least 20 characters long.');
       return;

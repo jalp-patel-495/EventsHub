@@ -102,14 +102,24 @@ def send_registration_otp(email, code):
         content_html
     )
     
-    email_msg = EmailMultiAlternatives(
-        subject,
-        plain_message,
-        settings.DEFAULT_FROM_EMAIL,
-        [email]
-    )
-    email_msg.attach_alternative(html_message, "text/html")
-    email_msg.send(fail_silently=True)
+    try:
+        from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'ahmedabadeventhub@gmail.com')
+        if '<' not in from_email:
+            from_email = f"Ahmedabad Event Hub <{from_email}>"
+
+        email_msg = EmailMultiAlternatives(
+            subject,
+            plain_message,
+            from_email,
+            [email]
+        )
+        email_msg.attach_alternative(html_message, "text/html")
+        sent_count = email_msg.send(fail_silently=False)
+        print(f"[Email Success] OTP successfully sent to: {email} (Sent count: {sent_count})")
+        return True
+    except Exception as e:
+        print(f"[Email Error] Failed sending OTP email to {email}: {e}")
+        return False
 
 def create_password_reset_otp(user):
     otp_code = str(random.randint(100000, 999999))
@@ -150,14 +160,22 @@ def send_password_reset_email(user, otp_code=None):
         button_url=reset_url
     )
     
-    email_msg = EmailMultiAlternatives(
-        subject,
-        plain_message,
-        settings.DEFAULT_FROM_EMAIL,
-        [user.email]
-    )
-    email_msg.attach_alternative(html_message, "text/html")
-    email_msg.send(fail_silently=False)
+    try:
+        from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'ahmedabadeventhub@gmail.com')
+        if '<' not in from_email:
+            from_email = f"Ahmedabad Event Hub <{from_email}>"
+
+        email_msg = EmailMultiAlternatives(
+            subject,
+            plain_message,
+            from_email,
+            [user.email]
+        )
+        email_msg.attach_alternative(html_message, "text/html")
+        email_msg.send(fail_silently=False)
+        print(f"[Email Success] Password reset email sent to: {user.email}")
+    except Exception as e:
+        print(f"[Email Error] Failed sending password reset email to {user.email}: {e}")
 
 def send_booking_confirmation_email(booking):
     subject = f"Booking Confirmed: {booking.event.title} - Ahmedabad Event Hub"
@@ -220,14 +238,22 @@ def send_booking_confirmation_email(booking):
         button_url=dashboard_url
     )
     
-    email_msg = EmailMultiAlternatives(
-        subject,
-        plain_message,
-        settings.DEFAULT_FROM_EMAIL,
-        [booking.user.email]
-    )
-    email_msg.attach_alternative(html_message, "text/html")
-    email_msg.send(fail_silently=True)
+    try:
+        from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'ahmedabadeventhub@gmail.com')
+        if '<' not in from_email:
+            from_email = f"Ahmedabad Event Hub <{from_email}>"
+
+        email_msg = EmailMultiAlternatives(
+            subject,
+            plain_message,
+            from_email,
+            [booking.user.email]
+        )
+        email_msg.attach_alternative(html_message, "text/html")
+        email_msg.send(fail_silently=False)
+        print(f"[Email Success] Booking confirmation email sent to: {booking.user.email}")
+    except Exception as e:
+        print(f"[Email Error] Failed sending booking confirmation to {booking.user.email}: {e}")
 
 def send_login_notification_email(user, request):
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
@@ -287,11 +313,19 @@ def send_login_notification_email(user, request):
         button_url=reset_url
     )
     
-    email_msg = EmailMultiAlternatives(
-        subject,
-        plain_message,
-        settings.DEFAULT_FROM_EMAIL,
-        [user.email]
-    )
-    email_msg.attach_alternative(html_message, "text/html")
-    email_msg.send(fail_silently=True)
+    try:
+        from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'ahmedabadeventhub@gmail.com')
+        if '<' not in from_email:
+            from_email = f"Ahmedabad Event Hub <{from_email}>"
+
+        email_msg = EmailMultiAlternatives(
+            subject,
+            plain_message,
+            from_email,
+            [user.email]
+        )
+        email_msg.attach_alternative(html_message, "text/html")
+        email_msg.send(fail_silently=False)
+        print(f"[Email Success] Login alert email sent to: {user.email}")
+    except Exception as e:
+        print(f"[Email Error] Failed sending login alert to {user.email}: {e}")

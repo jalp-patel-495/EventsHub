@@ -26,7 +26,7 @@ class AuthenticationTests(APITestCase):
             'last_name': 'Doe',
             'password': 'StrongPassword123!',
             'password_confirm': 'StrongPassword123!',
-            'phone': '1234567890',
+            'phone': '9876543219',
             'role': 'customer'
         }
 
@@ -47,6 +47,8 @@ class AuthenticationTests(APITestCase):
         # 4. Register user with correct OTP
         valid_register_data = {**self.user_data, 'otp': otp_record.code}
         response = self.client.post(self.register_url, valid_register_data)
+        if response.status_code != 201:
+            print("REGISTER RESP DATA:", response.data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         
         # Verify user is created and immediately active
@@ -73,11 +75,11 @@ class AuthenticationTests(APITestCase):
         self.assertEqual(response.data['first_name'], 'John')
 
         # Update profile
-        update_data = {'first_name': 'Jonathan', 'phone': '9876543210'}
+        update_data = {'first_name': 'Jonathan', 'phone': '9876543218'}
         response = self.client.put(self.profile_url, update_data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['first_name'], 'Jonathan')
-        self.assertEqual(response.data['phone'], '9876543210')
+        self.assertEqual(response.data['phone'], '9876543218')
 
         # 6. Logout
         refresh_token = response.wsgi_request.META.get('HTTP_AUTHORIZATION') # client mock doesn't retain tokens, let's pass refresh manually from login
@@ -99,6 +101,35 @@ class AuthenticationTests(APITestCase):
         self.user_data['password_confirm'] = 'DifferentPassword123!'
         response = self.client.post(self.register_url, self.user_data)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_validation_rules(self):
+        # 1. Test dummy phone number (0000000000)
+        EmailOTP.objects.create(email='valtest@example.com', code='123456')
+        bad_phone_data = {
+            **self.user_data,
+            'email': 'valtest@example.com',
+            'phone': '0000000000',
+            'otp': '123456'
+        }
+        res = self.client.post(self.register_url, bad_phone_data)
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('phone', res.data)
+
+        # 2. Test non-alphabetic name
+        EmailOTP.objects.create(email='valtest2@example.com', code='654321')
+        bad_name_data = {
+            **self.user_data,
+            'email': 'valtest2@example.com',
+            'first_name': 'John123',
+            'otp': '654321'
+        }
+        res = self.client.post(self.register_url, bad_name_data)
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('first_name', res.data)
+
+        # 3. Test invalid email format for OTP request
+        res = self.client.post(self.register_otp_url, {'email': 'invalid-email-format'})
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_password_reset_flow(self):
         # Register and verify user

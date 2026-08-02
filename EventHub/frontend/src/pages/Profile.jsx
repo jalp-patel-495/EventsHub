@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { motion } from 'framer-motion';
 import { User, Phone, Mail, Calendar, Upload, Save, CheckCircle2, Shield, MessageSquare, CornerDownRight, Lock, Eye, EyeOff, KeyRound } from 'lucide-react';
 import api, { BACKEND_URL } from '../api/api';
+import { validateName, validatePhone } from '../utils/validation';
 
 const Profile = () => {
   const { user, updateProfile } = useAuth();
@@ -93,31 +94,27 @@ const Profile = () => {
     setSuccessMsg('');
     setErrorMsg('');
 
-    const nameRegex = /^[A-Za-z\s'-]+$/;
-    if (!firstName.trim() || firstName.trim().length < 2) {
-      setErrorMsg('First name must be at least 2 characters long.');
+    const fnErr = validateName(firstName, 'First Name');
+    if (fnErr) {
+      setErrorMsg(fnErr);
       setLoading(false);
       return;
     }
-    if (!nameRegex.test(firstName.trim())) {
-      setErrorMsg('First name must only contain alphabetical characters.');
+
+    const lnErr = validateName(lastName, 'Last Name');
+    if (lnErr) {
+      setErrorMsg(lnErr);
       setLoading(false);
       return;
     }
-    if (!lastName.trim() || lastName.trim().length < 2) {
-      setErrorMsg('Last name must be at least 2 characters long.');
-      setLoading(false);
-      return;
-    }
-    if (!nameRegex.test(lastName.trim())) {
-      setErrorMsg('Last name must only contain alphabetical characters.');
-      setLoading(false);
-      return;
-    }
-    if (phone && !/^\d{10}$/.test(phone)) {
-      setErrorMsg('Phone number must be exactly 10 digits.');
-      setLoading(false);
-      return;
+
+    if (phone && phone.trim()) {
+      const phErr = validatePhone(phone);
+      if (phErr) {
+        setErrorMsg(phErr);
+        setLoading(false);
+        return;
+      }
     }
 
     try {

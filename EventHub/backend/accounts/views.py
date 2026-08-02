@@ -16,12 +16,14 @@ from .serializers import (
     CustomTokenObtainPairSerializer,
     ForgotPasswordSerializer,
     ResetPasswordSerializer,
-    ChangePasswordSerializer
+    ChangePasswordSerializer,
+    validate_email_field
 )
 from .utils import send_registration_otp, send_password_reset_email, create_password_reset_otp
 from .models import EmailOTP
 from django.utils import timezone
 import re
+from rest_framework.serializers import ValidationError
 
 User = get_user_model()
 
@@ -32,6 +34,12 @@ class RegisterOTPView(APIView):
         email = request.data.get('email', '').strip()
         if not email:
             return Response({"error": "Email address is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            validate_email_field(email)
+        except ValidationError as ve:
+            detail = ve.detail[0] if isinstance(ve.detail, list) else ve.detail
+            return Response({"error": str(detail)}, status=status.HTTP_400_BAD_REQUEST)
 
         # Verify email is not registered
         if User.objects.filter(email=email).exists():
@@ -57,6 +65,12 @@ class ResendOTPView(APIView):
         email = request.data.get('email', '').strip()
         if not email:
             return Response({"error": "Email address is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            validate_email_field(email)
+        except ValidationError as ve:
+            detail = ve.detail[0] if isinstance(ve.detail, list) else ve.detail
+            return Response({"error": str(detail)}, status=status.HTTP_400_BAD_REQUEST)
 
         # Block resend if user is already fully registered
         if User.objects.filter(email=email, is_active=True).exists():
