@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import api, { BACKEND_URL } from '../api/api';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, Trash2, Edit2, Plus, Sparkles, TrendingUp, Users, IndianRupee, Star, FileText, Upload, X, ShieldAlert, MapPin, Building, CheckCircle, XCircle, LayoutDashboard, Ticket, Tag, Percent, ChevronLeft, ChevronRight, ChevronDown, Eye } from 'lucide-react';
+import { Calendar, Trash2, Edit2, Plus, Sparkles, TrendingUp, Users, IndianRupee, Star, FileText, Upload, X, ShieldAlert, MapPin, Building, CheckCircle, XCircle, LayoutDashboard, Ticket, Tag, Percent, ChevronLeft, ChevronRight, ChevronDown, Eye, MessageSquare } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import VenuePaymentModal from '../components/VenuePaymentModal';
 import EventDetailModal from '../components/EventDetailModal';
+import VenueBookingChatModal from '../components/VenueBookingChatModal';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 const OrganizerDashboard = () => {
@@ -98,6 +99,7 @@ const OrganizerDashboard = () => {
   const [bookingDates, setBookingDates] = useState({ start: '', end: '' });
   const [bookingError, setBookingError] = useState('');
   const [bookingActionLoading, setBookingActionLoading] = useState(false);
+  const [chatModalBooking, setChatModalBooking] = useState(null);
   const [venueFilter, setVenueFilter] = useState('all'); // 'all' | 'available' | 'booked'
 
   const [pendingEventData, setPendingEventData] = useState(null);
@@ -1293,7 +1295,17 @@ const OrganizerDashboard = () => {
                                   {vb.status}
                                 </span>
                               </td>
-                              <td className="px-6 py-4 text-right">
+                              <td className="px-6 py-4 text-right flex items-center justify-end space-x-2">
+                                {vb.status === 'approved' && (
+                                  <button
+                                    onClick={() => setChatModalBooking(vb)}
+                                    className="px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"
+                                    title="Direct Message Venue Owner"
+                                  >
+                                    <MessageSquare className="w-3.5 h-3.5" />
+                                    <span>Message Owner</span>
+                                  </button>
+                                )}
                                 {vb.status !== 'cancelled' && vb.status !== 'rejected' && (
                                   <button
                                     onClick={() => handleCancelVenueBooking(vb.id)}
@@ -1397,96 +1409,123 @@ const OrganizerDashboard = () => {
                 </div>
               ) : null}
 
-              {/* Historical graph */}
-              <div className="glass-panel rounded-2xl p-6 border border-white/5">
-                <h4 className="font-bold text-lg text-dark-text mb-2">Revenue Performance (Per Event)</h4>
-                <p className="text-xs text-dark-muted mb-8">Sales revenue breakdown across listed events</p>
-                
-                {myEvents.length === 0 ? (
-                  <div className="text-center py-12 text-dark-muted">No data available to display chart.</div>
-                ) : (
-                  /* Custom Premium SVG Dashboard Chart */
-                  <div className="w-full flex flex-col items-center">
-                    <div className="w-full h-80 relative flex items-end">
-                      {/* Y-axis Guidelines */}
-                      <div className="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-10">
-                        {[0, 1, 2, 3].map(i => (
-                          <div key={i} className="border-t border-dashed border-white w-full h-0"></div>
-                        ))}
-                      </div>
-                      
-                      {/* SVG Chart */}
-                      <svg className="w-full h-full" viewBox="0 0 800 300">
-                        <defs>
-                          <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#10B981" stopOpacity="0.4" />
-                            <stop offset="100%" stopColor="#10B981" stopOpacity="0.0" />
-                          </linearGradient>
-                        </defs>
-                        
-                        {/* Calculate points */}
-                        {(() => {
-                          const maxRevenue = Math.max(...myEvents.map(e => e.tickets_sold * e.price), 1000);
-                          const widthStep = 800 / (myEvents.length + 1);
-                          const points = myEvents.map((e, index) => {
-                            const rev = e.tickets_sold * e.price;
-                            const x = widthStep * (index + 1);
-                            const y = 300 - (rev / maxRevenue * 240) - 20; // 240 max height bounds, padding 20
-                            return { x, y, title: e.title, value: rev };
-                          });
-                          
-                          if (points.length === 0) return null;
-                          
-                          const pathD = `M ${points[0].x} ${points[0].y} ` + points.slice(1).map(p => `L ${p.x} ${p.y}`).join(' ');
-                          const areaD = `${pathD} L ${points[points.length - 1].x} 280 L ${points[0].x} 280 Z`;
-                          
-                          return (
-                            <>
-                              {/* Area Fill */}
-                              <path d={areaD} fill="url(#chartGrad)" />
-                              
-                              {/* Line path */}
-                              <path d={pathD} fill="none" stroke="#10B981" strokeWidth="3" strokeLinecap="round" />
-                              
-                              {/* Interactive Data Nodes */}
-                              {points.map((p, i) => (
-                                <g key={i}>
-                                  <circle 
-                                    cx={p.x} 
-                                    cy={p.y} 
-                                    r="6" 
-                                    fill="#10B981" 
-                                    stroke="#0A0E1A" 
-                                    strokeWidth="2"
-                                    className="transition-all duration-200 hover:r-8 cursor-pointer"
-                                  />
-                                  <text 
-                                    x={p.x} 
-                                    y={p.y - 12} 
-                                    textAnchor="middle" 
-                                    fill="#10B981" 
-                                    fontSize="10" 
-                                    fontWeight="bold"
-                                  >
-                                    ₹{p.value}
-                                  </text>
-                                </g>
-                              ))}
-                            </>
-                          );
-                        })()}
-                      </svg>
-                    </div>
-                    
-                    {/* X-axis Labels */}
-                    <div className="flex justify-between w-full mt-4 px-10 text-xs text-dark-muted font-semibold truncate">
-                      {myEvents.map((event, idx) => (
-                        <span key={event.id} className="text-[10px] truncate max-w-[80px]" title={event.title}>
-                          {event.title}
-                        </span>
-                      ))}
-                    </div>
+              {/* Event Performance & Analytics Dashboard Card */}
+              <div className="glass-panel rounded-2xl p-6 border border-white/5 shadow-xl">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-4 border-b border-white/5">
+                  <div>
+                    <h4 className="font-extrabold text-lg text-dark-text flex items-center gap-2">
+                      <TrendingUp className="w-5 h-5 text-emerald-400" />
+                      <span>Event Sales & Revenue Performance</span>
+                    </h4>
+                    <p className="text-xs text-dark-muted mt-1">Breakdown of top revenue-generating events and sales performance</p>
                   </div>
+                </div>
+
+                {(!events || events.length === 0) ? (
+                  <div className="text-center py-12 text-dark-muted glass-panel rounded-xl">
+                    <p className="text-xs">No events listed yet to generate sales analytics.</p>
+                  </div>
+                ) : (
+                  (() => {
+                    const sortedEvents = [...events]
+                      .map(e => {
+                        const priceVal = parseFloat(e.price) || 0;
+                        const soldVal = parseInt(e.tickets_sold) || 0;
+                        const rev = priceVal * soldVal;
+                        return {
+                          ...e,
+                          revenue: rev,
+                          soldVal,
+                          priceVal,
+                          catName: e.category_details?.name || e.category || 'General'
+                        };
+                      })
+                      .sort((a, b) => b.revenue - a.revenue);
+
+                    const topEventsList = sortedEvents.slice(0, 6);
+                    const highestRevenue = Math.max(...topEventsList.map(e => e.revenue), 1);
+
+                    return (
+                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        {/* Top 6 Performing Events Progress Bars (2 Columns) */}
+                        <div className="lg:col-span-2 space-y-4">
+                          <h5 className="text-xs font-bold text-dark-muted uppercase tracking-wider mb-2 flex items-center justify-between">
+                            <span>Top Performing Events (By Revenue)</span>
+                            <span className="text-[10px] text-emerald-400 font-mono">Top {topEventsList.length} Listed</span>
+                          </h5>
+
+                          {topEventsList.map((evt, idx) => {
+                            const percent = Math.round((evt.revenue / highestRevenue) * 100);
+                            return (
+                              <div key={evt.id || idx} className="bg-white/5 border border-white/5 rounded-xl p-3.5 hover:border-emerald-500/30 transition-all">
+                                <div className="flex items-center justify-between text-xs mb-2 gap-2">
+                                  <div className="flex items-center space-x-2.5 min-w-0">
+                                    <span className={`w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-bold ${
+                                      idx === 0 ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
+                                      idx === 1 ? 'bg-slate-300/20 text-slate-300 border border-slate-300/30' :
+                                      idx === 2 ? 'bg-amber-700/20 text-amber-500 border border-amber-700/30' :
+                                      'bg-white/10 text-dark-muted'
+                                    }`}>
+                                      #{idx + 1}
+                                    </span>
+                                    <span className="font-bold text-dark-text truncate text-sm" title={evt.title}>{evt.title}</span>
+                                    <span className="text-[9px] font-semibold bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full flex-shrink-0 uppercase">
+                                      {evt.catName}
+                                    </span>
+                                  </div>
+                                  <div className="text-right flex-shrink-0">
+                                    <span className="font-extrabold text-emerald-400 text-sm">₹{evt.revenue.toLocaleString('en-IN')}</span>
+                                    <span className="text-[10px] text-dark-muted block">{evt.soldVal} ticket{evt.soldVal !== 1 ? 's' : ''} sold</span>
+                                  </div>
+                                </div>
+
+                                {/* Clean Smooth Progress Bar */}
+                                <div className="w-full bg-white/5 rounded-full h-2 overflow-hidden">
+                                  <div
+                                    className="bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-400 h-2 rounded-full transition-all duration-700"
+                                    style={{ width: `${Math.max(percent, 4)}%` }}
+                                  ></div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {/* Revenue Summary Stats Box */}
+                        <div className="space-y-4 flex flex-col justify-between">
+                          <h5 className="text-xs font-bold text-dark-muted uppercase tracking-wider mb-2">
+                            Revenue Performance Summary
+                          </h5>
+
+                          <div className="bg-gradient-to-br from-emerald-950/40 via-dark-bg to-dark-bg p-5 rounded-2xl border border-emerald-500/20 space-y-4">
+                            <div>
+                              <span className="text-xs text-dark-muted block">Total Event Revenue</span>
+                              <p className="text-2xl font-black text-emerald-400 font-mono mt-1">
+                                ₹{sortedEvents.reduce((acc, cur) => acc + cur.revenue, 0).toLocaleString('en-IN')}
+                              </p>
+                            </div>
+
+                            <div className="pt-3 border-t border-white/5 space-y-2.5 text-xs">
+                              <div className="flex justify-between">
+                                <span className="text-dark-muted">Total Events Listed:</span>
+                                <span className="font-bold text-dark-text">{events.length}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-dark-muted">Active Sales Events:</span>
+                                <span className="font-bold text-emerald-400">{sortedEvents.filter(e => e.revenue > 0).length}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-dark-muted">Avg Revenue Per Event:</span>
+                                <span className="font-bold text-cyan-400">
+                                  ₹{events.length > 0 ? (sortedEvents.reduce((acc, cur) => acc + cur.revenue, 0) / events.length).toFixed(0) : 0}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()
                 )}
               </div>
             </motion.div>
@@ -2223,6 +2262,13 @@ const OrganizerDashboard = () => {
           showHostBox={true}
         />
       )}
+
+      <VenueBookingChatModal
+        booking={chatModalBooking}
+        isOpen={!!chatModalBooking}
+        onClose={() => setChatModalBooking(null)}
+        currentUser={user}
+      />
     </div>
   );
 };

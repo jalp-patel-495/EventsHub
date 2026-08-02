@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import api, { BACKEND_URL } from '../api/api';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, Trash2, Edit2, Plus, Sparkles, Building, CheckCircle, XCircle, IndianRupee, Calendar, Upload, X, ShieldAlert, BadgeCheck, MapPin, UtensilsCrossed, Music2, Palette, Star, ClipboardList, LayoutDashboard, AlertCircle, Eye } from 'lucide-react';
+import { Home, Trash2, Edit2, Plus, Sparkles, Building, CheckCircle, XCircle, IndianRupee, Calendar, Upload, X, ShieldAlert, BadgeCheck, MapPin, UtensilsCrossed, Music2, Palette, Star, ClipboardList, LayoutDashboard, AlertCircle, Eye, MessageSquare } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLocation, useNavigate } from 'react-router-dom';
 import VenueDetailModal from '../components/VenueDetailModal';
+import VenueBookingChatModal from '../components/VenueBookingChatModal';
 const CUISINE_TEMPLATES = {
   'Gujarati Thali': '2 Sabzis (Paneer & Potato/Green), Dal/Kadhi, Rice/Khichdi, Roti/Puri, 2 Farsan, 1 Sweet, Butter Milk, Papad, Salad',
   'Punjabi': 'Paneer Tikka Masala, Veg Jaipuri, Dal Makhani, Jeera Rice, Butter Naan/Tandoori Roti, 1 Starter, Sweet, Raita, Salad',
@@ -104,6 +105,7 @@ const PlotOwnerDashboard = () => {
 
   // Dedicated Service Tabs State
   const [confirmRefundModal, setConfirmRefundModal] = useState({ show: false, bookingId: null, amount: 0, retained: 0 });
+  const [chatModalBooking, setChatModalBooking] = useState(null);
 
   const [selectedServiceVenueId, setSelectedServiceVenueId] = useState('');
   const [activeServiceTab, setActiveServiceTab] = useState('catering');
@@ -1240,8 +1242,26 @@ const PlotOwnerDashboard = () => {
                                 </button>
                               </div>
                             )}
+                            {booking.status === 'approved' && !booking.cancel_requested && (
+                              <button
+                                onClick={() => setChatModalBooking(booking)}
+                                className="px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ml-auto"
+                                title="Direct Message Organizer"
+                              >
+                                <MessageSquare className="w-3.5 h-3.5" />
+                                <span>Direct Message</span>
+                              </button>
+                            )}
                             {booking.cancel_requested && booking.status === 'approved' && (
                               <div className="flex justify-end space-x-2">
+                                <button
+                                  onClick={() => setChatModalBooking(booking)}
+                                  className="px-2.5 py-1 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 rounded-lg transition-all flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider border border-blue-500/10"
+                                  title="Direct Message Organizer"
+                                >
+                                  <MessageSquare className="w-3.5 h-3.5" />
+                                  <span>Message</span>
+                                </button>
                                 <button
                                   onClick={() => handleBookingAction(booking.id, 'approve_cancel')}
                                   className="px-2.5 py-1 bg-red-500/10 text-red-400 hover:bg-red-500/20 rounded-lg transition-all flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider border border-red-500/10"
@@ -2561,6 +2581,13 @@ const PlotOwnerDashboard = () => {
           onClose={() => setSelectedDetailVenue(null)}
         />
       )}
+
+      <VenueBookingChatModal
+        booking={chatModalBooking}
+        isOpen={!!chatModalBooking}
+        onClose={() => setChatModalBooking(null)}
+        currentUser={user}
+      />
     </div>
   );
 };

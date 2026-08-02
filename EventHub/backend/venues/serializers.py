@@ -1,7 +1,16 @@
 from rest_framework import serializers
 from django.utils import timezone
-from .models import Venue, VenueBooking, VenueReview
+from .models import Venue, VenueBooking, VenueReview, VenueBookingMessage
 from accounts.serializers import UserSerializer
+
+
+class VenueBookingMessageSerializer(serializers.ModelSerializer):
+    sender_details = UserSerializer(source='sender', read_only=True)
+
+    class Meta:
+        model = VenueBookingMessage
+        fields = ('id', 'booking', 'sender', 'sender_details', 'message', 'created_at')
+        read_only_fields = ('sender', 'booking')
 
 
 class VenueReviewSerializer(serializers.ModelSerializer):
@@ -93,6 +102,7 @@ class VenueSerializer(serializers.ModelSerializer):
 class VenueBookingSerializer(serializers.ModelSerializer):
     organizer_details = UserSerializer(source='organizer', read_only=True)
     venue_details = VenueSerializer(source='venue', read_only=True)
+    messages = VenueBookingMessageSerializer(many=True, read_only=True)
 
     class Meta:
         model = VenueBooking
@@ -101,7 +111,8 @@ class VenueBookingSerializer(serializers.ModelSerializer):
             'start_date', 'end_date', 'total_price', 'status', 'payment_status',
             'payment_id', 'cancel_requested', 'created_at',
             'use_catering', 'catering_plates', 'use_dj', 'use_decor',
-            'catering_cuisine', 'catering_description', 'dj_package', 'dj_equipment', 'decor_theme'
+            'catering_cuisine', 'catering_description', 'dj_package', 'dj_equipment', 'decor_theme',
+            'messages'
         )
         read_only_fields = ('organizer', 'total_price', 'status', 'payment_status', 'payment_id')
 

@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Menu, X, LogOut, User as UserIcon, Calendar, Building, ShieldAlert, ChevronDown, Bell, Check, CheckCheck, Sun, Moon, QrCode, LayoutDashboard, Mail, Heart, Compass, Zap, Ticket } from 'lucide-react';
+import { Menu, X, LogOut, User as UserIcon, Calendar, Building, ShieldAlert, ChevronDown, Bell, Check, CheckCheck, Sun, Moon, QrCode, LayoutDashboard, Mail, Heart, Compass, Zap, Ticket, MessageSquare } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api, { BACKEND_URL, WS_URL } from '../api/api';
+import VenueBookingChatModal from './VenueBookingChatModal';
 
 const Navbar = () => {
   const { user, isAuthenticated, logout } = useAuth();
@@ -23,10 +24,37 @@ const Navbar = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+  const [chatModalBooking, setChatModalBooking] = useState(null);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [pendingApprovalsCount, setPendingApprovalsCount] = useState(0);
   const [pendingRefundsCount, setPendingRefundsCount] = useState(0);
+
+  const handleReplyFromNavbar = async (notif) => {
+    setNotificationsOpen(false);
+    const match = notif.message?.match(/booking #(\d+)/i);
+    const bookingId = match ? parseInt(match[1]) : null;
+
+    if (bookingId) {
+      try {
+        const res = await api.get(`venues/bookings/`);
+        const list = res.data?.results || res.data || [];
+        const found = list.find(b => b.id === bookingId);
+        if (found) {
+          setChatModalBooking(found);
+          return;
+        }
+      } catch (err) {
+        console.error("Failed to fetch booking for reply:", err);
+      }
+    }
+
+    if (user?.role === 'plot_owner') {
+      navigate('/plot-owner/dashboard');
+    } else {
+      navigate('/customer-dashboard');
+    }
+  };
   const [toast, setToast] = useState({ show: false, title: '', message: '' });
   const navigate = useNavigate();
   const location = useLocation();
@@ -399,31 +427,47 @@ const Navbar = () => {
                                   No notifications yet.
                                 </div>
                               ) : (
-                                notifications.map((n) => (
-                                  <div
-                                    key={n.id}
-                                    className={`p-4 transition-colors flex items-start justify-between space-x-2 ${
-                                      n.is_read ? 'opacity-85 hover:bg-white/[0.01]' : 'bg-white/[0.02] hover:bg-white/[0.04]'
-                                    }`}
-                                  >
-                                    <div className="min-w-0">
-                                      <h5 className="text-xs font-bold text-dark-text leading-tight">{n.title}</h5>
-                                      <p className="text-[11px] text-dark-text mt-1 leading-normal opacity-85">{n.message}</p>
-                                      <span className="text-[9px] text-dark-muted mt-2 block font-medium opacity-90">
-                                        {new Date(n.created_at).toLocaleDateString()} at {new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                      </span>
+                                notifications.map((n) => {
+                                  const isMessageNotif = (n.title && n.title.toLowerCase().includes('message')) || (n.message && n.message.toLowerCase().includes('sent a message'));
+
+                                  return (
+                                    <div
+                                      key={n.id}
+                                      className={`p-4 transition-colors flex flex-col space-y-2 ${
+                                        n.is_read ? 'opacity-85 hover:bg-white/[0.01]' : 'bg-white/[0.02] hover:bg-white/[0.04]'
+                                      }`}
+                                    >
+                                      <div className="flex items-start justify-between space-x-2">
+                                        <div className="min-w-0">
+                                          <h5 className="text-xs font-bold text-dark-text leading-tight">{n.title}</h5>
+                                          <p className="text-[11px] text-dark-text mt-1 leading-normal opacity-85">{n.message}</p>
+                                          <span className="text-[9px] text-dark-muted mt-2 block font-medium opacity-90">
+                                            {new Date(n.created_at).toLocaleDateString()} at {new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                          </span>
+                                        </div>
+                                        {!n.is_read && (
+                                          <button
+                                            onClick={() => handleMarkAsRead(n.id)}
+                                            className="text-brand-primary hover:text-brand-primary/80 p-1 flex-shrink-0"
+                                            title="Mark as read"
+                                          >
+                                            <Check className="w-4 h-4" />
+                                          </button>
+                                        )}
+                                      </div>
+
+                                      {isMessageNotif && (
+                                        <button
+                                          onClick={() => handleReplyFromNavbar(n)}
+                                          className="w-full mt-1 px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                                        >
+                                          <MessageSquare className="w-3.5 h-3.5" />
+                                          <span>Reply / Send Answer</span>
+                                        </button>
+                                      )}
                                     </div>
-                                    {!n.is_read && (
-                                      <button
-                                        onClick={() => handleMarkAsRead(n.id)}
-                                        className="text-brand-primary hover:text-brand-primary/80 p-1 flex-shrink-0"
-                                        title="Mark as read"
-                                      >
-                                        <Check className="w-4 h-4" />
-                                      </button>
-                                    )}
-                                  </div>
-                                ))
+                                  );
+                                })
                               )}
                             </div>
                           </motion.div>
@@ -655,6 +699,13 @@ const Navbar = () => {
             </motion.div>
           )}
         </AnimatePresence>
+
+        <VenueBookingChatModal
+          booking={chatModalBooking}
+          isOpen={!!chatModalBooking}
+          onClose={() => setChatModalBooking(null)}
+          currentUser={user}
+        />
       </nav>
     </>
   );

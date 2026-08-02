@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import api, { BACKEND_URL } from '../api/api';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, Heart, Bell, Trash2, ShieldAlert, CheckCircle, Ticket, XCircle, Download, Sparkles, MapPin, Building, Star, X, Coins, Search } from 'lucide-react';
+import { Calendar, Heart, Bell, Trash2, ShieldAlert, CheckCircle, Ticket, XCircle, Download, Sparkles, MapPin, Building, Star, X, Coins, Search, MessageSquare } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import VenuePaymentModal from '../components/VenuePaymentModal';
 import VenueDetailModal from '../components/VenueDetailModal';
 import EventDetailModal from '../components/EventDetailModal';
+import VenueBookingChatModal from '../components/VenueBookingChatModal';
 
 const CustomerDashboard = () => {
   const { user } = useAuth();
@@ -23,6 +24,7 @@ const CustomerDashboard = () => {
 
   // Detail Modal States
   const [selectedDetailEvent, setSelectedDetailEvent] = useState(null);
+  const [chatModalBooking, setChatModalBooking] = useState(null);
 
   // Review & Rating Modal States
   const [showReviewModal, setShowReviewModal] = useState(false);
@@ -142,6 +144,19 @@ const CustomerDashboard = () => {
   }, [activeTab]);
 
   const handleDownloadTicket = async (booking) => {
+    if (!booking) return;
+
+    const eventTitle = booking.event_details?.title || booking.event_name || booking.title || "Event Pass";
+    const eventDate = booking.event_details?.date || booking.date || "N/A";
+    const eventTime = booking.event_details?.time || booking.time || "";
+    const eventLocation = booking.event_details?.location || booking.location || "Ahmedabad, Gujarat";
+    const attendeeFirstName = booking.user_details?.first_name || user?.first_name || "Valued";
+    const attendeeLastName = booking.user_details?.last_name || user?.last_name || "Guest";
+    const attendeeEmail = booking.user_details?.email || user?.email || "";
+    const ticketsCount = booking.tickets_count || 1;
+    const ticketCategory = booking.ticket_category || "General";
+    const totalPrice = parseFloat(booking.total_price || 0) + (parseFloat(booking.event_details?.price || 0) > 0 ? ticketsCount * 15 : 0);
+
     const ticketDiv = document.createElement('div');
     ticketDiv.style.position = 'absolute';
     ticketDiv.style.left = '-9999px';
@@ -159,15 +174,15 @@ const CustomerDashboard = () => {
         <p style="margin: 5px 0 0 0; font-size: 10px; text-transform: uppercase; color: #9CA3AF; letter-spacing: 2px;">Official Entry Pass</p>
       </div>
       <div style="border-top: 1px dashed rgba(255,255,255,0.1); border-bottom: 1px dashed rgba(255,255,255,0.1); padding: 20px 0; margin-bottom: 25px;">
-        <h3 style="margin: 0 0 10px 0; font-size: 18px; color: #FFFFFF;">${booking.event_details.title}</h3>
-        <p style="margin: 5px 0; font-size: 12px; color: #D1D5DB;"><strong>Date:</strong> ${booking.event_details.date} at ${booking.event_details.time}</p>
-        <p style="margin: 5px 0; font-size: 12px; color: #D1D5DB;"><strong>Location:</strong> ${booking.event_details.location}</p>
+        <h3 style="margin: 0 0 10px 0; font-size: 18px; color: #FFFFFF;">${eventTitle}</h3>
+        <p style="margin: 5px 0; font-size: 12px; color: #D1D5DB;"><strong>Date:</strong> ${eventDate} ${eventTime ? 'at ' + eventTime : ''}</p>
+        <p style="margin: 5px 0; font-size: 12px; color: #D1D5DB;"><strong>Location:</strong> ${eventLocation}</p>
       </div>
       <div style="margin-bottom: 25px;">
-        <p style="margin: 5px 0; font-size: 12px; color: #9CA3AF;"><strong>Attendee:</strong> ${booking.user_details.first_name} ${booking.user_details.last_name}</p>
-        <p style="margin: 5px 0; font-size: 12px; color: #9CA3AF;"><strong>Email:</strong> ${booking.user_details.email}</p>
-        <p style="margin: 5px 0; font-size: 12px; color: #9CA3AF;"><strong>Quantity:</strong> ${booking.tickets_count} Ticket(s) (${booking.ticket_category} Pass)</p>
-        <p style="margin: 5px 0; font-size: 12px; color: #9CA3AF;"><strong>Amount Paid:</strong> ₹${(parseFloat(booking.total_price) + (parseFloat(booking.event_details?.price) > 0 ? booking.tickets_count * 15 : 0)).toFixed(2)}</p>
+        <p style="margin: 5px 0; font-size: 12px; color: #9CA3AF;"><strong>Attendee:</strong> ${attendeeFirstName} ${attendeeLastName}</p>
+        <p style="margin: 5px 0; font-size: 12px; color: #9CA3AF;"><strong>Email:</strong> ${attendeeEmail}</p>
+        <p style="margin: 5px 0; font-size: 12px; color: #9CA3AF;"><strong>Quantity:</strong> ${ticketsCount} Ticket(s) (${ticketCategory} Pass)</p>
+        <p style="margin: 5px 0; font-size: 12px; color: #9CA3AF;"><strong>Amount Paid:</strong> ₹${totalPrice.toFixed(2)}</p>
       </div>
       <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; margin-top: 10px;">
         <div id="ticket-qr-container" style="background: white; padding: 10px; border-radius: 12px; margin-bottom: 10px; display: inline-block;"></div>
@@ -190,10 +205,13 @@ const CustomerDashboard = () => {
 
     await new Promise((resolve) => {
       qrImg.onload = resolve;
-      setTimeout(resolve, 1500);
+      setTimeout(resolve, 1200);
     });
 
     try {
+      const { default: html2canvas } = await import('html2canvas');
+      const { jsPDF } = await import('jspdf');
+
       const canvas = await html2canvas(ticketDiv, {
         backgroundColor: '#0A0E1A',
         scale: 2,
@@ -209,8 +227,11 @@ const CustomerDashboard = () => {
       pdf.save(`Ticket-${booking.qr_code_hash || "FREE"}.pdf`);
     } catch (err) {
       console.error("PDF generation failed:", err);
+      alert("Failed to download PDF ticket. Please try again.");
     } finally {
-      document.body.removeChild(ticketDiv);
+      if (document.body.contains(ticketDiv)) {
+        document.body.removeChild(ticketDiv);
+      }
     }
   };
 
@@ -439,6 +460,31 @@ const CustomerDashboard = () => {
     } catch (err) {
       console.error("Failed to mark read:", err);
     }
+  };
+
+  const handleReplyToNotification = async (notif) => {
+    const match = notif.message?.match(/booking #(\d+)/i);
+    const bookingId = match ? parseInt(match[1]) : null;
+
+    if (bookingId) {
+      let foundBooking = venueBookings.find(b => b.id === bookingId);
+      if (!foundBooking) {
+        try {
+          const res = await api.get(`venues/bookings/`);
+          const list = res.data?.results || res.data || [];
+          foundBooking = list.find(b => b.id === bookingId);
+        } catch (err) {
+          console.error("Failed to fetch booking for notification reply:", err);
+        }
+      }
+
+      if (foundBooking) {
+        setChatModalBooking(foundBooking);
+        return;
+      }
+    }
+
+    setActiveTab('venues');
   };
 
   const unreadNotificationsCount = notifications.filter(n => !n.is_read).length;
@@ -698,12 +744,14 @@ const CustomerDashboard = () => {
                         <div>
                           <span className="text-xs font-semibold text-dark-muted uppercase">Status</span>
                           <span className={`block text-xs font-bold px-2 py-0.5 rounded mt-0.5 uppercase ${
+                            booking.is_checked_in ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' :
                             booking.payment_status === 'refunded' ? 'bg-red-500/10 text-red-400' :
                             booking.refund_requested ? 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/10' :
                             booking.status === 'confirmed' ? 'bg-emerald-500/10 text-emerald-400' : 
                             'bg-red-500/10 text-red-400'
                           }`}>
-                            {booking.payment_status === 'refunded' ? 'Refunded' :
+                            {booking.is_checked_in ? 'Checked In' :
+                             booking.payment_status === 'refunded' ? 'Refunded' :
                              booking.refund_requested ? 'Refund Pending' :
                              booking.status}
                           </span>
@@ -738,18 +786,20 @@ const CustomerDashboard = () => {
                             >
                               <Download className="w-4 h-4" />
                             </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedCancelBooking(booking);
-                                setTicketsToCancel(1);
-                                setCancelModalOpen(true);
-                              }}
-                              className="p-2 text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 rounded-xl transition-all"
-                              title="Cancel Ticket(s)"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                            {!booking.is_checked_in && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedCancelBooking(booking);
+                                  setTicketsToCancel(1);
+                                  setCancelModalOpen(true);
+                                }}
+                                className="p-2 text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 rounded-xl transition-all"
+                                title="Cancel Ticket(s)"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
                           </div>
                         )}
                       </div>
@@ -877,6 +927,20 @@ const CustomerDashboard = () => {
                               </a>
                             )}
 
+                            {vb.status === 'approved' && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setChatModalBooking(vb);
+                                }}
+                                className="px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"
+                                title="Direct Message Venue Owner"
+                              >
+                                <MessageSquare className="w-3.5 h-3.5" />
+                                <span>Message Owner</span>
+                              </button>
+                            )}
+
                             {vb.status === 'approved' && !vb.cancel_requested && (
                               <button
                                 onClick={(e) => { e.stopPropagation(); handleOpenReviewModal('venue', vb.venue_details); }}
@@ -986,33 +1050,55 @@ const CustomerDashboard = () => {
                   <p className="text-dark-muted">No notifications received.</p>
                 </div>
               ) : (
-                notifications.map((notif) => (
-                  <div
-                    key={notif.id}
-                    className={`glass-card rounded-2xl p-5 flex items-start justify-between border-l-4 transition-all ${
-                      notif.is_read ? 'border-white/5 opacity-60' : 'border-emerald-500 bg-emerald-500/5'
-                    }`}
-                  >
-                    <div className="flex space-x-3">
-                      <div className={`p-2 rounded-lg ${notif.is_read ? 'bg-white/5 text-dark-muted' : 'bg-emerald-500/10 text-emerald-400'}`}>
-                        {notif.is_read ? <CheckCircle className="w-4 h-4" /> : <Bell className="w-4 h-4" />}
+                notifications.map((notif) => {
+                  const isMessageNotif = (notif.title && notif.title.toLowerCase().includes('message')) || (notif.message && notif.message.toLowerCase().includes('sent a message'));
+
+                  return (
+                    <div
+                      key={notif.id}
+                      className={`glass-card rounded-2xl p-5 border-l-4 transition-all space-y-3 ${
+                        notif.is_read ? 'border-white/5 opacity-80' : 'border-emerald-500 bg-emerald-500/5'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex space-x-3">
+                          <div className={`p-2 rounded-lg ${isMessageNotif ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : notif.is_read ? 'bg-white/5 text-dark-muted' : 'bg-emerald-500/10 text-emerald-400'}`}>
+                            {isMessageNotif ? <MessageSquare className="w-4 h-4" /> : notif.is_read ? <CheckCircle className="w-4 h-4" /> : <Bell className="w-4 h-4" />}
+                          </div>
+                          <div>
+                            <h5 className="font-bold text-sm text-dark-text">{notif.title}</h5>
+                            <p className="text-xs text-dark-muted mt-1 leading-relaxed">{notif.message}</p>
+                            <span className="block text-[10px] text-dark-muted mt-2">{new Date(notif.created_at).toLocaleString()}</span>
+                          </div>
+                        </div>
+                        {!notif.is_read && (
+                          <button
+                            onClick={() => handleMarkNotificationRead(notif.id)}
+                            className="text-[10px] font-bold text-brand-primary hover:text-emerald-400 uppercase tracking-wider"
+                          >
+                            Mark read
+                          </button>
+                        )}
                       </div>
-                      <div>
-                        <h5 className="font-bold text-sm text-dark-text">{notif.title}</h5>
-                        <p className="text-xs text-dark-muted mt-1 leading-relaxed">{notif.message}</p>
-                        <span className="block text-[10px] text-dark-muted mt-2">{new Date(notif.created_at).toLocaleString()}</span>
-                      </div>
+
+                      {isMessageNotif && (
+                        <div className="pt-3 border-t border-white/10 flex items-center justify-between">
+                          <span className="text-[10px] font-extrabold text-blue-400 uppercase tracking-wider flex items-center gap-1.5">
+                            <MessageSquare className="w-3.5 h-3.5" />
+                            <span>Direct Chat Notification</span>
+                          </span>
+                          <button
+                            onClick={() => handleReplyToNotification(notif)}
+                            className="px-3.5 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-md shadow-blue-950/40 cursor-pointer"
+                          >
+                            <MessageSquare className="w-3.5 h-3.5" />
+                            <span>Reply / Send Answer</span>
+                          </button>
+                        </div>
+                      )}
                     </div>
-                    {!notif.is_read && (
-                      <button
-                        onClick={() => handleMarkNotificationRead(notif.id)}
-                        className="text-[10px] font-bold text-brand-primary hover:text-emerald-400 uppercase tracking-wider"
-                      >
-                        Mark read
-                      </button>
-                    )}
-                  </div>
-                ))
+                  );
+                })
               )}
             </motion.div>
           )}
@@ -1869,6 +1955,13 @@ const CustomerDashboard = () => {
           }}
         />
       )}
+
+      <VenueBookingChatModal
+        booking={chatModalBooking}
+        isOpen={!!chatModalBooking}
+        onClose={() => setChatModalBooking(null)}
+        currentUser={user}
+      />
     </div>
   );
 };

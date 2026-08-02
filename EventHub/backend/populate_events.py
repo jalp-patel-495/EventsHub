@@ -67,6 +67,7 @@ def setup_categories():
         {"name": "Art", "slug": "art"},
         {"name": "Workshop", "slug": "workshop"},
         {"name": "Charity", "slug": "charity"},
+        {"name": "Comedy", "slug": "comedy"},
     ]
     
     categories = {}

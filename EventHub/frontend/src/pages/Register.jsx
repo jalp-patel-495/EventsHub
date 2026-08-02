@@ -12,7 +12,7 @@ const Register = () => {
 
   useEffect(() => {
     if (isAuthenticated && user) {
-      const dashboardPath = user.role === 'admin' ? '/admin-dashboard' : user.role === 'organizer' ? '/organizer/events' : user.role === 'plot_owner' ? '/venues/manage' : '/events';
+      const dashboardPath = user.role === 'admin' ? '/admin-dashboard' : user.role === 'organizer' ? '/organizer/events' : user.role === 'plot_owner' ? '/venues/dashboard' : '/events';
       navigate(dashboardPath, { replace: true });
     }
   }, [isAuthenticated, user, navigate]);

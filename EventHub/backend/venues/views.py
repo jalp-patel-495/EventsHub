@@ -5,8 +5,8 @@ from django.shortcuts import get_object_or_404
 from django.db.models import Q
 from datetime import datetime
 
-from .models import Venue, VenueBooking, VenueReview
-from .serializers import VenueSerializer, VenueBookingSerializer, VenueReviewSerializer
+from .models import Venue, VenueBooking, VenueReview, VenueBookingMessage
+from .serializers import VenueSerializer, VenueBookingSerializer, VenueReviewSerializer, VenueBookingMessageSerializer
 from notifications.models import Notification
 
 class VenueViewSet(viewsets.ModelViewSet):
@@ -95,10 +95,12 @@ class VenueViewSet(viewsets.ModelViewSet):
         return queryset
 
     def perform_create(self, serializer):
-        if self.request.user.role != 'plot_owner':
-            from rest_framework.exceptions import PermissionDenied
-            raise PermissionDenied("Only venue owners can list venues.")
-        serializer.save(owner=self.request.user)
+        user = self.request.user
+        if user.role != 'plot_owner':
+            user.role = 'plot_owner'
+            user.is_approved = True
+            user.save(update_fields=['role', 'is_approved'])
+        serializer.save(owner=user)
 
     def update(self, request, *args, **kwargs):
         venue = self.get_object()
@@ -388,5 +390,43 @@ class VenueReviewCreateView(APIView):
         
         review = serializer.save(user=request.user, venue=venue)
         return Response(VenueReviewSerializer(review).data, status=status.HTTP_201_CREATED)
+
+
+class VenueBookingMessageView(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get(self, request, booking_id):
+        booking = get_object_or_404(VenueBooking, pk=booking_id)
+        if booking.organizer != request.user and booking.venue.owner != request.user and request.user.role != 'admin':
+            return Response({"error": "You do not have permission to view messages for this booking."}, status=status.HTTP_403_FORBIDDEN)
+        
+        messages = VenueBookingMessage.objects.filter(booking=booking).select_related('sender').order_by('created_at')
+        return Response(VenueBookingMessageSerializer(messages, many=True).data)
+
+    def post(self, request, booking_id):
+        booking = get_object_or_404(VenueBooking, pk=booking_id)
+        if booking.organizer != request.user and booking.venue.owner != request.user and request.user.role != 'admin':
+            return Response({"error": "You do not have permission to send messages for this booking."}, status=status.HTTP_403_FORBIDDEN)
+        
+        text = request.data.get('message', '').strip()
+        if not text:
+            return Response({"error": "Message content cannot be empty."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        msg = VenueBookingMessage.objects.create(
+            booking=booking,
+            sender=request.user,
+            message=text
+        )
+
+        recipient = booking.organizer if request.user == booking.venue.owner else booking.venue.owner
+        sender_role_label = "Venue Owner" if request.user == booking.venue.owner else "Organizer"
+        Notification.objects.create(
+            user=recipient,
+            title=f"New Message from {sender_role_label}",
+            message=f"{request.user.first_name or request.user.email} sent a message regarding booking #{booking.id} ({booking.venue.name}): '{text[:60]}...'"
+        )
+
+        return Response(VenueBookingMessageSerializer(msg).data, status=status.HTTP_201_CREATED)
+
 
 
