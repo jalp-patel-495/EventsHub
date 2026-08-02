@@ -20,6 +20,12 @@ EventHub is a modern, responsive web application designed for discovering, booki
 
 ---
 
+## 📊 Developer Badges
+![GitHub top language](https://img.shields.io/github/languages/top/jalp-patel-495/EventsHub?style=flat-square)
+![GitHub repo size](https://img.shields.io/github/repo-size/jalp-patel-495/EventsHub?style=flat-square)
+
+---
+
 ## 🚀 Getting Started
 
 ### Backend Setup
