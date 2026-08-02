@@ -1,4 +1,5 @@
 # 🎪 EventHub - Full Stack Event Management Platform
+> A premium event hosting, ticketing, and venue-booking experience for Ahmedabad.
 
 EventHub is a modern, responsive web application designed for discovering, booking, and managing events, party plots, auditoriums, banquets, and resorts.
 
@@ -17,6 +18,12 @@ EventHub is a modern, responsive web application designed for discovering, booki
 - **Frontend**: React, TailwindCSS, Vite, Lucide Icons
 - **Backend**: Python, Django REST Framework, SQLite
 - **Authentication**: JWT (JSON Web Tokens) with OTP Verification
+
+---
+
+## 📊 Developer Badges
+![GitHub top language](https://img.shields.io/github/languages/top/jalp-patel-495/EventsHub?style=flat-square)
+![GitHub repo size](https://img.shields.io/github/repo-size/jalp-patel-495/EventsHub?style=flat-square)
 
 ---
 
