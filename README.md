@@ -1,4 +1,5 @@
 # 🎪 EventHub - Full Stack Event Management Platform
+> A premium event hosting, ticketing, and venue-booking experience for Ahmedabad.
 
 EventHub is a modern, responsive web application designed for discovering, booking, and managing events, party plots, auditoriums, banquets, and resorts.
 
