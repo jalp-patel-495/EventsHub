@@ -15,6 +15,7 @@ from .models import Category, Event, Booking, Review, Wishlist, Coupon, ContactQ
 from .serializers import CategorySerializer, EventSerializer, BookingSerializer, ReviewSerializer, WishlistSerializer, CouponSerializer, ContactQuerySerializer, EventBookingMessageSerializer
 from notifications.models import Notification
 from events.live_events import get_live_weather, get_live_ahmedabad_events
+from .recommendation_service import get_user_event_recommendations
 
 class CustomPagination(PageNumberPagination):
     page_size = 6
@@ -956,4 +957,48 @@ class EventBookingMessageView(APIView):
                 )
 
         return Response(EventBookingMessageSerializer(msg).data, status=status.HTTP_201_CREATED)
+
+
+class EventRecommendationsView(APIView):
+    """
+    API Endpoint for fetching AI-powered event recommendations.
+    
+    Route: GET /api/events/recommendations/
+    Query Params: limit (optional, default 5)
+    
+    Behavior:
+    1. Returns top 5 personalized event recommendations based on user's bookings & wishlist content similarity using Scikit-Learn.
+    2. If user is unauthenticated or has no booking history, returns trending & top-rated events.
+    """
+    permission_classes = (permissions.AllowAny,)
+
+    def get(self, request):
+        limit = request.query_params.get('limit', 5)
+        try:
+            limit = int(limit)
+        except ValueError:
+            limit = 5
+
+        user = request.user if request.user.is_authenticated else None
+        
+        # Get AI recommendations from recommendation service
+        recommended_events = get_user_event_recommendations(user=user, limit=limit)
+        
+        # Serialize recommendations
+        serializer = EventSerializer(recommended_events, many=True, context={'request': request})
+        
+        has_history = False
+        if user and user.is_authenticated:
+            from events.models import Booking, Wishlist
+            has_history = (
+                Booking.objects.filter(user=user, status='confirmed').exists() or 
+                Wishlist.objects.filter(user=user).exists()
+            )
+
+        return Response({
+            "recommendations": serializer.data,
+            "count": len(serializer.data),
+            "recommendation_type": "personalized" if has_history else "trending"
+        }, status=status.HTTP_200_OK)
+
 

@@ -8,6 +8,7 @@ import VenuePaymentModal from '../components/VenuePaymentModal';
 import VenueDetailModal from '../components/VenueDetailModal';
 import EventDetailModal from '../components/EventDetailModal';
 import VenueBookingChatModal from '../components/VenueBookingChatModal';
+import AIEventRecommendations from '../components/AIEventRecommendations';
 
 const CustomerDashboard = () => {
   const { user } = useAuth();
@@ -657,6 +658,26 @@ const CustomerDashboard = () => {
                   </div>
                 </div>
               </div>
+
+              {/* AI Event Recommendations Section */}
+              <AIEventRecommendations 
+                title="Recommended for You" 
+                subtitle="AI-tailored event picks based on your ticket history & wishlist" 
+              />
+            </motion.div>
+          )}
+
+          {activeTab === 'recommendations' && (
+            <motion.div
+              key="recommendations"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 15 }}
+            >
+              <AIEventRecommendations 
+                title="AI Event Recommendations Engine" 
+                subtitle="Personalized suggestions generated using Scikit-Learn Content-Based Filtering" 
+              />
             </motion.div>
           )}
 

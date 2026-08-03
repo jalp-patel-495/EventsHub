@@ -19,13 +19,15 @@ from .views import (
     EventActiveCouponsView,
     OrganizerCouponManagementView,
     OrganizerCouponDetailView,
-    EventBookingMessageView
+    EventBookingMessageView,
+    EventRecommendationsView
 )
 
 router = DefaultRouter()
 router.register(r'listings', EventViewSet, basename='event')
 
 urlpatterns = [
+    path('recommendations/', EventRecommendationsView.as_view(), name='event_recommendations'),
     path('categories/', CategoryListView.as_view(), name='category_list'),
     path('bookings/', BookingCreateListView.as_view(), name='booking_list'),
     path('bookings/verify/', BookingVerifyPaymentView.as_view(), name='booking_verify'),

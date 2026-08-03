@@ -6,6 +6,7 @@ import { Search, Calendar, MapPin, Filter, Star, Heart, X, Ticket, ChevronLeft, 
 import { useNavigate, useLocation } from 'react-router-dom';
 import BookingModal from '../components/BookingModal';
 import EventDetailModal from '../components/EventDetailModal';
+import AIEventRecommendations from '../components/AIEventRecommendations';
 
 const EventExplore = () => {
   const { isAuthenticated, user } = useAuth();
@@ -164,6 +165,12 @@ const EventExplore = () => {
           Explore concerts, tech summits, workshops, garba nights, and cultural festivals happening across Ahmedabad.
         </p>
       </div>
+
+      {/* AI Recommendations Section */}
+      <AIEventRecommendations 
+        title="Recommended for You" 
+        subtitle="AI-curated events tailored to your preferences, booking history & wishlist" 
+      />
 
       {/* Search & Filter Bar */}
       <form onSubmit={handleSearchSubmit} className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-6">
