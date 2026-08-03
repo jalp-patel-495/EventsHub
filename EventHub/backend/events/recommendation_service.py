@@ -82,7 +82,7 @@ def get_user_event_recommendations(user=None, limit=5):
         # Fallback if scikit-learn is not installed in the runtime environment
         return get_trending_or_popular_events(limit=limit)
 
-    all_events = list(Event.objects.all().select_related('category', 'venue'))
+    all_events = list(Event.objects.filter(is_approved=True).select_related('category', 'venue'))
     total_events_count = len(all_events)
 
     # If database has very few events, return available events directly
@@ -149,6 +149,10 @@ def get_user_event_recommendations(user=None, limit=5):
     seen_ids = set()
 
     for idx in ranked_indices:
+        # Only recommend highly relevant events (similarity score >= 1.0)
+        if event_scores[idx] < 1.0:
+            continue
+
         event = all_events[idx]
         
         # Skip events user has already booked (avoid recommending already purchased tickets)
