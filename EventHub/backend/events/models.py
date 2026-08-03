@@ -114,3 +114,17 @@ class ContactQuery(models.Model):
 
     def __str__(self):
         return f"{self.name} - {self.subject or 'No Subject'}"
+
+
+class EventBookingMessage(models.Model):
+    booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name='messages')
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_event_booking_messages')
+    message = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f"Msg from {self.sender.email} for Ticket Booking #{self.booking.id}"
+

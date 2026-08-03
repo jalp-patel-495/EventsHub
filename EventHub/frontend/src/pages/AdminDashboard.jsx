@@ -968,7 +968,7 @@ const AdminDashboard = () => {
                         {/* Total Commission */}
                         <div className="bg-white/5 border border-white/5 p-4 rounded-xl">
                           <p className="text-[10px] text-dark-muted font-bold uppercase tracking-wider">Total Commission Earned</p>
-                          <h3 className="text-3xl font-black text-emerald-400 mt-2">
+                          <h3 className="text-3xl font-black text-white mt-2">
                             ₹{(summary.finance.admin_total_commission || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </h3>
                           <p className="text-[9px] text-dark-muted mt-1 leading-relaxed">
@@ -1029,7 +1029,7 @@ const AdminDashboard = () => {
                         {/* Customer Refunds */}
                         <div className="bg-white/5 border border-white/5 p-4 rounded-xl">
                           <p className="text-[10px] text-dark-muted font-bold uppercase tracking-wider">Total Customer Refunds (50%)</p>
-                          <h3 className="text-2xl font-black text-blue-400 mt-2">
+                          <h3 className="text-2xl font-black text-white mt-2">
                             ₹{(summary.finance.customer_refunds || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                           </h3>
                           <div className="mt-3 space-y-1 text-[9px] text-dark-muted border-t border-white/5 pt-2">
@@ -1047,7 +1047,7 @@ const AdminDashboard = () => {
                         {/* Organizer Net & Loss Impact */}
                         <div className="bg-white/5 border border-white/5 p-4 rounded-xl">
                           <p className="text-[10px] text-dark-muted font-bold uppercase tracking-wider">Organizer Sales Net Retained</p>
-                          <h3 className="text-2xl font-black text-emerald-400 mt-2">
+                          <h3 className="text-2xl font-black text-white mt-2">
                             ₹{(summary.finance.organizer_active_sales + summary.finance.organizer_cancelled_retained || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                           </h3>
                           <div className="mt-3 space-y-1 text-[9px] text-dark-muted border-t border-white/5 pt-2">
@@ -1065,7 +1065,7 @@ const AdminDashboard = () => {
                         {/* Admin Net & Loss Impact */}
                         <div className="bg-white/5 border border-white/5 p-4 rounded-xl">
                           <p className="text-[10px] text-dark-muted font-bold uppercase tracking-wider">Admin Commission Retained</p>
-                          <h3 className="text-2xl font-black text-brand-primary mt-2">
+                          <h3 className="text-2xl font-black text-white mt-2">
                             ₹{(summary.finance.admin_active_commission + summary.finance.admin_cancelled_commission || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                           </h3>
                           <div className="mt-3 space-y-1 text-[9px] text-dark-muted border-t border-white/5 pt-2">
@@ -1076,6 +1076,91 @@ const AdminDashboard = () => {
                             <div className="flex justify-between">
                               <span>Cut/Loss from Refunds (10%):</span>
                               <span className="text-red-400 font-medium">-₹{(summary.finance.admin_cut_refund_impact || 0).toLocaleString()}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                      </div>
+                    </div>
+
+                    {/* Venue Ticketing Profit & Loss Audit */}
+                    <div className="glass-panel border border-white/10 rounded-2xl p-6 shadow-lg bg-gradient-to-br from-slate-900 via-slate-950 to-blue-950/15">
+                      <div className="flex items-center space-x-2 border-b border-white/5 pb-4 mb-4">
+                        <Activity className="w-5 h-5 text-blue-400" />
+                        <h2 className="font-extrabold text-base text-dark-text uppercase tracking-wider">
+                          Venue Ticketing Sales & Cancellation Splits
+                        </h2>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        
+                        {/* Venue Gross Sales */}
+                        <div className="bg-white/5 border border-white/5 p-4 rounded-xl">
+                          <p className="text-[10px] text-dark-muted font-bold uppercase tracking-wider">Gross Venue Bookings Sales</p>
+                          <h3 className="text-2xl font-black text-white mt-2">
+                            ₹{(summary.finance.venue_gross_sales ?? ((summary.finance.completed_venues_revenue || 0) + (summary.finance.refunded_venues_revenue || 0))).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </h3>
+                          <div className="mt-3 space-y-1 text-[9px] text-dark-muted border-t border-white/5 pt-2">
+                            <div className="flex justify-between">
+                              <span>Active Bookings (80% / 20%):</span>
+                              <span className="text-dark-text font-medium">₹{(summary.finance.venue_active_sales ?? (summary.finance.completed_venues_revenue || 0)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Cancelled Bookings:</span>
+                              <span className="text-red-400 font-medium">₹{(summary.finance.venue_cancelled_sales ?? (summary.finance.refunded_venues_revenue || 0)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Customer Refunds */}
+                        <div className="bg-white/5 border border-white/5 p-4 rounded-xl">
+                          <p className="text-[10px] text-dark-muted font-bold uppercase tracking-wider">Total Customer Refunds (95%)</p>
+                          <h3 className="text-2xl font-black text-white mt-2">
+                            ₹{(summary.finance.venue_customer_refunds ?? ((summary.finance.refunded_venues_revenue || 0) * 0.95)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </h3>
+                          <div className="mt-3 space-y-1 text-[9px] text-dark-muted border-t border-white/5 pt-2">
+                            <div className="flex justify-between">
+                              <span>Cancellations Count:</span>
+                              <span className="text-dark-text font-medium">{summary.finance.venue_cancelled_count || 0} bookings</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Refund policy rate:</span>
+                              <span className="text-blue-400 font-medium">95% venue price</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Plot Owner Net Retained */}
+                        <div className="bg-white/5 border border-white/5 p-4 rounded-xl">
+                          <p className="text-[10px] text-dark-muted font-bold uppercase tracking-wider">Plot Owner Sales Net Retained</p>
+                          <h3 className="text-2xl font-black text-white mt-2">
+                            ₹{((summary.finance.owner_active_sales ?? ((summary.finance.completed_venues_revenue || 0) * 0.80)) + (summary.finance.owner_cancelled_retained || 0)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </h3>
+                          <div className="mt-3 space-y-1 text-[9px] text-dark-muted border-t border-white/5 pt-2">
+                            <div className="flex justify-between">
+                              <span>Active Owner Cut (80%):</span>
+                              <span className="text-dark-text font-medium">₹{(summary.finance.owner_active_sales ?? ((summary.finance.completed_venues_revenue || 0) * 0.80)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Cut/Loss from Refunds (80%):</span>
+                              <span className="text-red-400 font-medium">-₹{(summary.finance.owner_refund_impact ?? ((summary.finance.refunded_venues_revenue || 0) * 0.80)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Admin Venue Commission Retained */}
+                        <div className="bg-white/5 border border-white/5 p-4 rounded-xl">
+                          <p className="text-[10px] text-dark-muted font-bold uppercase tracking-wider">Admin Commission Retained</p>
+                          <h3 className="text-2xl font-black text-white mt-2">
+                            ₹{(summary.finance.admin_venue_commission || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </h3>
+                          <div className="mt-3 space-y-1 text-[9px] text-dark-muted border-t border-white/5 pt-2">
+                            <div className="flex justify-between">
+                              <span>Active Admin Cut (20%):</span>
+                              <span className="text-dark-text font-medium">₹{(summary.finance.admin_venue_active_commission ?? ((summary.finance.completed_venues_revenue || 0) * 0.20)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Cut/Loss from Refunds (15%):</span>
+                              <span className="text-red-400 font-medium">-₹{(summary.finance.admin_venue_refund_impact ?? ((summary.finance.refunded_venues_revenue || 0) * 0.15)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                             </div>
                           </div>
                         </div>

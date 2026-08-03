@@ -100,6 +100,7 @@ const OrganizerDashboard = () => {
   const [bookingError, setBookingError] = useState('');
   const [bookingActionLoading, setBookingActionLoading] = useState(false);
   const [chatModalBooking, setChatModalBooking] = useState(null);
+  const [chatModalType, setChatModalType] = useState('venue');
   const [venueFilter, setVenueFilter] = useState('all'); // 'all' | 'available' | 'booked'
 
   const [pendingEventData, setPendingEventData] = useState(null);
@@ -1042,16 +1043,28 @@ const OrganizerDashboard = () => {
                           </td>
                           <td className="px-6 py-4 text-xs text-dark-muted">{new Date(booking.created_at).toLocaleDateString()}</td>
                           <td className="px-6 py-4 text-right text-xs">
-                            {booking.refund_requested ? (
+                            <div className="flex items-center justify-end space-x-2">
                               <button
-                                onClick={() => setRefundConfirmBookingId(booking.id)}
-                                className="bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/15 px-3 py-1.5 rounded-lg font-bold text-[10px] transition-colors"
+                                onClick={() => {
+                                  setChatModalType('event');
+                                  setChatModalBooking(booking);
+                                }}
+                                className="px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                                title="Direct Message Customer"
                               >
-                                Approve Refund
+                                <MessageSquare className="w-3.5 h-3.5" />
+                                <span>Message Customer</span>
                               </button>
-                            ) : (
-                              <span className="text-[10px] text-dark-muted font-semibold">—</span>
-                            )}
+
+                              {booking.refund_requested && (
+                                <button
+                                  onClick={() => setRefundConfirmBookingId(booking.id)}
+                                  className="bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/15 px-3 py-1.5 rounded-lg font-bold text-[10px] transition-colors"
+                                >
+                                  Approve Refund
+                                </button>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       ))
@@ -1296,10 +1309,13 @@ const OrganizerDashboard = () => {
                                 </span>
                               </td>
                               <td className="px-6 py-4 text-right flex items-center justify-end space-x-2">
-                                {vb.status === 'approved' && (
+                                {(vb.status === 'approved' || vb.status === 'pending') && (
                                   <button
-                                    onClick={() => setChatModalBooking(vb)}
-                                    className="px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"
+                                    onClick={() => {
+                                      setChatModalType('venue');
+                                      setChatModalBooking(vb);
+                                    }}
+                                    className="px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
                                     title="Direct Message Venue Owner"
                                   >
                                     <MessageSquare className="w-3.5 h-3.5" />
@@ -2265,6 +2281,7 @@ const OrganizerDashboard = () => {
 
       <VenueBookingChatModal
         booking={chatModalBooking}
+        type={chatModalType}
         isOpen={!!chatModalBooking}
         onClose={() => setChatModalBooking(null)}
         currentUser={user}

@@ -2,14 +2,20 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import api from '../api/api';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageSquare, Send, X, Loader2, Sparkles } from 'lucide-react';
+import { MessageSquare, Send, X, Loader2, Sparkles, Building, Calendar, User } from 'lucide-react';
 
-const VenueBookingChatModal = ({ booking, isOpen, onClose, currentUser }) => {
+const VenueBookingChatModal = ({ booking, isOpen, onClose, currentUser, type }) => {
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef(null);
+
+  // Determine booking type (event ticket booking vs venue plot booking)
+  const isEventBooking = type === 'event' || Boolean(booking?.event_details || booking?.event);
+  const endpoint = isEventBooking 
+    ? `events/bookings/${booking?.id}/messages/` 
+    : `venues/bookings/${booking?.id}/messages/`;
 
   const isVenueOwner = currentUser?.id === booking?.venue_details?.owner || currentUser?.role === 'plot_owner';
 
@@ -17,7 +23,7 @@ const VenueBookingChatModal = ({ booking, isOpen, onClose, currentUser }) => {
     if (!booking || !booking.id) return;
     try {
       setLoading(true);
-      const res = await api.get(`venues/bookings/${booking.id}/messages/`);
+      const res = await api.get(endpoint);
       setMessages(res.data || []);
     } catch (err) {
       console.error("Failed to load messages:", err);
@@ -32,7 +38,7 @@ const VenueBookingChatModal = ({ booking, isOpen, onClose, currentUser }) => {
       const interval = setInterval(fetchMessages, 4000); // Auto refresh every 4s
       return () => clearInterval(interval);
     }
-  }, [isOpen, booking?.id]);
+  }, [isOpen, booking?.id, endpoint]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -47,7 +53,7 @@ const VenueBookingChatModal = ({ booking, isOpen, onClose, currentUser }) => {
     setSending(true);
 
     try {
-      const res = await api.post(`venues/bookings/${booking.id}/messages/`, { message: textToSend });
+      const res = await api.post(endpoint, { message: textToSend });
       setMessages(prev => [...prev, res.data]);
     } catch (err) {
       console.error("Failed to send message:", err);
@@ -60,9 +66,35 @@ const VenueBookingChatModal = ({ booking, isOpen, onClose, currentUser }) => {
 
   if (!isOpen || !booking) return null;
 
-  const recipientName = isVenueOwner 
-    ? (booking.organizer_details ? `${booking.organizer_details.first_name || ''} ${booking.organizer_details.last_name || ''}`.trim() || booking.organizer_details.email : "Organizer")
-    : (booking.venue_details ? `${booking.venue_details.name} (Owner)` : "Venue Owner");
+  // Determine Recipient Display Name
+  let recipientName = "User";
+  if (isEventBooking) {
+    const isCustomer = currentUser?.id === booking?.user || currentUser?.id === booking?.user_details?.id || currentUser?.role === 'customer';
+    const isOrganizer = currentUser?.id === booking?.event_details?.organizer || currentUser?.role === 'organizer';
+    
+    if (isCustomer) {
+      const org = booking.event_details?.organizer_details;
+      recipientName = org ? `${org.first_name || ''} ${org.last_name || ''}`.trim() || org.email : "Event Organizer";
+    } else if (isOrganizer) {
+      const cust = booking.user_details;
+      recipientName = cust ? `${cust.first_name || ''} ${cust.last_name || ''}`.trim() || cust.email : "Customer";
+    } else {
+      const cust = booking.user_details;
+      recipientName = cust ? `${cust.first_name || ''} ${cust.last_name || ''}`.trim() || cust.email : "Customer";
+    }
+  } else {
+    // Venue Plot Booking
+    if (isVenueOwner) {
+      const booker = booking.organizer_details;
+      recipientName = booker ? `${booker.first_name || ''} ${booker.last_name || ''}`.trim() || booker.email : "Booker";
+    } else {
+      recipientName = booking.venue_details ? `${booking.venue_details.name} (Venue Owner)` : "Venue Owner";
+    }
+  }
+
+  const titleText = isEventBooking 
+    ? (booking.event_details?.title || "Event Booking")
+    : (booking.venue_details?.name || "Venue Plot Booking");
 
   const modalJSX = (
     <AnimatePresence>
@@ -85,9 +117,9 @@ const VenueBookingChatModal = ({ booking, isOpen, onClose, currentUser }) => {
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="font-extrabold text-base text-slate-100 flex items-center gap-2">
-                  <span className="truncate">Direct Message Chat</span>
+                  <span className="truncate">{titleText}</span>
                   <span className="text-[10px] bg-emerald-500/15 text-emerald-400 font-bold px-2.5 py-0.5 rounded-full uppercase border border-emerald-500/30 shrink-0">
-                    Booking #{booking.id}
+                    #{booking.id}
                   </span>
                 </h3>
                 <p className="text-xs text-slate-400 mt-0.5 truncate">
@@ -96,7 +128,7 @@ const VenueBookingChatModal = ({ booking, isOpen, onClose, currentUser }) => {
               </div>
             </div>
             
-            {/* Prominent Red Close Button */}
+            {/* Close Button */}
             <button
               onClick={onClose}
               className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 border border-red-500/20 rounded-xl transition-all flex items-center space-x-1 font-bold text-xs shrink-0 cursor-pointer"
@@ -119,7 +151,7 @@ const VenueBookingChatModal = ({ booking, isOpen, onClose, currentUser }) => {
                 <Sparkles className="w-8 h-8 text-blue-400 opacity-80 mb-2" />
                 <p className="text-sm font-bold text-slate-200">No messages yet</p>
                 <p className="text-xs text-slate-400 mt-1 max-w-xs leading-relaxed">
-                  Start the conversation! Type a message below to discuss timings, decoration, catering, or event entry details.
+                  Start the conversation! Send a message below regarding entry details, timings, catering, or event queries.
                 </p>
               </div>
             ) : (
@@ -129,7 +161,7 @@ const VenueBookingChatModal = ({ booking, isOpen, onClose, currentUser }) => {
 
                 const senderName = msg.sender_details 
                   ? `${msg.sender_details.first_name || ''} ${msg.sender_details.last_name || ''}`.trim() || msg.sender_details.email 
-                  : (isMe ? "You" : "Other User");
+                  : (isMe ? "You" : "User");
 
                 return (
                   <div

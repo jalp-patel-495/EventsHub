@@ -11,8 +11,8 @@ from django.db.models import Q
 from django.utils import timezone
 from decimal import Decimal
 
-from .models import Category, Event, Booking, Review, Wishlist, Coupon, ContactQuery
-from .serializers import CategorySerializer, EventSerializer, BookingSerializer, ReviewSerializer, WishlistSerializer, CouponSerializer, ContactQuerySerializer
+from .models import Category, Event, Booking, Review, Wishlist, Coupon, ContactQuery, EventBookingMessage
+from .serializers import CategorySerializer, EventSerializer, BookingSerializer, ReviewSerializer, WishlistSerializer, CouponSerializer, ContactQuerySerializer, EventBookingMessageSerializer
 from notifications.models import Notification
 from events.live_events import get_live_weather, get_live_ahmedabad_events
 
@@ -874,3 +874,86 @@ class LiveEventsRecentSalesView(APIView):
                 "timestamp": booking.created_at.isoformat() if booking.created_at else None,
             })
         return Response(recent_live_bookings_data, status=status.HTTP_200_OK)
+
+
+class EventBookingMessageView(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get(self, request, booking_id):
+        booking = get_object_or_404(Booking, pk=booking_id)
+        is_customer = (booking.user == request.user)
+        is_organizer = (booking.event.organizer == request.user)
+        is_venue_owner = (booking.event.venue and booking.event.venue.owner == request.user)
+        is_admin = (getattr(request.user, 'role', '') == 'admin' or request.user.is_staff)
+
+        if not (is_customer or is_organizer or is_venue_owner or is_admin):
+            return Response({"error": "You do not have permission to view messages for this booking."}, status=status.HTTP_403_FORBIDDEN)
+
+        messages = EventBookingMessage.objects.filter(booking=booking).select_related('sender').order_by('created_at')
+        return Response(EventBookingMessageSerializer(messages, many=True).data)
+
+    def post(self, request, booking_id):
+        booking = get_object_or_404(Booking, pk=booking_id)
+        is_customer = (booking.user == request.user)
+        is_organizer = (booking.event.organizer == request.user)
+        is_venue_owner = (booking.event.venue and booking.event.venue.owner == request.user)
+        is_admin = (getattr(request.user, 'role', '') == 'admin' or request.user.is_staff)
+
+        if not (is_customer or is_organizer or is_venue_owner or is_admin):
+            return Response({"error": "You do not have permission to send messages for this booking."}, status=status.HTTP_403_FORBIDDEN)
+
+        text = request.data.get('message', '').strip()
+        if not text:
+            return Response({"error": "Message content cannot be empty."}, status=status.HTTP_400_BAD_REQUEST)
+
+        msg = EventBookingMessage.objects.create(
+            booking=booking,
+            sender=request.user,
+            message=text
+        )
+
+        sender_name = request.user.first_name or request.user.email
+
+        # Send notifications
+        if is_customer:
+            # Customer -> Organizer (and Venue Owner if applicable)
+            Notification.objects.create(
+                user=booking.event.organizer,
+                title="New Message from Customer",
+                message=f"{sender_name} sent a message regarding booking #{booking.id} ({booking.event.title}): '{text[:60]}...'"
+            )
+            if booking.event.venue and booking.event.venue.owner and booking.event.venue.owner != booking.event.organizer:
+                Notification.objects.create(
+                    user=booking.event.venue.owner,
+                    title="New Message from Customer",
+                    message=f"{sender_name} sent a message regarding ticket booking #{booking.id} for event at {booking.event.venue.name}: '{text[:60]}...'"
+                )
+        elif is_organizer:
+            # Organizer -> Customer
+            Notification.objects.create(
+                user=booking.user,
+                title="New Message from Organizer",
+                message=f"{sender_name} sent a message regarding your ticket booking #{booking.id} ({booking.event.title}): '{text[:60]}...'"
+            )
+            if booking.event.venue and booking.event.venue.owner and booking.event.venue.owner != request.user:
+                Notification.objects.create(
+                    user=booking.event.venue.owner,
+                    title="New Message from Organizer",
+                    message=f"{sender_name} sent a message regarding ticket booking #{booking.id} ({booking.event.title}): '{text[:60]}...'"
+                )
+        elif is_venue_owner:
+            # Venue Owner -> Customer & Organizer
+            Notification.objects.create(
+                user=booking.user,
+                title="New Message from Venue Owner",
+                message=f"{sender_name} sent a message regarding your ticket booking #{booking.id} ({booking.event.title}): '{text[:60]}...'"
+            )
+            if booking.event.organizer != request.user:
+                Notification.objects.create(
+                    user=booking.event.organizer,
+                    title="New Message from Venue Owner",
+                    message=f"{sender_name} sent a message regarding ticket booking #{booking.id} ({booking.event.title}): '{text[:60]}...'"
+                )
+
+        return Response(EventBookingMessageSerializer(msg).data, status=status.HTTP_201_CREATED)
+

@@ -1227,6 +1227,13 @@ const PlotOwnerDashboard = () => {
                             {booking.status === 'pending' && (
                               <div className="flex justify-end space-x-2">
                                 <button
+                                  onClick={() => setChatModalBooking(booking)}
+                                  className="p-1.5 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 rounded-lg transition-all"
+                                  title="Direct Message Booker"
+                                >
+                                  <MessageSquare className="w-4 h-4" />
+                                </button>
+                                <button
                                   onClick={() => handleBookingAction(booking.id, 'approve')}
                                   className="p-1.5 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 rounded-lg transition-all"
                                   title="Approve"

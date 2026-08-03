@@ -25,6 +25,7 @@ const CustomerDashboard = () => {
   // Detail Modal States
   const [selectedDetailEvent, setSelectedDetailEvent] = useState(null);
   const [chatModalBooking, setChatModalBooking] = useState(null);
+  const [chatModalType, setChatModalType] = useState('venue');
 
   // Review & Rating Modal States
   const [showReviewModal, setShowReviewModal] = useState(false);
@@ -757,7 +758,39 @@ const CustomerDashboard = () => {
                           </span>
                         </div>
                         {booking.status === 'confirmed' && (
-                          <div className="flex space-x-2" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setChatModalType('event');
+                                setChatModalBooking(booking);
+                              }}
+                              className="px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                              title="Direct Message Event Organizer"
+                            >
+                              <MessageSquare className="w-3.5 h-3.5" />
+                              <span>Message Organizer</span>
+                            </button>
+
+                            {booking.event_details?.venue_details?.owner && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setChatModalType('venue');
+                                  setChatModalBooking({
+                                    id: booking.id,
+                                    venue_details: booking.event_details.venue_details,
+                                    organizer_details: user
+                                  });
+                                }}
+                                className="px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                                title="Direct Message Venue Owner"
+                              >
+                                <Building className="w-3.5 h-3.5" />
+                                <span>Message Venue Owner</span>
+                              </button>
+                            )}
+
                             <a
                               href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(booking.event_details.location)}`}
                               target="_blank"
@@ -927,13 +960,14 @@ const CustomerDashboard = () => {
                               </a>
                             )}
 
-                            {vb.status === 'approved' && (
+                            {(vb.status === 'approved' || vb.status === 'pending') && (
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
+                                  setChatModalType('venue');
                                   setChatModalBooking(vb);
                                 }}
-                                className="px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"
+                                className="px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
                                 title="Direct Message Venue Owner"
                               >
                                 <MessageSquare className="w-3.5 h-3.5" />
@@ -1958,6 +1992,7 @@ const CustomerDashboard = () => {
 
       <VenueBookingChatModal
         booking={chatModalBooking}
+        type={chatModalType}
         isOpen={!!chatModalBooking}
         onClose={() => setChatModalBooking(null)}
         currentUser={user}

@@ -80,6 +80,19 @@ class AdminSummaryView(views.APIView):
         organizer_cancelled_retained = float(refunded_events_revenue) * 0.40
         organizer_refund_impact = float(refunded_events_revenue) * 0.40
 
+        # Detailed venue ticket sales splits
+        venue_gross_sales = float(completed_venues_revenue) + float(refunded_venues_revenue)
+        venue_cancelled_count = refunded_venue_bookings.count()
+        venue_active_sales = float(completed_venues_revenue)
+        venue_cancelled_sales = float(refunded_venues_revenue)
+        admin_venue_active_commission = float(completed_venues_revenue) * 0.20
+        admin_venue_cancelled_commission = float(refunded_venues_revenue) * 0.05
+        admin_venue_refund_impact = float(refunded_venues_revenue) * 0.15
+        venue_customer_refunds = float(refunded_venues_revenue) * 0.95
+        owner_active_sales = float(completed_venues_revenue) * 0.80
+        owner_cancelled_retained = 0.0
+        owner_refund_impact = float(refunded_venues_revenue) * 0.80
+
         # Commission calculations
         # Admin gets 20% on active bookings, 10% on refunded bookings
         admin_organizer_commission = (float(completed_events_revenue) * 0.20) + (float(refunded_events_revenue) * 0.10)
@@ -195,7 +208,20 @@ class AdminSummaryView(views.APIView):
                 "customer_refunds": customer_refunds,
                 "organizer_active_sales": organizer_active_sales,
                 "organizer_cancelled_retained": organizer_cancelled_retained,
-                "organizer_refund_impact": organizer_refund_impact
+                "organizer_refund_impact": organizer_refund_impact,
+
+                # Detailed venue stats
+                "venue_gross_sales": venue_gross_sales,
+                "venue_active_sales": venue_active_sales,
+                "venue_cancelled_sales": venue_cancelled_sales,
+                "venue_cancelled_count": venue_cancelled_count,
+                "admin_venue_active_commission": admin_venue_active_commission,
+                "admin_venue_cancelled_commission": admin_venue_cancelled_commission,
+                "admin_venue_refund_impact": admin_venue_refund_impact,
+                "venue_customer_refunds": venue_customer_refunds,
+                "owner_active_sales": owner_active_sales,
+                "owner_cancelled_retained": owner_cancelled_retained,
+                "owner_refund_impact": owner_refund_impact
             },
             "pending": {
                 "organizers": pending_organizers,

@@ -18,7 +18,8 @@ from .views import (
     LiveEventsRecentSalesView,
     EventActiveCouponsView,
     OrganizerCouponManagementView,
-    OrganizerCouponDetailView
+    OrganizerCouponDetailView,
+    EventBookingMessageView
 )
 
 router = DefaultRouter()
@@ -31,6 +32,7 @@ urlpatterns = [
     path('bookings/scan-verify/', BookingScanVerifyView.as_view(), name='booking_scan_verify'),
     path('bookings/<int:booking_id>/cancel/', BookingCancelView.as_view(), name='booking_cancel'),
     path('bookings/<int:booking_id>/approve-refund/', OrganizerRefundApproveView.as_view(), name='booking_approve_refund'),
+    path('bookings/<int:booking_id>/messages/', EventBookingMessageView.as_view(), name='event_booking_messages'),
     path('coupons/apply/', ApplyCouponView.as_view(), name='coupon_apply'),
     path('coupons/organizer/', OrganizerCouponManagementView.as_view(), name='organizer_coupons'),
     path('coupons/organizer/<int:pk>/', OrganizerCouponDetailView.as_view(), name='organizer_coupon_detail'),

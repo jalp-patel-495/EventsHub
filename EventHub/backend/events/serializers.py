@@ -1,10 +1,17 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from .models import Category, Event, Booking, Review, Wishlist, Coupon, ContactQuery
+from .models import Category, Event, Booking, Review, Wishlist, Coupon, ContactQuery, EventBookingMessage
 from accounts.serializers import UserSerializer
 from venues.serializers import VenueSerializer
 
 User = get_user_model()
+
+class EventBookingMessageSerializer(serializers.ModelSerializer):
+    sender_details = UserSerializer(source='sender', read_only=True)
+
+    class Meta:
+        model = EventBookingMessage
+        fields = ('id', 'booking', 'sender', 'sender_details', 'message', 'created_at')
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
@@ -70,13 +77,14 @@ class BookingSerializer(serializers.ModelSerializer):
     user_details = UserSerializer(source='user', read_only=True)
     event_details = EventSerializer(source='event', read_only=True)
     coupon_details = CouponSerializer(source='coupon', read_only=True)
+    messages = EventBookingMessageSerializer(many=True, read_only=True)
 
     class Meta:
         model = Booking
         fields = (
             'id', 'user', 'user_details', 'event', 'event_details', 'tickets_count', 
             'total_price', 'status', 'payment_status', 'payment_id', 'coupon', 'coupon_details', 
-            'razorpay_order_id', 'razorpay_payment_id', 'qr_code_hash', 'is_checked_in', 'ticket_category', 'refund_requested', 'created_at'
+            'razorpay_order_id', 'razorpay_payment_id', 'qr_code_hash', 'is_checked_in', 'ticket_category', 'refund_requested', 'messages', 'created_at'
         )
         read_only_fields = (
             'user', 'event', 'total_price', 'status', 'payment_status', 'payment_id', 
