@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Menu, X, LogOut, User as UserIcon, Calendar, Building, ShieldAlert, ChevronDown, Bell, Check, CheckCheck, Sun, Moon, QrCode, LayoutDashboard, Mail, Heart, Compass, Zap, Ticket, MessageSquare } from 'lucide-react';
+import { Menu, X, LogOut, User as UserIcon, Calendar, Building, ShieldAlert, ChevronDown, Bell, Check, CheckCheck, Sun, Moon, QrCode, LayoutDashboard, Mail, Heart, Compass, Zap, Ticket, MessageSquare, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api, { BACKEND_URL, WS_URL } from '../api/api';
 import VenueBookingChatModal from './VenueBookingChatModal';
@@ -243,6 +243,7 @@ const Navbar = () => {
     : [
         { name: 'Home', path: '/' },
         { name: 'Explore', path: '/explore' },
+        { name: 'Recommended', path: '/recommended' },
         { name: 'Venues', path: '/venues' },
         { name: 'Live Feed', path: '/live-feed' },
         { name: 'Contact', path: '/contact' },
@@ -261,6 +262,7 @@ const Navbar = () => {
       default: // customer
         return [
           { name: 'Dashboard', path: '/bookings', icon: <LayoutDashboard className="w-4 h-4" /> },
+          { name: 'Recommended', path: '/recommended', icon: <Sparkles className="w-4 h-4 text-blue-400" /> },
           { name: 'Explore', path: '/explore', icon: <Compass className="w-4 h-4" /> },
           { name: 'Live Feed', path: '/live-feed', icon: <Zap className="w-4 h-4" /> },
           { name: 'Venue Rentals', path: '/bookings?tab=venues', icon: <Building className="w-4 h-4" /> },
