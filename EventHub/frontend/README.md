@@ -1,16 +1,44 @@
-# React + Vite
+# 🎪 EventHub - Frontend Module
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+> **React 19 + Vite + Tailwind CSS + Framer Motion + Three.js**
 
-Currently, two official plugins are available:
+This directory contains the user interface and client-side web application for **EventHub**.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+---
 
-## React Compiler
+## ⚡ Features & Capabilities
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Interactive 3D Visuals**: Animated 3D event tickets powered by Three.js and Framer Motion.
+- **Role-Based Portals**:
+  - Customer Portal (Browse events/venues, seat selection, AI chatbot, AI catering planner, Wishlist, PDF ticket generator).
+  - Organizer Dashboard (Event creation, active coupon management, mobile/web QR code scanner for gate entry verification).
+  - Plot Owner Dashboard (Venue listing, slot pricing, optional add-on packages, request approvals).
+  - Admin Portal (System analytics, user role approvals, KYC event/venue approval, refund oversight).
+- **Real-Time Communication**: Live chat widget via WebSockets (`ws://localhost:8000/ws`).
+- **QR Scanner**: Built-in camera-based QR code entry validator powered by `html5-qrcode`.
+- **Invoicing & E-Tickets**: Client-side PDF e-ticket and itemized receipt downloads (`jsPDF` & `html2canvas`).
 
-## Expanding the Oxlint configuration
+---
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+## 🛠️ Scripts & Commands
+
+```bash
+# Install dependencies
+npm install
+
+# Start Vite development server
+npm run dev
+
+# Build production bundle
+npm run build
+
+# Preview production build
+npm run preview
+
+# Run Oxlint
+npm run lint
+```
+
+---
+
+© 2026 EventHub. Developed by **Jalp Patel** ([@jalp-patel-495](https://github.com/jalp-patel-495)).
