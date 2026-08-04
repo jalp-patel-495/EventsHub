@@ -12,10 +12,10 @@ The platform delivers a seamless end-to-end experience featuring AI-powered even
 
 [![YOLO](https://img.shields.io/badge/GitHub%20Achievement-YOLO-FF4500?style=for-the-badge&logo=github&logoColor=white)](https://github.com/jalp-patel-495)
 [![Pull Shark](https://img.shields.io/badge/GitHub%20Achievement-Pull%20Shark-00D2FF?style=for-the-badge&logo=github&logoColor=white)](https://github.com/jalp-patel-495)
+[![Pair Extraordinaire](https://img.shields.io/badge/GitHub%20Achievement-Pair%20Extraordinaire-2ea44f?style=for-the-badge&logo=github&logoColor=white)](https://github.com/jalp-patel-495)
 [![Top Language](https://img.shields.io/github/languages/top/jalp-patel-495/EventsHub?style=for-the-badge)](https://github.com/jalp-patel-495/EventsHub)
 [![Repo Size](https://img.shields.io/github/repo-size/jalp-patel-495/EventsHub?style=for-the-badge)](https://github.com/jalp-patel-495/EventsHub)
 [![Stars](https://img.shields.io/github/stars/jalp-patel-495/EventsHub?style=for-the-badge)](https://github.com/jalp-patel-495/EventsHub)
-
 
 ---
 
