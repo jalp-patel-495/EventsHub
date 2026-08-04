@@ -94,16 +94,20 @@ class CateringServiceViewSet(viewsets.ModelViewSet):
         rating = request.data.get('rating')
         comment = request.data.get('comment', '')
 
-        if not rating or int(rating) < 1 or int(rating) > 5:
+        try:
+            rating_val = int(rating)
+            if rating_val < 1 or rating_val > 5:
+                raise ValueError()
+        except (ValueError, TypeError):
             return Response(
-                {"error": "Please provide a rating between 1 and 5."},
+                {"error": "Please provide a valid rating between 1 and 5."},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
         review = CateringReview.objects.create(
             catering_service=service,
             user=request.user,
-            rating=rating,
+            rating=rating_val,
             comment=comment
         )
         serializer = CateringReviewSerializer(review)
@@ -132,7 +136,12 @@ class CateringPackageViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         service_id = self.request.data.get('catering_service')
-        service = CateringService.objects.get(id=service_id)
+        try:
+            service = CateringService.objects.get(id=service_id)
+        except CateringService.DoesNotExist:
+            from rest_framework.exceptions import ValidationError
+            raise ValidationError({"catering_service": "Invalid catering service ID."})
+            
         if service.owner != self.request.user:
             raise permissions.exceptions.PermissionDenied("You are not the owner of this service.")
         serializer.save()

@@ -18,19 +18,23 @@ from .views import (
     LiveEventsRecentSalesView,
     EventActiveCouponsView,
     OrganizerCouponManagementView,
-    OrganizerCouponDetailView
+    OrganizerCouponDetailView,
+    EventBookingMessageView,
+    EventRecommendationsView
 )
 
 router = DefaultRouter()
 router.register(r'listings', EventViewSet, basename='event')
 
 urlpatterns = [
+    path('recommendations/', EventRecommendationsView.as_view(), name='event_recommendations'),
     path('categories/', CategoryListView.as_view(), name='category_list'),
     path('bookings/', BookingCreateListView.as_view(), name='booking_list'),
     path('bookings/verify/', BookingVerifyPaymentView.as_view(), name='booking_verify'),
     path('bookings/scan-verify/', BookingScanVerifyView.as_view(), name='booking_scan_verify'),
     path('bookings/<int:booking_id>/cancel/', BookingCancelView.as_view(), name='booking_cancel'),
     path('bookings/<int:booking_id>/approve-refund/', OrganizerRefundApproveView.as_view(), name='booking_approve_refund'),
+    path('bookings/<int:booking_id>/messages/', EventBookingMessageView.as_view(), name='event_booking_messages'),
     path('coupons/apply/', ApplyCouponView.as_view(), name='coupon_apply'),
     path('coupons/organizer/', OrganizerCouponManagementView.as_view(), name='organizer_coupons'),
     path('coupons/organizer/<int:pk>/', OrganizerCouponDetailView.as_view(), name='organizer_coupon_detail'),

@@ -6,13 +6,15 @@ import { Mail, Lock, User, Phone, CheckCircle2, AlertCircle, Eye, EyeOff, Sparkl
 import ThreeDEventBackground from '../components/ThreeDEventBackground';
 import api from '../api/api';
 
+import { validateName, validatePhone, validateEmail } from '../utils/validation';
+
 const Register = () => {
   const { register, isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     if (isAuthenticated && user) {
-      const dashboardPath = user.role === 'admin' ? '/admin-dashboard' : user.role === 'organizer' ? '/organizer/events' : user.role === 'plot_owner' ? '/venues/manage' : '/events';
+      const dashboardPath = user.role === 'admin' ? '/admin-dashboard' : user.role === 'organizer' ? '/organizer/events' : user.role === 'plot_owner' ? '/venues/dashboard' : '/events';
       navigate(dashboardPath, { replace: true });
     }
   }, [isAuthenticated, user, navigate]);
@@ -42,29 +44,27 @@ const Register = () => {
     setErrorMsg('');
 
     // Detailed Validations
-    if (!firstName.trim() || !lastName.trim()) {
-      setErrorMsg('First Name and Last Name are required.');
+    const firstNameErr = validateName(firstName, 'First Name');
+    if (firstNameErr) {
+      setErrorMsg(firstNameErr);
       return;
     }
 
-    const nameRegex = /^[A-Za-z]+$/;
-    if (!nameRegex.test(firstName.trim())) {
-      setErrorMsg('First Name must only contain alphabetical characters.');
-      return;
-    }
-    if (!nameRegex.test(lastName.trim())) {
-      setErrorMsg('Last Name must only contain alphabetical characters.');
+    const lastNameErr = validateName(lastName, 'Last Name');
+    if (lastNameErr) {
+      setErrorMsg(lastNameErr);
       return;
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      setErrorMsg('Please enter a valid email address.');
+    const emailErr = validateEmail(email);
+    if (emailErr) {
+      setErrorMsg(emailErr);
       return;
     }
 
-    if (!phone || phone.length !== 10) {
-      setErrorMsg('Phone number must be exactly 10 digits.');
+    const phoneErr = validatePhone(phone);
+    if (phoneErr) {
+      setErrorMsg(phoneErr);
       return;
     }
 
@@ -206,7 +206,7 @@ const Register = () => {
               {step === 1 ? 'Join the Hub' : 'Verify Your Email'}
             </h2>
             <p className="text-sm text-dark-muted mt-2">
-              {step === 1 ? 'Sign up for Ahmedabad Event Hub' : 'Enter the 6-digit verification code sent to your Gmail inbox'}
+              {step === 1 ? 'Sign up for Ahmedabad Event Hub' : 'Enter the 6-digit verification code sent to your email (check Inbox & Spam/Junk folder)'}
             </p>
           </div>
 
@@ -451,8 +451,22 @@ const Register = () => {
                 )}
               </button>
 
-              <div className="flex justify-between items-center text-xs mt-2">
-                <span className="text-dark-muted">Didn't receive the email?</span>
+              <div className="flex flex-col sm:flex-row justify-between items-center text-xs space-y-2 sm:space-y-0 mt-2">
+                <div className="flex items-center space-x-1 text-dark-muted">
+                  <span>Wrong email?</span>
+                  <button
+                    type="button"
+                    disabled={loading}
+                    onClick={() => {
+                      setStep(1);
+                      setErrorMsg('');
+                      setOtpSentMessage('');
+                    }}
+                    className="text-amber-400 hover:text-amber-300 font-semibold transition-colors underline cursor-pointer"
+                  >
+                    Change Email
+                  </button>
+                </div>
                 <button
                   type="button"
                   disabled={loading}
@@ -461,7 +475,7 @@ const Register = () => {
                     setErrorMsg('');
                     setOtpSentMessage('');
                     try {
-                      const res = await api.post('accounts/resend-otp/', { email });
+                      const res = await api.post('accounts/resend-otp/', { email: email.trim().toLowerCase() });
                       setOtpSentMessage(res.data.message || 'OTP verification code resent!');
                     } catch (err) {
                       setErrorMsg(err.response?.data?.error || 'Failed to resend OTP.');

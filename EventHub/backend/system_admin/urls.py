@@ -6,6 +6,7 @@ urlpatterns = [
     path('users/', views.UserManagementView.as_view(), name='admin-users'),
     path('users/<int:pk>/toggle-active/', views.ToggleUserActiveView.as_view(), name='admin-users-toggle-active'),
     path('users/<int:pk>/approve/', views.ApproveUserView.as_view(), name='admin-users-approve'),
+    path('users/<int:pk>/message/', views.SendMessageToUserView.as_view(), name='admin-users-message'),
     path('events/', views.EventApprovalListView.as_view(), name='admin-events'),
     path('events/<int:pk>/decision/', views.ApproveRejectEventView.as_view(), name='admin-events-decision'),
     path('venues/', views.VenueApprovalListView.as_view(), name='admin-venues'),

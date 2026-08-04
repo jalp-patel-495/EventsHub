@@ -106,6 +106,150 @@ STATIC_EVENTS = [
         "image": "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=800&auto=format&fit=crop&q=80",
         "source": "Google Events",
         "url": "https://ahmedabadeventhub.com",
+    },
+    {
+        "id": "ge-8",
+        "title": "Food Donation Drive & Hunger Free Gujarat Gala",
+        "description": "Join our community initiative to distribute meal kits to under-resourced communities across Ahmedabad.",
+        "date": "2026-08-23",
+        "time": "18:00:00",
+        "location": "Tagore Memorial Hall, Paldi, Ahmedabad, Gujarat",
+        "price": 300.0,
+        "image": "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=800&auto=format&fit=crop&q=80",
+        "source": "Google Events",
+        "url": "https://ahmedabadeventhub.com",
+    },
+    {
+        "id": "ge-9",
+        "title": "Green Ahmedabad Plantation & Environmental Drive",
+        "description": "Tree planting and clean environmental drive along the green belts of Shilaj and Sanand Road.",
+        "date": "2026-08-19",
+        "time": "07:30:00",
+        "location": "Bougainvillea Luxury Farmhouse Lawn, Shilaj, Ahmedabad, Gujarat",
+        "price": 150.0,
+        "image": "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80",
+        "source": "Google Events",
+        "url": "https://ahmedabadeventhub.com",
+    },
+    {
+        "id": "ge-10",
+        "title": "Animal Welfare & Pet Adoption Drive Ahmedabad",
+        "description": "Adopt rescued pets, get free veterinary checkups, and support local animal welfare shelters in Gujarat.",
+        "date": "2026-08-15",
+        "time": "11:00:00",
+        "location": "Gulmohar Greens Golf & Resort Lawn, Sanand Road, Ahmedabad, Gujarat",
+        "price": 100.0,
+        "image": "https://images.unsplash.com/photo-1548767797-d8c844163c4c?w=800&auto=format&fit=crop&q=80",
+        "source": "Google Events",
+        "url": "https://ahmedabadeventhub.com",
+    },
+    {
+        "id": "ge-11",
+        "title": "Amdavad Hackathon 2026",
+        "description": "24-hour hackathon for student developers, designers, and innovators building AI and open-source solutions.",
+        "date": "2026-11-08",
+        "time": "09:00:00",
+        "location": "L.D. College of Engineering Auditorium, Ahmedabad, Gujarat",
+        "price": 0.0,
+        "image": "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=800&auto=format&fit=crop&q=80",
+        "source": "Google Events",
+        "url": "https://ahmedabadeventhub.com",
+    },
+    {
+        "id": "ge-12",
+        "title": "Kankaria Lake Marathon & Fitness Walk",
+        "description": "10K and 5K fitness run around Kankaria Lake, supporting health awareness and healthy lifestyles.",
+        "date": "2026-11-22",
+        "time": "06:00:00",
+        "location": "Kankaria Lakefront, Maninagar, Ahmedabad, Gujarat",
+        "price": 250.0,
+        "image": "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=800&auto=format&fit=crop&q=80",
+        "source": "Google Events",
+        "url": "https://ahmedabadeventhub.com",
+    },
+    {
+        "id": "ge-13",
+        "title": "International Kite Festival Pre-Expo",
+        "description": "Exhibition of traditional hand-carved patangs, kite flying workshops, and international artisan showcases.",
+        "date": "2027-01-08",
+        "time": "10:00:00",
+        "location": "Sabarmati Riverfront Park, Ahmedabad, Gujarat",
+        "price": 0.0,
+        "image": "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=800&auto=format&fit=crop&q=80",
+        "source": "Google Events",
+        "url": "https://ahmedabadeventhub.com",
+    },
+    {
+        "id": "ge-14",
+        "title": "AI & Machine Learning Hands-on Workshop",
+        "description": "Learn deep learning models, LLMs, and Python neural networks from industry artificial intelligence experts.",
+        "date": "2026-11-28",
+        "time": "14:00:00",
+        "location": "IIM Ahmedabad New Campus Auditorium, Vastrapur, Ahmedabad, Gujarat",
+        "price": 499.0,
+        "image": "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=800&auto=format&fit=crop&q=80",
+        "source": "Google Events",
+        "url": "https://ahmedabadeventhub.com",
+    },
+    {
+        "id": "ge-15",
+        "title": "Classical Sitar & Tabla Jugalbandi Night",
+        "description": "An enchanting evening of Indian classical raga compositions performed by maestro sitarists and tabla virtuosos.",
+        "date": "2026-12-12",
+        "time": "19:30:00",
+        "location": "Pandit Omkarnath Thakur Hall, University Area, Ahmedabad, Gujarat",
+        "price": 350.0,
+        "image": "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800&auto=format&fit=crop&q=80",
+        "source": "Google Events",
+        "url": "https://ahmedabadeventhub.com",
+    },
+    {
+        "id": "ge-16",
+        "title": "Ahmedabad Startup Founders Meetup",
+        "description": "Monthly networking and pitch feedback session for early-stage tech founders, angel investors, and incubators.",
+        "date": "2026-12-18",
+        "time": "18:30:00",
+        "location": "iHub Gujarat, Knowledge Consortium Campus, Ahmedabad, Gujarat",
+        "price": 0.0,
+        "image": "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&auto=format&fit=crop&q=80",
+        "source": "Google Events",
+        "url": "https://ahmedabadeventhub.com",
+    },
+    {
+        "id": "ge-17",
+        "title": "Fine Art Painting & Watercolor Workshop",
+        "description": "Unleash your creativity with guided watercolor painting instruction, canvas materials, and art exhibition.",
+        "date": "2026-12-20",
+        "time": "11:00:00",
+        "location": "Amdavad ni Gufa, University Area, Ahmedabad, Gujarat",
+        "price": 200.0,
+        "image": "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=800&auto=format&fit=crop&q=80",
+        "source": "Google Events",
+        "url": "https://ahmedabadeventhub.com",
+    },
+    {
+        "id": "ge-18",
+        "title": "Esports Gaming Championship Ahmedabad",
+        "description": "Competitive gaming tournament featuring Valorant, BGMI, and FIFA with cash prizes and live stream broadcasting.",
+        "date": "2026-12-27",
+        "time": "10:00:00",
+        "location": "TransStadia E-Sports Arena, Kankaria, Ahmedabad, Gujarat",
+        "price": 199.0,
+        "image": "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=800&auto=format&fit=crop&q=80",
+        "source": "Google Events",
+        "url": "https://ahmedabadeventhub.com",
+    },
+    {
+        "id": "ge-19",
+        "title": "Organic Farmers Market & Craft Fair",
+        "description": "Buy fresh organic produce, handmade pottery, eco-friendly goods, and artisanal snacks directly from Gujarat farmers.",
+        "date": "2027-01-15",
+        "time": "08:30:00",
+        "location": "Gulmohar Park Lawn, Satellite, Ahmedabad, Gujarat",
+        "price": 0.0,
+        "image": "https://images.unsplash.com/photo-1488459716781-31db52582fe9?w=800&auto=format&fit=crop&q=80",
+        "source": "Google Events",
+        "url": "https://ahmedabadeventhub.com",
     }
 ]
 
@@ -187,7 +331,7 @@ def _get_high_res_event_image(title: str, description: str, raw_image: str, used
     else:
         raw_lower = raw_image.lower()
         bad_keywords = [
-            "encrypted-tbn", "maps.gstatic", "maps.googleapis", "ssl.gstatic",
+            "maps.gstatic", "maps.googleapis", "ssl.gstatic",
             "staticmap", "streetviewpixels", "google.com/maps", "googleusercontent",
             "map", "pin", "marker", "location-pin", "place-holder"
         ]
@@ -404,6 +548,12 @@ def get_live_ahmedabad_events():
                 seen_titles.add(norm_title)
                 filtered.append(e)
         if filtered:
+            # Combine SerpAPI live events with static events so feed is always rich (15+ events)
+            for st in STATIC_EVENTS:
+                st_title = re.sub(r'\s+', ' ', st["title"].strip().lower())
+                if st_title not in seen_titles:
+                    seen_titles.add(st_title)
+                    filtered.append(st)
             return filtered
 
     # 2. Static fallback (Google Events / Ahmedabad static data)

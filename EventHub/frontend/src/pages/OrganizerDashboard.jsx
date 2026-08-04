@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import api, { BACKEND_URL } from '../api/api';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, Trash2, Edit2, Plus, Sparkles, TrendingUp, Users, IndianRupee, Star, FileText, Upload, X, ShieldAlert, MapPin, Building, CheckCircle, XCircle, LayoutDashboard, Ticket, Tag, Percent, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar, Trash2, Edit2, Plus, Sparkles, TrendingUp, Users, IndianRupee, Star, FileText, Upload, X, ShieldAlert, MapPin, Building, CheckCircle, XCircle, LayoutDashboard, Ticket, Tag, Percent, ChevronLeft, ChevronRight, ChevronDown, Eye, MessageSquare } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import VenuePaymentModal from '../components/VenuePaymentModal';
+import EventDetailModal from '../components/EventDetailModal';
+import VenueBookingChatModal from '../components/VenueBookingChatModal';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 const OrganizerDashboard = () => {
@@ -21,17 +23,20 @@ const OrganizerDashboard = () => {
   
   const routeLocation = useLocation();
   const navigate = useNavigate();
-  const activeTab = routeLocation.pathname === '/organizer/sales'
+  const path = routeLocation.pathname;
+  const activeTab = path.includes('/sales')
     ? 'bookings'
-    : routeLocation.pathname === '/organizer/reviews'
+    : path.includes('/reviews')
       ? 'reviews'
-      : routeLocation.pathname === '/organizer/analytics'
+      : path.includes('/analytics')
         ? 'analytics'
-        : routeLocation.pathname === '/organizer/refunds'
+        : path.includes('/refunds')
           ? 'refunds'
-          : routeLocation.pathname === '/organizer/offers'
+          : path.includes('/offers')
             ? 'offers'
-            : 'events';
+            : (path.includes('/rentals') || path.includes('/venues') || path.includes('/venue-rentals'))
+              ? 'venue_rentals'
+              : 'events';
   const setActiveTab = (tabId) => {
     const paths = {
       events: '/organizer/events',
@@ -39,7 +44,8 @@ const OrganizerDashboard = () => {
       reviews: '/organizer/reviews',
       analytics: '/organizer/analytics',
       refunds: '/organizer/refunds',
-      offers: '/organizer/offers'
+      offers: '/organizer/offers',
+      venue_rentals: '/organizer/rentals'
     };
     navigate(paths[tabId] || '/organizer/events');
   };
@@ -52,9 +58,10 @@ const OrganizerDashboard = () => {
   const [offerEventId, setOfferEventId] = useState('');
   const [offerLoading, setOfferLoading] = useState(false);
 
-  // Modal states (Create/Edit)
+  // Modal states (Create/Edit/Detail)
   const [modalOpen, setModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
+  const [selectedDetailEvent, setSelectedDetailEvent] = useState(null);
   
   // Form states
   const [title, setTitle] = useState('');
@@ -88,9 +95,13 @@ const OrganizerDashboard = () => {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentVenue, setPaymentVenue] = useState(null);
   const [paymentDates, setPaymentDates] = useState({ start: '', end: '' });
-
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 9;
+  const [rentModal, setRentModal] = useState({ show: false, venue: null });
+  const [bookingDates, setBookingDates] = useState({ start: '', end: '' });
+  const [bookingError, setBookingError] = useState('');
+  const [bookingActionLoading, setBookingActionLoading] = useState(false);
+  const [chatModalBooking, setChatModalBooking] = useState(null);
+  const [chatModalType, setChatModalType] = useState('venue');
+  const [venueFilter, setVenueFilter] = useState('all'); // 'all' | 'available' | 'booked'
 
   const [pendingEventData, setPendingEventData] = useState(null);
 
@@ -201,7 +212,7 @@ const OrganizerDashboard = () => {
 
   const fetchApprovedVenues = async () => {
     try {
-      const res = await api.get('venues/listings/');
+      const res = await api.get('venues/listings/?page_size=1000');
       setApprovedVenues(res.data.results || res.data);
     } catch (err) {
       console.error("Failed to fetch approved venues:", err);
@@ -221,10 +232,12 @@ const OrganizerDashboard = () => {
   };
 
   useEffect(() => {
-    fetchDashboardData();
-    fetchApprovedVenues();
-    fetchCoupons();
-  }, []);
+    if (user && user.id) {
+      fetchDashboardData();
+      fetchApprovedVenues();
+      fetchCoupons();
+    }
+  }, [user]);
 
   const handleCreateOffer = async (e) => {
     e.preventDefault();
@@ -286,6 +299,7 @@ const OrganizerDashboard = () => {
   };
 
   const fetchDashboardData = async () => {
+    if (!user || !user.id) return;
     setLoading(true);
     try {
       // Fetch organizer's listings, categories, booking purchases, and venue rentals
@@ -469,6 +483,24 @@ const OrganizerDashboard = () => {
 
         // If creating a new event, intercept and prompt for payment first
         if (!editingEvent) {
+          try {
+            const checkRes = await api.get(`venues/bookings/?venue=${venueId}`);
+            const activeBookings = checkRes.data || [];
+            const isOverlap = activeBookings.some(vb => {
+              const status = (vb.status || '').toLowerCase();
+              if (status !== 'approved' && status !== 'pending') return false;
+              return (vb.start_date <= date && vb.end_date >= date);
+            });
+
+            if (isOverlap) {
+              setFormError("This venue is already booked on the selected date. Please select another date.");
+              setFormLoading(false);
+              return;
+            }
+          } catch (err) {
+            console.error("Error checking date availability:", err);
+          }
+
           setPendingEventData({
             title: title.trim(),
             description: description.trim(),
@@ -582,11 +614,66 @@ const OrganizerDashboard = () => {
     }
   };
 
+  const handleBookVenueSubmit = async (e) => {
+    e.preventDefault();
+    setBookingError('');
+    
+    if (!bookingDates.start || !bookingDates.end) {
+      setBookingError("Please select both start and end dates.");
+      return;
+    }
+
+    if (new Date(bookingDates.start) > new Date(bookingDates.end)) {
+      setBookingError("Start date cannot be after end date.");
+      return;
+    }
+
+    setBookingActionLoading(true);
+    try {
+      const selectedVenueId = rentModal.venue.id;
+      const reqStart = bookingDates.start;
+      const reqEnd = bookingDates.end;
+
+      // Real-time backend query for all active/pending bookings of this venue plot
+      const checkRes = await api.get(`venues/bookings/?venue=${selectedVenueId}`);
+      const activeBookings = checkRes.data || [];
+
+      const isOverlap = activeBookings.some(vb => {
+        const status = (vb.status || '').toLowerCase();
+        if (status !== 'approved' && status !== 'pending') return false;
+        return (vb.start_date <= reqEnd && vb.end_date >= reqStart);
+      });
+
+      if (isOverlap) {
+        setBookingError("This venue is already booked on this date. Please select another date.");
+        setBookingActionLoading(false);
+        return;
+      }
+
+      setPaymentVenue(rentModal.venue);
+      setPaymentDates({ start: bookingDates.start, end: bookingDates.end });
+      setRentModal({ show: false, venue: null });
+      setBookingDates({ start: '', end: '' });
+      setShowPaymentModal(true);
+    } catch (err) {
+      console.error("Error checking date availability:", err);
+      setBookingError(err.response?.data?.error || "This venue is already booked on this date. Please select another date.");
+    } finally {
+      setBookingActionLoading(false);
+    }
+  };
+
+
+  // Safe array fallbacks
+  const safeEvents = Array.isArray(events) ? events : (events?.results && Array.isArray(events.results) ? events.results : []);
+  const safeBookings = Array.isArray(bookings) ? bookings : (bookings?.results && Array.isArray(bookings.results) ? bookings.results : []);
+  const safeVenueBookings = Array.isArray(venueBookings) ? venueBookings : (venueBookings?.results && Array.isArray(venueBookings.results) ? venueBookings.results : []);
+  const safeApprovedVenues = Array.isArray(approvedVenues) ? approvedVenues : (approvedVenues?.results && Array.isArray(approvedVenues.results) ? approvedVenues.results : []);
 
   // Stats calculation
-  const myEvents = events.filter(e => e.organizer === user?.id || e.organizer_details?.id === user?.id);
-  const confirmedBookings = bookings.filter(b => b.status === 'confirmed');
-  const refundedBookings = bookings.filter(b => b.status === 'cancelled');
+  const myEvents = safeEvents.filter(e => e.organizer === user?.id || e.organizer_details?.id === user?.id);
+  const confirmedBookings = safeBookings.filter(b => b.status === 'confirmed');
+  const refundedBookings = safeBookings.filter(b => b.status === 'cancelled');
 
   const totalTicketsSold = confirmedBookings.reduce((sum, b) => sum + b.tickets_count, 0);
 
@@ -615,13 +702,13 @@ const OrganizerDashboard = () => {
   }, []).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
   // Venue stats calculations for organizer
-  const activeVenues = venueBookings.filter(vb => vb.status === 'approved');
-  const cancelledVenues = venueBookings.filter(vb => vb.status === 'cancelled');
+  const activeVenues = safeVenueBookings.filter(vb => vb.status === 'approved');
+  const cancelledVenues = safeVenueBookings.filter(vb => vb.status === 'cancelled');
 
   const totalVenueSpent = activeVenues.reduce((sum, vb) => sum + parseFloat(vb.total_price), 0);
-  const totalVenueRefunded = cancelledVenues.reduce((sum, vb) => sum + parseFloat(vb.total_price) * 0.9, 0);
-  const totalVenueLoss = cancelledVenues.reduce((sum, vb) => sum + parseFloat(vb.total_price) * 0.1, 0);
-  const netVenueExpenses = totalVenueSpent + totalVenueLoss;
+  const totalVenueRefunded = cancelledVenues.reduce((sum, vb) => sum + parseFloat(vb.total_price), 0);
+  const totalVenueLoss = 0;
+  const netVenueExpenses = totalVenueSpent;
 
   if (loading) {
     return (
@@ -667,6 +754,7 @@ const OrganizerDashboard = () => {
             {activeTab === 'events' && 'Organizer Dashboard'}
             {activeTab === 'bookings' && 'Ticket Sales'}
             {activeTab === 'refunds' && 'Refund Ticket Requests'}
+            {activeTab === 'venue_rentals' && 'Venue Rentals & Plot Bookings'}
             {activeTab === 'reviews' && 'Customer Reviews'}
             {activeTab === 'analytics' && 'Revenue Analytics'}
             {activeTab === 'offers' && 'Event Promotional Offers'}
@@ -675,6 +763,7 @@ const OrganizerDashboard = () => {
             {activeTab === 'events' && 'Host events, review ticketing metrics, and manage customer sales'}
             {activeTab === 'bookings' && 'View and track all event tickets purchased by customers'}
             {activeTab === 'refunds' && 'Manage and approve cancelation refund requests submitted by attendees'}
+            {activeTab === 'venue_rentals' && 'View and manage plot venue rentals reserved for your events'}
             {activeTab === 'reviews' && 'Review feedback and ratings received from event attendees'}
             {activeTab === 'analytics' && 'Detailed overview of organizer income and event performance reports'}
             {activeTab === 'offers' && 'Set promotional discount coupon codes for your events and manage active offers'}
@@ -790,134 +879,99 @@ const OrganizerDashboard = () => {
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 15 }}
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+              className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-6"
             >
-              {(() => {
-                const totalPages = Math.ceil(myEvents.length / itemsPerPage) || 1;
-                const displayedEvents = myEvents.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-
-                return (
-                  <>
-                    {myEvents.length === 0 ? (
-                      <div className="col-span-full glass-panel text-center py-16 rounded-2xl">
-                        <Calendar className="w-12 h-12 text-dark-muted mx-auto mb-4" />
-                        <p className="text-dark-muted">You haven't created any events yet. Click "Create New Event" to get started!</p>
+              {myEvents.length === 0 ? (
+                <div className="col-span-full glass-panel text-center py-16 rounded-2xl">
+                  <Calendar className="w-12 h-12 text-dark-muted mx-auto mb-4" />
+                  <p className="text-dark-muted">You haven't created any events yet. Click "Create New Event" to get started!</p>
+                </div>
+              ) : (
+                myEvents.map((event) => (
+                  <div key={event.id} className="glass-card rounded-2xl overflow-hidden flex flex-col group">
+                    {event.image ? (
+                      <div className="relative overflow-hidden cursor-pointer" onClick={() => setSelectedDetailEvent(event)}>
+                        <img
+                          src={event.image.startsWith('http') ? event.image : `${BACKEND_URL}${event.image}`}
+                          alt={event.title}
+                          className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                        <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <span className="bg-black/60 backdrop-blur-md text-white text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5 border border-white/20">
+                            <Eye className="w-3.5 h-3.5" /> View Details
+                          </span>
+                        </div>
                       </div>
                     ) : (
-                      displayedEvents.map((event) => (
-                        <div key={event.id} className="glass-card rounded-2xl overflow-hidden flex flex-col">
-                          {event.image ? (
-                            <img
-                              src={event.image.startsWith('http') ? event.image : `${BACKEND_URL}${event.image}`}
-                              alt={event.title}
-                              className="w-full h-48 object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-48 bg-white/5 flex items-center justify-center text-dark-muted">
-                              <Calendar className="w-10 h-10" />
-                            </div>
-                          )}
-                          
-                          <div className="p-6 flex flex-col flex-grow">
-                            <div className="flex justify-between items-start mb-2">
-                              <span className="text-[10px] font-bold uppercase tracking-wider bg-white/5 text-dark-muted px-2 py-0.5 rounded">
-                                {event.category_details?.name || 'General'}
-                              </span>
-                              <span className="text-sm font-semibold text-amber-400 flex items-center space-x-0.5">
-                                <Star className="w-3.5 h-3.5 fill-amber-400" />
-                                <span>{event.rating_avg}</span>
-                              </span>
-                            </div>
-                            <h4 className="font-bold text-lg text-dark-text">{event.title}</h4>
-                            <p className="text-xs text-dark-muted mt-1">{event.date} | {event.location}</p>
-                            
-                            <div className="grid grid-cols-2 gap-4 mt-6 p-3 bg-white/5 rounded-xl border border-white/5 text-center">
-                              <div>
-                                <span className="text-[10px] font-semibold text-dark-muted uppercase">Sold</span>
-                                <p className="font-bold text-dark-text mt-0.5">{event.tickets_sold} / {event.tickets_total}</p>
-                              </div>
-                              <div>
-                                <span className="text-[10px] font-semibold text-dark-muted uppercase">Ticket Price</span>
-                                <p className="font-bold text-brand-primary mt-0.5">₹{event.price}</p>
-                              </div>
-                            </div>
-
-                            <div className="flex items-center justify-end space-x-3 mt-6 pt-4 border-t border-white/5">
-                              <button
-                                onClick={() => {
-                                  setOfferEventId(event.id);
-                                  setOfferCode('');
-                                  setOfferDiscount('');
-                                  setOfferExpiry('');
-                                  setOfferModalOpen(true);
-                                }}
-                                className="flex items-center space-x-1 text-xs text-emerald-400 hover:text-emerald-300 font-semibold transition-colors"
-                              >
-                                <Tag className="w-3.5 h-3.5" />
-                                <span>Set Offer</span>
-                              </button>
-                              <button
-                                onClick={() => handleOpenEditModal(event)}
-                                className="flex items-center space-x-1 text-xs text-brand-primary hover:text-emerald-400 font-semibold transition-colors"
-                              >
-                                <Edit2 className="w-4 h-4" />
-                                <span>Edit</span>
-                              </button>
-                              <button
-                                onClick={() => handleDeleteEvent(event.id)}
-                                className="flex items-center space-x-1 text-xs text-red-400 hover:text-red-300 font-semibold transition-colors"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                                <span>Delete</span>
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    )}
-
-                    {/* Pagination Controls Bar */}
-                    {totalPages > 1 && (
-                      <div className="col-span-full flex flex-col sm:flex-row items-center justify-between gap-4 mt-8 pt-6 border-t border-white/5">
-                        <span className="text-xs text-dark-muted font-medium">
-                          Showing <span className="text-white font-bold">{Math.min((currentPage - 1) * itemsPerPage + 1, myEvents.length)}</span> to <span className="text-white font-bold">{Math.min(currentPage * itemsPerPage, myEvents.length)}</span> of <span className="text-white font-bold">{myEvents.length}</span> events
-                        </span>
-                        <div className="flex items-center space-x-2">
-                          <button
-                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                            disabled={currentPage === 1}
-                            className="px-3.5 py-2 rounded-xl text-xs font-bold bg-white/5 border border-white/10 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/10 transition-all flex items-center space-x-1"
-                          >
-                            <ChevronLeft className="w-4 h-4" />
-                            <span>Previous</span>
-                          </button>
-                          {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
-                            <button
-                              key={pageNum}
-                              onClick={() => setCurrentPage(pageNum)}
-                              className={`w-9 h-9 rounded-xl text-xs font-bold transition-all border ${
-                                currentPage === pageNum
-                                  ? 'bg-brand-primary text-white border-brand-primary shadow-lg shadow-emerald-500/20'
-                                  : 'bg-white/5 text-dark-muted hover:text-white border-white/10 hover:bg-white/10'
-                              }`}
-                            >
-                              {pageNum}
-                            </button>
-                          ))}
-                          <button
-                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                            disabled={currentPage === totalPages}
-                            className="px-3.5 py-2 rounded-xl text-xs font-bold bg-white/5 border border-white/10 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/10 transition-all flex items-center space-x-1"
-                          >
-                            <span>Next</span>
-                            <ChevronRight className="w-4 h-4" />
-                          </button>
-                        </div>
+                      <div className="w-full h-48 bg-white/5 flex items-center justify-center text-dark-muted cursor-pointer" onClick={() => setSelectedDetailEvent(event)}>
+                        <Calendar className="w-10 h-10" />
                       </div>
                     )}
-                  </>
-                );
-              })()}
+                    
+                    <div className="p-6 flex flex-col flex-grow">
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="text-[10px] font-bold uppercase tracking-wider bg-white/5 text-dark-muted px-2 py-0.5 rounded">
+                          {event.category_details?.name || 'General'}
+                        </span>
+                        <span className="text-sm font-semibold text-amber-400 flex items-center space-x-0.5">
+                          <Star className="w-3.5 h-3.5 fill-amber-400" />
+                          <span>{event.rating_avg}</span>
+                        </span>
+                      </div>
+                      <h4 className="font-bold text-lg text-dark-text cursor-pointer hover:text-brand-primary transition-colors" onClick={() => setSelectedDetailEvent(event)}>{event.title}</h4>
+                      <p className="text-xs text-dark-muted mt-1">{event.date} | {event.location}</p>
+                      
+                      <div className="grid grid-cols-2 gap-4 mt-6 p-3 bg-white/5 rounded-xl border border-white/5 text-center">
+                        <div>
+                          <span className="text-[10px] font-semibold text-dark-muted uppercase">Sold</span>
+                          <p className="font-bold text-dark-text mt-0.5">{event.tickets_sold} / {event.tickets_total}</p>
+                        </div>
+                        <div>
+                          <span className="text-[10px] font-semibold text-dark-muted uppercase">Ticket Price</span>
+                          <p className="font-bold text-brand-primary mt-0.5">₹{event.price}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-end space-x-3 mt-6 pt-4 border-t border-white/5">
+                        <button
+                          onClick={() => setSelectedDetailEvent(event)}
+                          className="flex items-center space-x-1 text-xs text-blue-400 hover:text-blue-300 font-semibold transition-colors"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>Details</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setOfferEventId(event.id);
+                            setOfferCode('');
+                            setOfferDiscount('');
+                            setOfferExpiry('');
+                            setOfferModalOpen(true);
+                          }}
+                          className="flex items-center space-x-1 text-xs text-emerald-400 hover:text-emerald-300 font-semibold transition-colors"
+                        >
+                          <Tag className="w-3.5 h-3.5" />
+                          <span>Set Offer</span>
+                        </button>
+                        <button
+                          onClick={() => handleOpenEditModal(event)}
+                          className="flex items-center space-x-1 text-xs text-brand-primary hover:text-emerald-400 font-semibold transition-colors"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                          <span>Edit</span>
+                        </button>
+                        <button
+                          onClick={() => handleDeleteEvent(event.id)}
+                          className="flex items-center space-x-1 text-xs text-red-400 hover:text-red-300 font-semibold transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          <span>Delete</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
             </motion.div>
           )}
 
@@ -989,16 +1043,28 @@ const OrganizerDashboard = () => {
                           </td>
                           <td className="px-6 py-4 text-xs text-dark-muted">{new Date(booking.created_at).toLocaleDateString()}</td>
                           <td className="px-6 py-4 text-right text-xs">
-                            {booking.refund_requested ? (
+                            <div className="flex items-center justify-end space-x-2">
                               <button
-                                onClick={() => setRefundConfirmBookingId(booking.id)}
-                                className="bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/15 px-3 py-1.5 rounded-lg font-bold text-[10px] transition-colors"
+                                onClick={() => {
+                                  setChatModalType('event');
+                                  setChatModalBooking(booking);
+                                }}
+                                className="px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                                title="Direct Message Customer"
                               >
-                                Approve Refund
+                                <MessageSquare className="w-3.5 h-3.5" />
+                                <span>Message Customer</span>
                               </button>
-                            ) : (
-                              <span className="text-[10px] text-dark-muted font-semibold">—</span>
-                            )}
+
+                              {booking.refund_requested && (
+                                <button
+                                  onClick={() => setRefundConfirmBookingId(booking.id)}
+                                  className="bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/15 px-3 py-1.5 rounded-lg font-bold text-[10px] transition-colors"
+                                >
+                                  Approve Refund
+                                </button>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       ))
@@ -1079,90 +1145,199 @@ const OrganizerDashboard = () => {
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 15 }}
-              className="glass-panel rounded-2xl overflow-hidden"
+              className="space-y-10"
             >
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-white/5 bg-white/5 text-xs font-semibold text-dark-muted uppercase tracking-wider">
-                      <th className="px-6 py-4">Venue</th>
-                      <th className="px-6 py-4">Rental Dates</th>
-                      <th className="px-6 py-4">Pricing Details</th>
-                      <th className="px-6 py-4">Status</th>
-                      <th className="px-6 py-4 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="text-sm divide-y divide-white/5">
-                    {venueBookings.length === 0 ? (
-                      <tr>
-                        <td colSpan="5" className="text-center py-12 text-dark-muted">You haven't requested any venue rentals yet.</td>
-                      </tr>
-                    ) : (
-                      venueBookings.map((vb) => (
-                        <tr key={vb.id} className="hover:bg-white/5 transition-colors">
-                          <td className="px-6 py-4">
-                            <p className="font-bold text-dark-text">{vb.venue_details?.name}</p>
-                            <p className="text-xs text-dark-muted mt-0.5">{vb.venue_details?.location}</p>
-                            {(vb.use_catering || vb.use_dj || vb.use_decor) && (
-                              <div className="flex flex-wrap gap-1.5 mt-2">
-                                {vb.use_catering && (
-                                  <span className="text-[9px] font-bold bg-orange-500/10 text-orange-400 px-1.5 py-0.5 rounded" title={`Menu: ${vb.catering_description}`}>
-                                    🍽 Catering ({vb.catering_cuisine}) ×{vb.catering_plates}
-                                  </span>
-                                )}
-                                {vb.use_dj && (
-                                  <span className="text-[9px] font-bold bg-purple-500/10 text-purple-400 px-1.5 py-0.5 rounded" title={`Equipment: ${vb.dj_equipment}`}>
-                                    🎵 DJ ({vb.dj_package})
-                                  </span>
-                                )}
-                                {vb.use_decor && (
-                                  <span className="text-[9px] font-bold bg-pink-500/10 text-pink-400 px-1.5 py-0.5 rounded" title={`Theme: ${vb.decor_theme}`}>
-                                    🎨 Decor ({vb.decor_theme})
-                                  </span>
-                                )}
-                              </div>
-                            )}
-                          </td>
-                          <td className="px-6 py-4 font-semibold text-dark-text">
-                            {vb.start_date} to {vb.end_date}
-                          </td>
-                          <td className="px-6 py-4 font-bold">
-                            {vb.status === 'cancelled' ? (
-                              <div className="text-xs space-y-0.5">
-                                <span className="text-dark-muted block line-through">₹{vb.total_price}</span>
-                                <span className="text-emerald-400 block">Refunded (90%): ₹{(parseFloat(vb.total_price) * 0.9).toFixed(2)}</span>
-                                <span className="text-red-400 block font-normal">Retained (10%): ₹{(parseFloat(vb.total_price) * 0.1).toFixed(2)}</span>
-                              </div>
+              {/* Available Venues Showcase (4 Cards per row) */}
+              <div>
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h2 className="text-xl font-bold text-dark-text flex items-center gap-2">
+                      <Building className="w-5 h-5 text-brand-primary" />
+                      <span>Available Venue Plots & Locations</span>
+                    </h2>
+                    <p className="text-xs text-dark-muted mt-0.5">Explore registered plot venues available for event hosting and rentals in Ahmedabad</p>
+                  </div>
+                  <span className="text-xs font-semibold px-3 py-1 bg-brand-primary/10 text-brand-primary border border-brand-primary/20 rounded-full">
+                    {safeApprovedVenues.length} Venues Available
+                  </span>
+                </div>
+
+                {safeApprovedVenues.length === 0 ? (
+                  <div className="glass-panel text-center py-12 rounded-2xl">
+                    <Building className="w-10 h-10 text-dark-muted mx-auto mb-3" />
+                    <p className="text-dark-muted text-sm">No venue plots currently available for rental.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                    {safeApprovedVenues.map((venue) => {
+                      const isBookedByMe = safeVenueBookings.some(vb => (vb.venue === venue.id || vb.venue_details?.id === venue.id) && vb.status !== 'cancelled' && vb.status !== 'rejected');
+                      return (
+                        <div key={venue.id} className="glass-card rounded-2xl overflow-hidden flex flex-col group relative">
+                          {isBookedByMe && (
+                            <div className="absolute top-3 left-3 z-10 text-[9px] font-extrabold uppercase tracking-wider bg-emerald-500 text-slate-950 px-2.5 py-1 rounded-full shadow-lg">
+                              ✓ Rented By You
+                            </div>
+                          )}
+                          <div className="relative h-44 overflow-hidden">
+                            {venue.image ? (
+                              <img
+                                src={venue.image.startsWith('http') ? venue.image : `${BACKEND_URL}${venue.image}`}
+                                alt={venue.name}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              />
                             ) : (
-                              <span className="text-brand-primary">₹{vb.total_price}</span>
+                              <div className="w-full h-full bg-white/5 flex items-center justify-center text-dark-muted">
+                                  <Building className="w-10 h-10" />
+                              </div>
                             )}
-                          </td>
-                          <td className="px-6 py-4">
-                            <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-extrabold ${
-                              vb.status === 'approved' ? 'bg-emerald-500/10 text-emerald-400' :
-                              vb.status === 'cancelled' ? 'bg-red-500/10 text-red-400' :
-                              vb.status === 'pending' ? 'bg-yellow-500/10 text-yellow-400' :
-                              'bg-red-500/10 text-red-400'
-                            }`}>
-                              {vb.status}
+                            <span className="absolute top-3 right-3 text-[10px] font-bold uppercase tracking-wider bg-black/60 backdrop-blur-md text-emerald-400 px-2.5 py-1 rounded-full border border-emerald-500/20">
+                              ₹{parseFloat(venue.price_per_day).toLocaleString('en-IN')}/day
                             </span>
-                          </td>
-                          <td className="px-6 py-4 text-right">
-                            {vb.status !== 'cancelled' && vb.status !== 'rejected' && (
+                          </div>
+
+                          <div className="p-5 flex flex-col flex-grow justify-between">
+                            <div>
+                              <span className="text-[10px] font-bold uppercase tracking-wider bg-white/5 text-dark-muted px-2 py-0.5 rounded">
+                                {venue.category || 'Plot Venue'}
+                              </span>
+                              <h4 className="font-bold text-base text-dark-text mt-1.5 line-clamp-1">{venue.name}</h4>
+                              <p className="text-xs text-dark-muted mt-1 line-clamp-1 flex items-center gap-1">
+                                <MapPin className="w-3 h-3 text-brand-primary flex-shrink-0" />
+                                <span>{venue.location}</span>
+                              </p>
+                              <p className="text-xs text-dark-muted mt-1 flex items-center gap-1">
+                                <Users className="w-3 h-3 text-dark-muted flex-shrink-0" />
+                                <span>Capacity: {venue.capacity?.toLocaleString() || 'N/A'} guests</span>
+                              </p>
+                            </div>
+
+                            <div className="mt-5 pt-4 border-t border-white/5">
                               <button
-                                onClick={() => handleCancelVenueBooking(vb.id)}
-                                className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg text-xs font-bold transition-all border border-red-500/5 whitespace-nowrap"
+                                onClick={() => {
+                                  setRentModal({ show: true, venue });
+                                }}
+                                className="w-full py-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-950/20 transition-all flex items-center justify-center space-x-1.5"
                               >
-                                Cancel Booking
+                                <Building className="w-3.5 h-3.5" />
+                                <span>Rent / Reserve Venue</span>
                               </button>
-                            )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* My Venue Rentals & Bookings */}
+              <div className="glass-panel rounded-2xl overflow-hidden">
+                <div className="p-6 border-b border-white/5 flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-bold text-dark-text">My Venue Rental Reservations</h3>
+                    <p className="text-xs text-dark-muted mt-0.5">Status of plot venues you have requested or rented</p>
+                  </div>
+                  <span className="text-xs font-semibold px-3 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full">
+                    {safeVenueBookings.length} Bookings
+                  </span>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-white/5 bg-white/5 text-xs font-semibold text-dark-muted uppercase tracking-wider">
+                        <th className="px-6 py-4">Venue</th>
+                        <th className="px-6 py-4">Rental Dates</th>
+                        <th className="px-6 py-4">Pricing Details</th>
+                        <th className="px-6 py-4">Status</th>
+                        <th className="px-6 py-4 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="text-sm divide-y divide-white/5">
+                      {safeVenueBookings.length === 0 ? (
+                        <tr>
+                          <td colSpan="5" className="text-center py-12 text-dark-muted">
+                            You haven't requested any venue rentals yet. Select a venue above to request a rental.
                           </td>
                         </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                      ) : (
+                          safeVenueBookings.map((vb) => (
+                            <tr key={vb.id} className="hover:bg-white/5 transition-colors">
+                              <td className="px-6 py-4">
+                                <p className="font-bold text-dark-text">{vb.venue_details?.name}</p>
+                                <p className="text-xs text-dark-muted mt-0.5">{vb.venue_details?.location}</p>
+                                {(vb.use_catering || vb.use_dj || vb.use_decor) && (
+                                  <div className="flex flex-wrap gap-1.5 mt-2">
+                                    {vb.use_catering && (
+                                      <span className="text-[9px] font-bold bg-orange-500/10 text-orange-400 px-1.5 py-0.5 rounded" title={`Menu: ${vb.catering_description}`}>
+                                        🍽 Catering ({vb.catering_cuisine}) ×{vb.catering_plates}
+                                      </span>
+                                    )}
+                                    {vb.use_dj && (
+                                      <span className="text-[9px] font-bold bg-purple-500/10 text-purple-400 px-1.5 py-0.5 rounded" title={`Equipment: ${vb.dj_equipment}`}>
+                                        🎵 DJ ({vb.dj_package})
+                                      </span>
+                                    )}
+                                    {vb.use_decor && (
+                                      <span className="text-[9px] font-bold bg-pink-500/10 text-pink-400 px-1.5 py-0.5 rounded" title={`Theme: ${vb.decor_theme}`}>
+                                        🎨 Decor ({vb.decor_theme})
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+                              </td>
+                              <td className="px-6 py-4 font-semibold text-dark-text">
+                                {vb.start_date} to {vb.end_date}
+                              </td>
+                              <td className="px-6 py-4 font-bold">
+                                {vb.status === 'cancelled' ? (
+                                  <div className="text-xs space-y-0.5">
+                                    <span className="text-dark-muted block line-through">₹{vb.total_price}</span>
+                                    <span className="text-emerald-400 block font-bold">100% Full Refund: ₹{parseFloat(vb.total_price).toFixed(2)}</span>
+                                  </div>
+                                ) : (
+                                  <span className="text-brand-primary">₹{vb.total_price}</span>
+                                )}
+                              </td>
+                              <td className="px-6 py-4">
+                                <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-extrabold ${
+                                  vb.status === 'approved' ? 'bg-emerald-500/10 text-emerald-400' :
+                                  vb.status === 'cancelled' ? 'bg-red-500/10 text-red-400' :
+                                  vb.status === 'pending' ? 'bg-yellow-500/10 text-yellow-400' :
+                                  'bg-red-500/10 text-red-400'
+                                }`}>
+                                  {vb.status}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 text-right flex items-center justify-end space-x-2">
+                                {(vb.status === 'approved' || vb.status === 'pending') && (
+                                  <button
+                                    onClick={() => {
+                                      setChatModalType('venue');
+                                      setChatModalBooking(vb);
+                                    }}
+                                    className="px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                                    title="Direct Message Venue Owner"
+                                  >
+                                    <MessageSquare className="w-3.5 h-3.5" />
+                                    <span>Message Owner</span>
+                                  </button>
+                                )}
+                                {vb.status !== 'cancelled' && vb.status !== 'rejected' && (
+                                  <button
+                                    onClick={() => handleCancelVenueBooking(vb.id)}
+                                    className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg text-xs font-bold transition-all border border-red-500/5 whitespace-nowrap"
+                                  >
+                                    Cancel Booking
+                                  </button>
+                                )}
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
             </motion.div>
           )}
 
@@ -1250,96 +1425,123 @@ const OrganizerDashboard = () => {
                 </div>
               ) : null}
 
-              {/* Historical graph */}
-              <div className="glass-panel rounded-2xl p-6 border border-white/5">
-                <h4 className="font-bold text-lg text-dark-text mb-2">Revenue Performance (Per Event)</h4>
-                <p className="text-xs text-dark-muted mb-8">Sales revenue breakdown across listed events</p>
-                
-                {myEvents.length === 0 ? (
-                  <div className="text-center py-12 text-dark-muted">No data available to display chart.</div>
-                ) : (
-                  /* Custom Premium SVG Dashboard Chart */
-                  <div className="w-full flex flex-col items-center">
-                    <div className="w-full h-80 relative flex items-end">
-                      {/* Y-axis Guidelines */}
-                      <div className="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-10">
-                        {[0, 1, 2, 3].map(i => (
-                          <div key={i} className="border-t border-dashed border-white w-full h-0"></div>
-                        ))}
-                      </div>
-                      
-                      {/* SVG Chart */}
-                      <svg className="w-full h-full" viewBox="0 0 800 300">
-                        <defs>
-                          <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#10B981" stopOpacity="0.4" />
-                            <stop offset="100%" stopColor="#10B981" stopOpacity="0.0" />
-                          </linearGradient>
-                        </defs>
-                        
-                        {/* Calculate points */}
-                        {(() => {
-                          const maxRevenue = Math.max(...myEvents.map(e => e.tickets_sold * e.price), 1000);
-                          const widthStep = 800 / (myEvents.length + 1);
-                          const points = myEvents.map((e, index) => {
-                            const rev = e.tickets_sold * e.price;
-                            const x = widthStep * (index + 1);
-                            const y = 300 - (rev / maxRevenue * 240) - 20; // 240 max height bounds, padding 20
-                            return { x, y, title: e.title, value: rev };
-                          });
-                          
-                          if (points.length === 0) return null;
-                          
-                          const pathD = `M ${points[0].x} ${points[0].y} ` + points.slice(1).map(p => `L ${p.x} ${p.y}`).join(' ');
-                          const areaD = `${pathD} L ${points[points.length - 1].x} 280 L ${points[0].x} 280 Z`;
-                          
-                          return (
-                            <>
-                              {/* Area Fill */}
-                              <path d={areaD} fill="url(#chartGrad)" />
-                              
-                              {/* Line path */}
-                              <path d={pathD} fill="none" stroke="#10B981" strokeWidth="3" strokeLinecap="round" />
-                              
-                              {/* Interactive Data Nodes */}
-                              {points.map((p, i) => (
-                                <g key={i}>
-                                  <circle 
-                                    cx={p.x} 
-                                    cy={p.y} 
-                                    r="6" 
-                                    fill="#10B981" 
-                                    stroke="#0A0E1A" 
-                                    strokeWidth="2"
-                                    className="transition-all duration-200 hover:r-8 cursor-pointer"
-                                  />
-                                  <text 
-                                    x={p.x} 
-                                    y={p.y - 12} 
-                                    textAnchor="middle" 
-                                    fill="#10B981" 
-                                    fontSize="10" 
-                                    fontWeight="bold"
-                                  >
-                                    ₹{p.value}
-                                  </text>
-                                </g>
-                              ))}
-                            </>
-                          );
-                        })()}
-                      </svg>
-                    </div>
-                    
-                    {/* X-axis Labels */}
-                    <div className="flex justify-between w-full mt-4 px-10 text-xs text-dark-muted font-semibold truncate">
-                      {myEvents.map((event, idx) => (
-                        <span key={event.id} className="text-[10px] truncate max-w-[80px]" title={event.title}>
-                          {event.title}
-                        </span>
-                      ))}
-                    </div>
+              {/* Event Performance & Analytics Dashboard Card */}
+              <div className="glass-panel rounded-2xl p-6 border border-white/5 shadow-xl">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-4 border-b border-white/5">
+                  <div>
+                    <h4 className="font-extrabold text-lg text-dark-text flex items-center gap-2">
+                      <TrendingUp className="w-5 h-5 text-emerald-400" />
+                      <span>Event Sales & Revenue Performance</span>
+                    </h4>
+                    <p className="text-xs text-dark-muted mt-1">Breakdown of top revenue-generating events and sales performance</p>
                   </div>
+                </div>
+
+                {(!events || events.length === 0) ? (
+                  <div className="text-center py-12 text-dark-muted glass-panel rounded-xl">
+                    <p className="text-xs">No events listed yet to generate sales analytics.</p>
+                  </div>
+                ) : (
+                  (() => {
+                    const sortedEvents = [...events]
+                      .map(e => {
+                        const priceVal = parseFloat(e.price) || 0;
+                        const soldVal = parseInt(e.tickets_sold) || 0;
+                        const rev = priceVal * soldVal;
+                        return {
+                          ...e,
+                          revenue: rev,
+                          soldVal,
+                          priceVal,
+                          catName: e.category_details?.name || e.category || 'General'
+                        };
+                      })
+                      .sort((a, b) => b.revenue - a.revenue);
+
+                    const topEventsList = sortedEvents.slice(0, 6);
+                    const highestRevenue = Math.max(...topEventsList.map(e => e.revenue), 1);
+
+                    return (
+                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        {/* Top 6 Performing Events Progress Bars (2 Columns) */}
+                        <div className="lg:col-span-2 space-y-4">
+                          <h5 className="text-xs font-bold text-dark-muted uppercase tracking-wider mb-2 flex items-center justify-between">
+                            <span>Top Performing Events (By Revenue)</span>
+                            <span className="text-[10px] text-emerald-400 font-mono">Top {topEventsList.length} Listed</span>
+                          </h5>
+
+                          {topEventsList.map((evt, idx) => {
+                            const percent = Math.round((evt.revenue / highestRevenue) * 100);
+                            return (
+                              <div key={evt.id || idx} className="bg-white/5 border border-white/5 rounded-xl p-3.5 hover:border-emerald-500/30 transition-all">
+                                <div className="flex items-center justify-between text-xs mb-2 gap-2">
+                                  <div className="flex items-center space-x-2.5 min-w-0">
+                                    <span className={`w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-bold ${
+                                      idx === 0 ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
+                                      idx === 1 ? 'bg-slate-300/20 text-slate-300 border border-slate-300/30' :
+                                      idx === 2 ? 'bg-amber-700/20 text-amber-500 border border-amber-700/30' :
+                                      'bg-white/10 text-dark-muted'
+                                    }`}>
+                                      #{idx + 1}
+                                    </span>
+                                    <span className="font-bold text-dark-text truncate text-sm" title={evt.title}>{evt.title}</span>
+                                    <span className="text-[9px] font-semibold bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full flex-shrink-0 uppercase">
+                                      {evt.catName}
+                                    </span>
+                                  </div>
+                                  <div className="text-right flex-shrink-0">
+                                    <span className="font-extrabold text-emerald-400 text-sm">₹{evt.revenue.toLocaleString('en-IN')}</span>
+                                    <span className="text-[10px] text-dark-muted block">{evt.soldVal} ticket{evt.soldVal !== 1 ? 's' : ''} sold</span>
+                                  </div>
+                                </div>
+
+                                {/* Clean Smooth Progress Bar */}
+                                <div className="w-full bg-white/5 rounded-full h-2 overflow-hidden">
+                                  <div
+                                    className="bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-400 h-2 rounded-full transition-all duration-700"
+                                    style={{ width: `${Math.max(percent, 4)}%` }}
+                                  ></div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {/* Revenue Summary Stats Box */}
+                        <div className="space-y-4 flex flex-col justify-between">
+                          <h5 className="text-xs font-bold text-dark-muted uppercase tracking-wider mb-2">
+                            Revenue Performance Summary
+                          </h5>
+
+                          <div className="bg-gradient-to-br from-emerald-950/40 via-dark-bg to-dark-bg p-5 rounded-2xl border border-emerald-500/20 space-y-4">
+                            <div>
+                              <span className="text-xs text-dark-muted block">Total Event Revenue</span>
+                              <p className="text-2xl font-black text-emerald-400 font-mono mt-1">
+                                ₹{sortedEvents.reduce((acc, cur) => acc + cur.revenue, 0).toLocaleString('en-IN')}
+                              </p>
+                            </div>
+
+                            <div className="pt-3 border-t border-white/5 space-y-2.5 text-xs">
+                              <div className="flex justify-between">
+                                <span className="text-dark-muted">Total Events Listed:</span>
+                                <span className="font-bold text-dark-text">{events.length}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-dark-muted">Active Sales Events:</span>
+                                <span className="font-bold text-emerald-400">{sortedEvents.filter(e => e.revenue > 0).length}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-dark-muted">Avg Revenue Per Event:</span>
+                                <span className="font-bold text-cyan-400">
+                                  ₹{events.length > 0 ? (sortedEvents.reduce((acc, cur) => acc + cur.revenue, 0) / events.length).toFixed(0) : 0}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()
                 )}
               </div>
             </motion.div>
@@ -1959,6 +2161,97 @@ const OrganizerDashboard = () => {
         )}
       </AnimatePresence>
 
+      {rentModal.show && rentModal.venue && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="glass-panel w-full max-w-md rounded-2xl p-6 shadow-2xl relative border border-white/10 space-y-6"
+          >
+            <div className="flex justify-between items-center border-b border-white/5 pb-3">
+              <h3 className="text-base font-bold text-dark-text uppercase tracking-wider">Book Venue Plot</h3>
+              <button
+                onClick={() => { setRentModal({ show: false, venue: null }); setBookingError(''); }}
+                className="text-dark-muted hover:text-dark-text"
+              >
+                <XCircle className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              <span className="text-[10px] font-bold text-dark-muted uppercase tracking-wider">Selected Venue:</span>
+              <div className="bg-white/5 border border-white/5 p-4 rounded-xl flex items-center space-x-3">
+                <Building className="w-6 h-6 text-brand-primary" />
+                <div>
+                  <h4 className="font-bold text-sm text-dark-text">{rentModal.venue.name}</h4>
+                  <p className="text-[10px] text-dark-muted mt-0.5">{rentModal.venue.location}</p>
+                </div>
+              </div>
+            </div>
+
+            <form onSubmit={handleBookVenueSubmit} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-bold text-dark-muted uppercase tracking-wider mb-1.5">Start Date</label>
+                  <input
+                    type="date"
+                    required
+                    value={bookingDates.start}
+                    onChange={(e) => setBookingDates({ ...bookingDates, start: e.target.value })}
+                    className="glass-input w-full px-3 py-2 rounded-xl text-xs bg-dark-bg text-dark-text"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-dark-muted uppercase tracking-wider mb-1.5">End Date</label>
+                  <input
+                    type="date"
+                    required
+                    value={bookingDates.end}
+                    onChange={(e) => setBookingDates({ ...bookingDates, end: e.target.value })}
+                    className="glass-input w-full px-3 py-2 rounded-xl text-xs bg-dark-bg text-dark-text"
+                  />
+                </div>
+              </div>
+
+              {bookingDates.start && bookingDates.end && new Date(bookingDates.start) <= new Date(bookingDates.end) && (
+                <div className="bg-white/5 p-3 rounded-xl flex justify-between items-center text-xs">
+                  <span className="text-dark-muted">Estimated Total Cost:</span>
+                  <span className="font-bold text-brand-primary">
+                    ₹{((Math.max(1, (new Date(bookingDates.end) - new Date(bookingDates.start)) / (1000 * 60 * 60 * 24) + 1)) * rentModal.venue.price_per_day).toLocaleString('en-IN')}
+                    <span className="text-[9px] text-dark-muted font-normal ml-1">
+                      ({Math.max(1, (new Date(bookingDates.end) - new Date(bookingDates.start)) / (1000 * 60 * 60 * 24) + 1)} days)
+                    </span>
+                  </span>
+                </div>
+              )}
+
+              {bookingError && (
+                <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-xl text-xs font-semibold">
+                  {bookingError}
+                </div>
+              )}
+
+              <div className="flex space-x-3 pt-3 border-t border-white/5">
+                <button
+                  type="button"
+                  onClick={() => { setRentModal({ show: false, venue: null }); setBookingError(''); }}
+                  className="flex-1 bg-white/5 border border-white/10 hover:bg-white/10 text-dark-text py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={bookingActionLoading}
+                  className="flex-1 bg-brand-primary hover:bg-[#0ea5e9] text-white py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-colors disabled:opacity-50 flex items-center justify-center space-x-1.5"
+                >
+                  {bookingActionLoading ? 'Booking...' : 'Book Venue'}
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
+
       {showPaymentModal && paymentVenue && (
         <VenuePaymentModal
           venue={paymentVenue}
@@ -1968,10 +2261,31 @@ const OrganizerDashboard = () => {
           onPaymentSuccess={() => {
             setShowPaymentModal(false);
             setPaymentVenue(null);
-            handlePendingEventCreation();
+            if (pendingEventData) {
+              handlePendingEventCreation();
+            } else {
+              showFeedback("Venue booked and paid successfully! Pending Owner approval.", "success");
+              fetchDashboardData();
+            }
           }}
         />
       )}
+
+      {selectedDetailEvent && (
+        <EventDetailModal
+          event={selectedDetailEvent}
+          onClose={() => setSelectedDetailEvent(null)}
+          showHostBox={true}
+        />
+      )}
+
+      <VenueBookingChatModal
+        booking={chatModalBooking}
+        type={chatModalType}
+        isOpen={!!chatModalBooking}
+        onClose={() => setChatModalBooking(null)}
+        currentUser={user}
+      />
     </div>
   );
 };

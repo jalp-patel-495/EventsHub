@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import api from '../api/api';
+import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Mail,
@@ -13,7 +14,10 @@ import {
   Clock
 } from 'lucide-react';
 
+import { validateName, validateEmail } from '../utils/validation';
+
 const Contact = () => {
+  const { user, isAuthenticated } = useAuth();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -25,11 +29,33 @@ const Contact = () => {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      const userRoleId = user.role === 'plot_owner' ? 'owners' : (user.role === 'organizer' ? 'organizer' : 'customer');
+      const fullName = user.first_name ? `${user.first_name} ${user.last_name || ''}`.trim() : (user.username || '');
+      setFormData(prev => ({
+        ...prev,
+        name: prev.name || fullName,
+        email: prev.email || user.email || '',
+        role: userRoleId
+      }));
+    }
+  }, [isAuthenticated, user]);
+
   const roles = [
     { id: 'customer', label: 'Customer', placeholder: 'Event discovery, booking, or payment query...' },
     { id: 'organizer', label: 'Organizer', placeholder: 'Event hosting, scanning app, or payout query...' },
     { id: 'owners', label: 'Plot/Venue Owner', placeholder: 'Listing plots, rental calendar, or dashboard query...' }
   ];
+
+  const displayRoles = isAuthenticated && user
+    ? roles.filter(r => {
+        if (user.role === 'customer') return r.id === 'customer';
+        if (user.role === 'organizer') return r.id === 'organizer';
+        if (user.role === 'plot_owner') return r.id === 'owners';
+        return true;
+      })
+    : roles;
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -50,15 +76,18 @@ const Contact = () => {
     e.preventDefault();
     setErrorMsg('');
 
-    if (!formData.name.trim() || formData.name.trim().length < 2) {
-      setErrorMsg('Please enter your full name (at least 2 characters).');
+    const nameErr = validateName(formData.name, 'Full Name');
+    if (nameErr) {
+      setErrorMsg(nameErr);
       return;
     }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email.trim())) {
-      setErrorMsg('Please enter a valid email address.');
+
+    const emailErr = validateEmail(formData.email);
+    if (emailErr) {
+      setErrorMsg(emailErr);
       return;
     }
+
     if (!formData.message.trim() || formData.message.trim().length < 20) {
       setErrorMsg('Message must be at least 20 characters long.');
       return;
@@ -181,7 +210,7 @@ const Contact = () => {
                       Select Your Role
                     </label>
                     <div className="flex flex-col sm:flex-row gap-2">
-                      {roles.map((r) => (
+                      {displayRoles.map((r) => (
                         <button
                           key={r.id}
                           type="button"
@@ -212,7 +241,7 @@ const Contact = () => {
                         required
                         value={formData.name}
                         onChange={handleInputChange}
-                        placeholder="Enter your full name"
+                        placeholder="Enter Your Full Name"
                         className="w-full px-4 py-3 rounded-xl glass-input text-sm"
                       />
                     </div>
@@ -228,7 +257,7 @@ const Contact = () => {
                         required
                         value={formData.email}
                         onChange={handleInputChange}
-                        placeholder="Enter your email address"
+                        placeholder="Enter Your Email Address"
                         className="w-full px-4 py-3 rounded-xl glass-input text-sm"
                       />
                     </div>
@@ -244,7 +273,7 @@ const Contact = () => {
                       name="subject"
                       value={formData.subject}
                       onChange={handleInputChange}
-                      placeholder="Enter subject of your message"
+                      placeholder="Enter Subject Of Your Message"
                       className="w-full px-4 py-3 rounded-xl glass-input text-sm"
                     />
                   </div>
@@ -260,7 +289,7 @@ const Contact = () => {
                       rows={5}
                       value={formData.message}
                       onChange={handleInputChange}
-                      placeholder="Enter your message here..."
+                      placeholder="Enter Your Message Here"
                       className="w-full px-4 py-3 rounded-xl glass-input text-sm resize-none"
                     />
                   </div>

@@ -15,6 +15,7 @@ from events.serializers import EventSerializer, BookingSerializer, ContactQueryS
 from venues.models import Venue
 from venues.serializers import VenueSerializer
 from notifications.models import Notification
+from notifications.serializers import NotificationSerializer
 
 User = get_user_model()
 
@@ -78,6 +79,19 @@ class AdminSummaryView(views.APIView):
         organizer_active_sales = float(completed_events_revenue) * 0.80
         organizer_cancelled_retained = float(refunded_events_revenue) * 0.40
         organizer_refund_impact = float(refunded_events_revenue) * 0.40
+
+        # Detailed venue ticket sales splits
+        venue_gross_sales = float(completed_venues_revenue) + float(refunded_venues_revenue)
+        venue_cancelled_count = refunded_venue_bookings.count()
+        venue_active_sales = float(completed_venues_revenue)
+        venue_cancelled_sales = float(refunded_venues_revenue)
+        admin_venue_active_commission = float(completed_venues_revenue) * 0.20
+        admin_venue_cancelled_commission = float(refunded_venues_revenue) * 0.05
+        admin_venue_refund_impact = float(refunded_venues_revenue) * 0.15
+        venue_customer_refunds = float(refunded_venues_revenue) * 0.95
+        owner_active_sales = float(completed_venues_revenue) * 0.80
+        owner_cancelled_retained = 0.0
+        owner_refund_impact = float(refunded_venues_revenue) * 0.80
 
         # Commission calculations
         # Admin gets 20% on active bookings, 10% on refunded bookings
@@ -194,7 +208,20 @@ class AdminSummaryView(views.APIView):
                 "customer_refunds": customer_refunds,
                 "organizer_active_sales": organizer_active_sales,
                 "organizer_cancelled_retained": organizer_cancelled_retained,
-                "organizer_refund_impact": organizer_refund_impact
+                "organizer_refund_impact": organizer_refund_impact,
+
+                # Detailed venue stats
+                "venue_gross_sales": venue_gross_sales,
+                "venue_active_sales": venue_active_sales,
+                "venue_cancelled_sales": venue_cancelled_sales,
+                "venue_cancelled_count": venue_cancelled_count,
+                "admin_venue_active_commission": admin_venue_active_commission,
+                "admin_venue_cancelled_commission": admin_venue_cancelled_commission,
+                "admin_venue_refund_impact": admin_venue_refund_impact,
+                "venue_customer_refunds": venue_customer_refunds,
+                "owner_active_sales": owner_active_sales,
+                "owner_cancelled_retained": owner_cancelled_retained,
+                "owner_refund_impact": owner_refund_impact
             },
             "pending": {
                 "organizers": pending_organizers,
@@ -293,6 +320,43 @@ class ApproveUserView(views.APIView):
         )
         
         return Response({"message": f"User {user.email} approved successfully.", "is_approved": user.is_approved})
+
+class SendMessageToUserView(views.APIView):
+    permission_classes = (IsPlatformAdmin,)
+
+    def get(self, request, pk):
+        user = get_object_or_404(User, pk=pk)
+        notifications = Notification.objects.filter(user=user).order_by('-created_at')
+        serializer = NotificationSerializer(notifications, many=True)
+        return Response(serializer.data)
+
+    def post(self, request, pk):
+        user = get_object_or_404(User, pk=pk)
+        title = request.data.get('title', 'Direct Message from EventHub Administrator').strip()
+        message = request.data.get('message', '').strip()
+
+        if not message:
+            return Response({"error": "Message content cannot be empty."}, status=status.HTTP_400_BAD_REQUEST)
+
+        notif = Notification.objects.create(
+            user=user,
+            title=title if title else "Direct Message from EventHub Administrator",
+            message=message
+        )
+
+        log_audit(
+            user=request.user,
+            action="DIRECT_MESSAGE_SENT",
+            resource="User",
+            resource_id=user.id,
+            request=request,
+            details={"recipient_email": user.email, "title": title}
+        )
+
+        return Response({
+            "message": f"Direct message sent successfully to {user.email}.",
+            "notification_id": notif.id
+        }, status=status.HTTP_201_CREATED)
 
 class EventApprovalListView(views.APIView):
     permission_classes = (IsPlatformAdmin,)

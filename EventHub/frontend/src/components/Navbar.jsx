@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Menu, X, LogOut, User as UserIcon, Calendar, Building, ShieldAlert, ChevronDown, Bell, Check, CheckCheck, Sun, Moon, QrCode, LayoutDashboard, Mail, Heart, Compass, Zap, Ticket } from 'lucide-react';
+import { Menu, X, LogOut, User as UserIcon, Calendar, Building, ShieldAlert, ChevronDown, Bell, Check, CheckCheck, Sun, Moon, QrCode, LayoutDashboard, Mail, Heart, Compass, Zap, Ticket, MessageSquare, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api, { BACKEND_URL, WS_URL } from '../api/api';
+import VenueBookingChatModal from './VenueBookingChatModal';
 
 const Navbar = () => {
   const { user, isAuthenticated, logout } = useAuth();
@@ -23,9 +24,37 @@ const Navbar = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+  const [chatModalBooking, setChatModalBooking] = useState(null);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [pendingApprovalsCount, setPendingApprovalsCount] = useState(0);
+  const [pendingRefundsCount, setPendingRefundsCount] = useState(0);
+
+  const handleReplyFromNavbar = async (notif) => {
+    setNotificationsOpen(false);
+    const match = notif.message?.match(/booking #(\d+)/i);
+    const bookingId = match ? parseInt(match[1]) : null;
+
+    if (bookingId) {
+      try {
+        const res = await api.get(`venues/bookings/`);
+        const list = res.data?.results || res.data || [];
+        const found = list.find(b => b.id === bookingId);
+        if (found) {
+          setChatModalBooking(found);
+          return;
+        }
+      } catch (err) {
+        console.error("Failed to fetch booking for reply:", err);
+      }
+    }
+
+    if (user?.role === 'plot_owner') {
+      navigate('/plot-owner/dashboard');
+    } else {
+      navigate('/customer-dashboard');
+    }
+  };
   const [toast, setToast] = useState({ show: false, title: '', message: '' });
   const navigate = useNavigate();
   const location = useLocation();
@@ -50,6 +79,7 @@ const Navbar = () => {
   useEffect(() => {
     if (!isAuthenticated || !user) {
       setPendingApprovalsCount(0);
+      setPendingRefundsCount(0);
       return;
     }
 
@@ -63,15 +93,21 @@ const Navbar = () => {
                           (res.data.pending.events || 0) +
                           (res.data.pending.venues || 0);
             setPendingApprovalsCount(total);
+            setPendingRefundsCount(0);
           }
         } else if (user.role === 'plot_owner') {
           const res = await api.get('venues/bookings/');
-          const pending = (res.data || []).filter(b => b.status === 'pending').length;
-          setPendingApprovalsCount(pending);
+          const bookings = res.data || [];
+          const pendingRental = bookings.filter(b => b.status === 'pending' && !b.cancel_requested).length;
+          const pendingRefund = bookings.filter(b => b.cancel_requested).length;
+          setPendingApprovalsCount(pendingRental);
+          setPendingRefundsCount(pendingRefund);
         } else if (user.role === 'organizer') {
           const res = await api.get('events/refund-requests/');
-          const pending = (res.data || []).filter(r => r.status === 'pending').length;
-          setPendingApprovalsCount(pending);
+          const refunds = res.data || [];
+          const pendingRefund = refunds.filter(r => r.status === 'pending').length;
+          setPendingApprovalsCount(0);
+          setPendingRefundsCount(pendingRefund);
         }
       } catch (err) {
         // silent catch
@@ -174,7 +210,6 @@ const Navbar = () => {
     ? user?.role === 'plot_owner'
       ? [
           { name: 'Dashboard', path: '/venues/dashboard' },
-          { name: 'My Venues', path: '/venues/manage' },
           { name: 'Rental Requests', path: '/venues/requests' },
           { name: 'Refund Requests', path: '/venues/refunds' },
           { name: 'Manage Services', path: '/venues/services' },
@@ -199,11 +234,16 @@ const Navbar = () => {
               { name: 'Approvals', path: '/admin/approvals' },
               { name: 'All Events', path: '/admin/events' },
               { name: 'All Venues', path: '/admin/venues' },
+              { name: 'User Directory', path: '/admin/users' },
+              { name: 'Transactions', path: '/admin/finance' },
+              { name: 'User Queries', path: '/admin/complaints' },
+              { name: 'Broadcast Alerts', path: '/admin/broadcast' },
             ]
           : []
     : [
         { name: 'Home', path: '/' },
         { name: 'Explore', path: '/explore' },
+        { name: 'Recommended', path: '/recommended' },
         { name: 'Venues', path: '/venues' },
         { name: 'Live Feed', path: '/live-feed' },
         { name: 'Contact', path: '/contact' },
@@ -222,6 +262,7 @@ const Navbar = () => {
       default: // customer
         return [
           { name: 'Dashboard', path: '/bookings', icon: <LayoutDashboard className="w-4 h-4" /> },
+          { name: 'Recommended', path: '/recommended', icon: <Sparkles className="w-4 h-4 text-blue-400" /> },
           { name: 'Explore', path: '/explore', icon: <Compass className="w-4 h-4" /> },
           { name: 'Live Feed', path: '/live-feed', icon: <Zap className="w-4 h-4" /> },
           { name: 'Venue Rentals', path: '/bookings?tab=venues', icon: <Building className="w-4 h-4" /> },
@@ -290,8 +331,10 @@ const Navbar = () => {
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-6">
               {navLinks.map((link) => {
-                const isApprovalsLink = link.name === 'Approvals' || link.name === 'Rental Requests' || link.name === 'Refund Requests' || link.name === 'Refund Ticket Requests';
-                const showBadge = isApprovalsLink && pendingApprovalsCount > 0;
+                const isRentalLink = link.name === 'Rental Requests' || link.name === 'Approvals';
+                const isRefundLink = link.name === 'Refund Requests' || link.name === 'Refund Ticket Requests';
+                const badgeCount = isRentalLink ? pendingApprovalsCount : isRefundLink ? pendingRefundsCount : 0;
+                const showBadge = badgeCount > 0;
                 return (
                   <Link
                     key={link.name}
@@ -303,7 +346,7 @@ const Navbar = () => {
                     <span>{link.name}</span>
                     {showBadge && (
                       <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full border border-dark-bg animate-pulse shadow-lg shadow-red-500/30">
-                        {pendingApprovalsCount}
+                        {badgeCount}
                       </span>
                     )}
                   </Link>
@@ -386,31 +429,47 @@ const Navbar = () => {
                                   No notifications yet.
                                 </div>
                               ) : (
-                                notifications.map((n) => (
-                                  <div
-                                    key={n.id}
-                                    className={`p-4 transition-colors flex items-start justify-between space-x-2 ${
-                                      n.is_read ? 'opacity-60 bg-transparent' : 'bg-brand-primary/[0.02] hover:bg-brand-primary/[0.04]'
-                                    }`}
-                                  >
-                                    <div className="min-w-0">
-                                      <h5 className="text-xs font-bold text-dark-text leading-tight">{n.title}</h5>
-                                      <p className="text-[11px] text-dark-muted mt-1 leading-normal">{n.message}</p>
-                                      <span className="text-[9px] text-dark-muted mt-2 block font-medium">
-                                        {new Date(n.created_at).toLocaleDateString()} at {new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                      </span>
+                                notifications.map((n) => {
+                                  const isMessageNotif = (n.title && n.title.toLowerCase().includes('message')) || (n.message && n.message.toLowerCase().includes('sent a message'));
+
+                                  return (
+                                    <div
+                                      key={n.id}
+                                      className={`p-4 transition-colors flex flex-col space-y-2 ${
+                                        n.is_read ? 'opacity-85 hover:bg-white/[0.01]' : 'bg-white/[0.02] hover:bg-white/[0.04]'
+                                      }`}
+                                    >
+                                      <div className="flex items-start justify-between space-x-2">
+                                        <div className="min-w-0">
+                                          <h5 className="text-xs font-bold text-dark-text leading-tight">{n.title}</h5>
+                                          <p className="text-[11px] text-dark-text mt-1 leading-normal opacity-85">{n.message}</p>
+                                          <span className="text-[9px] text-dark-muted mt-2 block font-medium opacity-90">
+                                            {new Date(n.created_at).toLocaleDateString()} at {new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                          </span>
+                                        </div>
+                                        {!n.is_read && (
+                                          <button
+                                            onClick={() => handleMarkAsRead(n.id)}
+                                            className="text-brand-primary hover:text-brand-primary/80 p-1 flex-shrink-0"
+                                            title="Mark as read"
+                                          >
+                                            <Check className="w-4 h-4" />
+                                          </button>
+                                        )}
+                                      </div>
+
+                                      {isMessageNotif && (
+                                        <button
+                                          onClick={() => handleReplyFromNavbar(n)}
+                                          className="w-full mt-1 px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                                        >
+                                          <MessageSquare className="w-3.5 h-3.5" />
+                                          <span>Reply / Send Answer</span>
+                                        </button>
+                                      )}
                                     </div>
-                                    {!n.is_read && (
-                                      <button
-                                        onClick={() => handleMarkAsRead(n.id)}
-                                        className="text-brand-primary hover:text-brand-primary/80 p-1 flex-shrink-0"
-                                        title="Mark as read"
-                                      >
-                                        <Check className="w-4 h-4" />
-                                      </button>
-                                    )}
-                                  </div>
-                                ))
+                                  );
+                                })
                               )}
                             </div>
                           </motion.div>
@@ -558,8 +617,10 @@ const Navbar = () => {
                 </div>
 
                 {navLinks.map((link) => {
-                  const isApprovalsLink = link.name === 'Approvals' || link.name === 'Rental Requests' || link.name === 'Refund Requests' || link.name === 'Refund Ticket Requests';
-                  const showBadge = isApprovalsLink && pendingApprovalsCount > 0;
+                  const isRentalLink = link.name === 'Rental Requests' || link.name === 'Approvals';
+                  const isRefundLink = link.name === 'Refund Requests' || link.name === 'Refund Ticket Requests';
+                  const badgeCount = isRentalLink ? pendingApprovalsCount : isRefundLink ? pendingRefundsCount : 0;
+                  const showBadge = badgeCount > 0;
                   return (
                     <Link
                       key={link.name}
@@ -572,7 +633,7 @@ const Navbar = () => {
                       <span>{link.name}</span>
                       {showBadge && (
                         <span className="bg-red-500 text-white text-xs font-black px-2 py-0.5 rounded-full border border-dark-bg animate-pulse">
-                          {pendingApprovalsCount} Pending
+                          {badgeCount} Pending
                         </span>
                       )}
                     </Link>
@@ -640,6 +701,13 @@ const Navbar = () => {
             </motion.div>
           )}
         </AnimatePresence>
+
+        <VenueBookingChatModal
+          booking={chatModalBooking}
+          isOpen={!!chatModalBooking}
+          onClose={() => setChatModalBooking(null)}
+          currentUser={user}
+        />
       </nav>
     </>
   );

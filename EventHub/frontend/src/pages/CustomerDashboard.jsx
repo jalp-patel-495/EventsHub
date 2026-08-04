@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import api, { BACKEND_URL } from '../api/api';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, Heart, Bell, Trash2, ShieldAlert, CheckCircle, Ticket, XCircle, Download, Sparkles, MapPin, Building, Star, X, Coins, Search } from 'lucide-react';
+import { Calendar, Heart, Bell, Trash2, ShieldAlert, CheckCircle, Ticket, XCircle, Download, Sparkles, MapPin, Building, Star, X, Coins, Search, MessageSquare } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { jsPDF } from 'jspdf';
-import html2canvas from 'html2canvas';
 import VenuePaymentModal from '../components/VenuePaymentModal';
 import VenueDetailModal from '../components/VenueDetailModal';
+import EventDetailModal from '../components/EventDetailModal';
+import VenueBookingChatModal from '../components/VenueBookingChatModal';
+import AIEventRecommendations from '../components/AIEventRecommendations';
 
 const CustomerDashboard = () => {
   const { user } = useAuth();
@@ -21,6 +22,11 @@ const CustomerDashboard = () => {
   const [message, setMessage] = useState('');
   const [recommendations, setRecommendations] = useState(null);
   const [loadingRecommendations, setLoadingRecommendations] = useState(false);
+
+  // Detail Modal States
+  const [selectedDetailEvent, setSelectedDetailEvent] = useState(null);
+  const [chatModalBooking, setChatModalBooking] = useState(null);
+  const [chatModalType, setChatModalType] = useState('venue');
 
   // Review & Rating Modal States
   const [showReviewModal, setShowReviewModal] = useState(false);
@@ -140,6 +146,19 @@ const CustomerDashboard = () => {
   }, [activeTab]);
 
   const handleDownloadTicket = async (booking) => {
+    if (!booking) return;
+
+    const eventTitle = booking.event_details?.title || booking.event_name || booking.title || "Event Pass";
+    const eventDate = booking.event_details?.date || booking.date || "N/A";
+    const eventTime = booking.event_details?.time || booking.time || "";
+    const eventLocation = booking.event_details?.location || booking.location || "Ahmedabad, Gujarat";
+    const attendeeFirstName = booking.user_details?.first_name || user?.first_name || "Valued";
+    const attendeeLastName = booking.user_details?.last_name || user?.last_name || "Guest";
+    const attendeeEmail = booking.user_details?.email || user?.email || "";
+    const ticketsCount = booking.tickets_count || 1;
+    const ticketCategory = booking.ticket_category || "General";
+    const totalPrice = parseFloat(booking.total_price || 0) + (parseFloat(booking.event_details?.price || 0) > 0 ? ticketsCount * 15 : 0);
+
     const ticketDiv = document.createElement('div');
     ticketDiv.style.position = 'absolute';
     ticketDiv.style.left = '-9999px';
@@ -157,15 +176,15 @@ const CustomerDashboard = () => {
         <p style="margin: 5px 0 0 0; font-size: 10px; text-transform: uppercase; color: #9CA3AF; letter-spacing: 2px;">Official Entry Pass</p>
       </div>
       <div style="border-top: 1px dashed rgba(255,255,255,0.1); border-bottom: 1px dashed rgba(255,255,255,0.1); padding: 20px 0; margin-bottom: 25px;">
-        <h3 style="margin: 0 0 10px 0; font-size: 18px; color: #FFFFFF;">${booking.event_details.title}</h3>
-        <p style="margin: 5px 0; font-size: 12px; color: #D1D5DB;"><strong>Date:</strong> ${booking.event_details.date} at ${booking.event_details.time}</p>
-        <p style="margin: 5px 0; font-size: 12px; color: #D1D5DB;"><strong>Location:</strong> ${booking.event_details.location}</p>
+        <h3 style="margin: 0 0 10px 0; font-size: 18px; color: #FFFFFF;">${eventTitle}</h3>
+        <p style="margin: 5px 0; font-size: 12px; color: #D1D5DB;"><strong>Date:</strong> ${eventDate} ${eventTime ? 'at ' + eventTime : ''}</p>
+        <p style="margin: 5px 0; font-size: 12px; color: #D1D5DB;"><strong>Location:</strong> ${eventLocation}</p>
       </div>
       <div style="margin-bottom: 25px;">
-        <p style="margin: 5px 0; font-size: 12px; color: #9CA3AF;"><strong>Attendee:</strong> ${booking.user_details.first_name} ${booking.user_details.last_name}</p>
-        <p style="margin: 5px 0; font-size: 12px; color: #9CA3AF;"><strong>Email:</strong> ${booking.user_details.email}</p>
-        <p style="margin: 5px 0; font-size: 12px; color: #9CA3AF;"><strong>Quantity:</strong> ${booking.tickets_count} Ticket(s) (${booking.ticket_category} Pass)</p>
-        <p style="margin: 5px 0; font-size: 12px; color: #9CA3AF;"><strong>Amount Paid:</strong> ₹${(parseFloat(booking.total_price) + (parseFloat(booking.event_details?.price) > 0 ? booking.tickets_count * 15 : 0)).toFixed(2)}</p>
+        <p style="margin: 5px 0; font-size: 12px; color: #9CA3AF;"><strong>Attendee:</strong> ${attendeeFirstName} ${attendeeLastName}</p>
+        <p style="margin: 5px 0; font-size: 12px; color: #9CA3AF;"><strong>Email:</strong> ${attendeeEmail}</p>
+        <p style="margin: 5px 0; font-size: 12px; color: #9CA3AF;"><strong>Quantity:</strong> ${ticketsCount} Ticket(s) (${ticketCategory} Pass)</p>
+        <p style="margin: 5px 0; font-size: 12px; color: #9CA3AF;"><strong>Amount Paid:</strong> ₹${totalPrice.toFixed(2)}</p>
       </div>
       <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; margin-top: 10px;">
         <div id="ticket-qr-container" style="background: white; padding: 10px; border-radius: 12px; margin-bottom: 10px; display: inline-block;"></div>
@@ -188,10 +207,13 @@ const CustomerDashboard = () => {
 
     await new Promise((resolve) => {
       qrImg.onload = resolve;
-      setTimeout(resolve, 1500);
+      setTimeout(resolve, 1200);
     });
 
     try {
+      const { default: html2canvas } = await import('html2canvas');
+      const { jsPDF } = await import('jspdf');
+
       const canvas = await html2canvas(ticketDiv, {
         backgroundColor: '#0A0E1A',
         scale: 2,
@@ -207,8 +229,11 @@ const CustomerDashboard = () => {
       pdf.save(`Ticket-${booking.qr_code_hash || "FREE"}.pdf`);
     } catch (err) {
       console.error("PDF generation failed:", err);
+      alert("Failed to download PDF ticket. Please try again.");
     } finally {
-      document.body.removeChild(ticketDiv);
+      if (document.body.contains(ticketDiv)) {
+        document.body.removeChild(ticketDiv);
+      }
     }
   };
 
@@ -366,7 +391,7 @@ const CustomerDashboard = () => {
       setBookingActionLoading(false);
     }
   };
-  const handleBookVenueSubmit = (e) => {
+  const handleBookVenueSubmit = async (e) => {
     e.preventDefault();
     setBookingError('');
     
@@ -380,11 +405,39 @@ const CustomerDashboard = () => {
       return;
     }
 
-    setPaymentVenue(rentModal.venue);
-    setPaymentDates({ start: bookingDates.start, end: bookingDates.end });
-    setRentModal({ show: false, venue: null });
-    setBookingDates({ start: '', end: '' });
-    setShowPaymentModal(true);
+    setBookingActionLoading(true);
+    try {
+      const selectedVenueId = rentModal.venue.id;
+      const reqStart = bookingDates.start;
+      const reqEnd = bookingDates.end;
+
+      // Real-time backend query for all active/pending bookings of this venue plot
+      const checkRes = await api.get(`venues/bookings/?venue=${selectedVenueId}`);
+      const activeBookings = checkRes.data || [];
+
+      const isOverlap = activeBookings.some(vb => {
+        const status = (vb.status || '').toLowerCase();
+        if (status !== 'approved' && status !== 'pending') return false;
+        return (vb.start_date <= reqEnd && vb.end_date >= reqStart);
+      });
+
+      if (isOverlap) {
+        setBookingError("This venue is already booked on this date. Please select another date.");
+        setBookingActionLoading(false);
+        return;
+      }
+
+      setPaymentVenue(rentModal.venue);
+      setPaymentDates({ start: bookingDates.start, end: bookingDates.end });
+      setRentModal({ show: false, venue: null });
+      setBookingDates({ start: '', end: '' });
+      setShowPaymentModal(true);
+    } catch (err) {
+      console.error("Error checking date availability:", err);
+      setBookingError(err.response?.data?.error || "This venue is already booked on this date. Please select another date.");
+    } finally {
+      setBookingActionLoading(false);
+    }
   };
 
   const handleRemoveWishlist = async (eventId) => {
@@ -411,9 +464,34 @@ const CustomerDashboard = () => {
     }
   };
 
+  const handleReplyToNotification = async (notif) => {
+    const match = notif.message?.match(/booking #(\d+)/i);
+    const bookingId = match ? parseInt(match[1]) : null;
+
+    if (bookingId) {
+      let foundBooking = venueBookings.find(b => b.id === bookingId);
+      if (!foundBooking) {
+        try {
+          const res = await api.get(`venues/bookings/`);
+          const list = res.data?.results || res.data || [];
+          foundBooking = list.find(b => b.id === bookingId);
+        } catch (err) {
+          console.error("Failed to fetch booking for notification reply:", err);
+        }
+      }
+
+      if (foundBooking) {
+        setChatModalBooking(foundBooking);
+        return;
+      }
+    }
+
+    setActiveTab('venues');
+  };
+
   const unreadNotificationsCount = notifications.filter(n => !n.is_read).length;
   const ticketRefunds = bookings.filter(b => b.payment_status === 'refunded').reduce((sum, b) => sum + (parseFloat(b.total_price) * 0.5), 0);
-  const venueRefunds = venueBookings.filter(vb => vb.payment_status === 'refunded').reduce((sum, vb) => sum + (parseFloat(vb.total_price) * 0.9), 0);
+  const venueRefunds = venueBookings.filter(vb => vb.payment_status === 'refunded').reduce((sum, vb) => sum + parseFloat(vb.total_price || 0), 0);
   const totalRefundedAmount = ticketRefunds + venueRefunds;
   const totalVenuesBooked = venueBookings.filter(vb => vb.status === 'approved').length;
 
@@ -580,6 +658,26 @@ const CustomerDashboard = () => {
                   </div>
                 </div>
               </div>
+
+              {/* AI Event Recommendations Section */}
+              <AIEventRecommendations 
+                title="Recommended for You" 
+                subtitle="AI-tailored event picks based on your ticket history & wishlist" 
+              />
+            </motion.div>
+          )}
+
+          {activeTab === 'recommendations' && (
+            <motion.div
+              key="recommendations"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 15 }}
+            >
+              <AIEventRecommendations 
+                title="AI Event Recommendations Engine" 
+                subtitle="Personalized suggestions generated using Scikit-Learn Content-Based Filtering" 
+              />
             </motion.div>
           )}
 
@@ -606,20 +704,26 @@ const CustomerDashboard = () => {
                 ) : (
                   bookings.map((booking) => (
                     <div key={booking.id} className="glass-card rounded-2xl p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-                      <div className="flex items-center space-x-4">
+                      <div 
+                        onClick={() => setSelectedDetailEvent(booking.event_details)}
+                        className="flex items-center space-x-4 cursor-pointer group flex-grow"
+                      >
                         {booking.event_details.image ? (
                           <img
                             src={booking.event_details.image.startsWith('http') ? booking.event_details.image : `${BACKEND_URL}${booking.event_details.image}`}
                             alt={booking.event_details.title}
-                            className="w-16 h-16 rounded-xl object-cover"
+                            className="w-16 h-16 rounded-xl object-cover group-hover:scale-105 transition-transform"
                           />
                         ) : (
-                          <div className="w-16 h-16 rounded-xl bg-white/5 flex items-center justify-center text-dark-muted">
+                          <div className="w-16 h-16 rounded-xl bg-white/5 flex items-center justify-center text-dark-muted group-hover:scale-105 transition-transform">
                             <Calendar className="w-6 h-6" />
                           </div>
                         )}
                         <div>
-                          <h4 className="font-bold text-lg text-dark-text">{booking.event_details.title}</h4>
+                          <h4 className="font-bold text-lg text-dark-text group-hover:text-brand-primary transition-colors flex items-center gap-2">
+                            <span>{booking.event_details.title}</span>
+                            <span className="text-[10px] text-blue-400 font-bold bg-blue-500/10 px-2 py-0.5 rounded uppercase">View Details ↗</span>
+                          </h4>
                           <p className="text-xs text-dark-muted mt-1">{booking.event_details.date} at {booking.event_details.time}</p>
                           <p className="text-xs text-dark-muted">{booking.event_details.location}</p>
                           <div className="flex items-center space-x-1.5 mt-1 text-[11px] text-amber-400 font-semibold">
@@ -662,18 +766,52 @@ const CustomerDashboard = () => {
                         <div>
                           <span className="text-xs font-semibold text-dark-muted uppercase">Status</span>
                           <span className={`block text-xs font-bold px-2 py-0.5 rounded mt-0.5 uppercase ${
+                            booking.is_checked_in ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' :
                             booking.payment_status === 'refunded' ? 'bg-red-500/10 text-red-400' :
                             booking.refund_requested ? 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/10' :
                             booking.status === 'confirmed' ? 'bg-emerald-500/10 text-emerald-400' : 
                             'bg-red-500/10 text-red-400'
                           }`}>
-                            {booking.payment_status === 'refunded' ? 'Refunded' :
+                            {booking.is_checked_in ? 'Checked In' :
+                             booking.payment_status === 'refunded' ? 'Refunded' :
                              booking.refund_requested ? 'Refund Pending' :
                              booking.status}
                           </span>
                         </div>
                         {booking.status === 'confirmed' && (
-                          <div className="flex space-x-2">
+                          <div className="flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setChatModalType('event');
+                                setChatModalBooking(booking);
+                              }}
+                              className="px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                              title="Direct Message Event Organizer"
+                            >
+                              <MessageSquare className="w-3.5 h-3.5" />
+                              <span>Message Organizer</span>
+                            </button>
+
+                            {booking.event_details?.venue_details?.owner && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setChatModalType('venue');
+                                  setChatModalBooking({
+                                    id: booking.id,
+                                    venue_details: booking.event_details.venue_details,
+                                    organizer_details: user
+                                  });
+                                }}
+                                className="px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                                title="Direct Message Venue Owner"
+                              >
+                                <Building className="w-3.5 h-3.5" />
+                                <span>Message Venue Owner</span>
+                              </button>
+                            )}
+
                             <a
                               href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(booking.event_details.location)}`}
                               target="_blank"
@@ -684,7 +822,7 @@ const CustomerDashboard = () => {
                               <MapPin className="w-4 h-4" />
                             </a>
                             <button
-                              onClick={() => handleOpenReviewModal('event', booking.event_details)}
+                              onClick={(e) => { e.stopPropagation(); handleOpenReviewModal('event', booking.event_details); }}
                               className={`p-2 rounded-xl transition-all ${
                                 booking.event_details.reviews?.some(r => r.user === user?.id)
                                   ? 'text-dark-muted bg-white/5 cursor-not-allowed border border-white/5'
@@ -696,23 +834,26 @@ const CustomerDashboard = () => {
                               <Star className={`w-4 h-4 ${booking.event_details.reviews?.some(r => r.user === user?.id) ? '' : 'fill-amber-400'}`} />
                             </button>
                             <button
-                              onClick={() => handleDownloadTicket(booking)}
+                              onClick={(e) => { e.stopPropagation(); handleDownloadTicket(booking); }}
                               className="p-2 text-brand-primary hover:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-xl transition-all"
                               title="Download PDF Ticket"
                             >
                               <Download className="w-4 h-4" />
                             </button>
-                            <button
-                              onClick={() => {
-                                setSelectedCancelBooking(booking);
-                                setTicketsToCancel(1);
-                                setCancelModalOpen(true);
-                              }}
-                              className="p-2 text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 rounded-xl transition-all"
-                              title="Cancel Ticket(s)"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                            {!booking.is_checked_in && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedCancelBooking(booking);
+                                  setTicketsToCancel(1);
+                                  setCancelModalOpen(true);
+                                }}
+                                className="p-2 text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 rounded-xl transition-all"
+                                title="Cancel Ticket(s)"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
                           </div>
                         )}
                       </div>
@@ -737,20 +878,26 @@ const CustomerDashboard = () => {
                   <div className="space-y-4">
                     {venueBookings.map((vb) => (
                       <div key={vb.id} className="glass-card rounded-2xl p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 border border-white/5 bg-dark-bg/25">
-                        <div className="flex items-center space-x-4">
+                        <div 
+                          onClick={() => setSelectedDetailVenue(vb.venue_details)}
+                          className="flex items-center space-x-4 cursor-pointer group flex-grow"
+                        >
                           {vb.venue_details?.image ? (
                             <img
                               src={vb.venue_details.image.startsWith('http') ? vb.venue_details.image : `${BACKEND_URL}${vb.venue_details.image}`}
                               alt={vb.venue_details.name}
-                              className="w-16 h-16 rounded-xl object-cover border border-white/10"
+                              className="w-16 h-16 rounded-xl object-cover border border-white/10 group-hover:scale-105 transition-transform"
                             />
                           ) : (
-                            <div className="w-16 h-16 rounded-xl bg-white/5 flex items-center justify-center text-dark-muted">
+                            <div className="w-16 h-16 rounded-xl bg-white/5 flex items-center justify-center text-dark-muted group-hover:scale-105 transition-transform">
                               <Building className="w-6 h-6" />
                             </div>
                           )}
                           <div>
-                            <h4 className="font-bold text-lg text-dark-text">{vb.venue_details?.name}</h4>
+                            <h4 className="font-bold text-lg text-dark-text group-hover:text-emerald-400 transition-colors flex items-center gap-2">
+                              <span>{vb.venue_details?.name}</span>
+                              <span className="text-[10px] text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded uppercase">View Details ↗</span>
+                            </h4>
                             <p className="text-xs text-emerald-400 font-semibold mt-0.5">{vb.start_date} to {vb.end_date}</p>
                             <p className="text-xs text-dark-muted">{vb.venue_details?.location}</p>
 
@@ -780,25 +927,42 @@ const CustomerDashboard = () => {
                         <div className="flex items-center space-x-6 w-full md:w-auto justify-between border-t md:border-t-0 border-white/5 pt-4 md:pt-0">
                           <div>
                             <span className="text-xs font-semibold text-dark-muted uppercase">Total Price</span>
-                            <p className="font-extrabold text-emerald-400 mt-0.5 font-mono">
+                            <p className={`font-extrabold mt-0.5 font-mono ${vb.payment_status === 'refunded' ? 'text-red-400 line-through' : 'text-emerald-400'}`}>
                               ₹{parseFloat(vb.total_price || 0).toLocaleString('en-IN')}
                             </p>
                           </div>
+
+                          {vb.payment_status === 'refunded' && (
+                            <div>
+                              <span className="text-xs font-semibold text-emerald-400 uppercase">100% Refunded</span>
+                              <p className="font-extrabold text-emerald-400 mt-0.5 font-mono">
+                                ₹{parseFloat(vb.total_price || 0).toLocaleString('en-IN')}
+                              </p>
+                            </div>
+                          )}
+
                           <div>
                             <span className="text-xs font-semibold text-dark-muted uppercase">Status</span>
                             <span className={`block text-xs font-bold px-2 py-0.5 rounded mt-0.5 uppercase ${
+                              vb.payment_status === 'refunded' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
                               vb.status === 'approved' ? (vb.cancel_requested ? 'bg-yellow-500/10 text-yellow-400' : 'bg-emerald-500/10 text-emerald-400') :
                               vb.status === 'pending' ? 'bg-yellow-500/10 text-yellow-400' :
                               'bg-red-500/10 text-red-400'
                             }`}>
-                              {vb.cancel_requested && vb.status === 'approved' ? 'Cancel Requested' : vb.status}
+                              {vb.payment_status === 'refunded' ? 'Rejected (100% Refunded)' :
+                               vb.cancel_requested && vb.status === 'approved' ? 'Cancel Requested' : vb.status}
                             </span>
                           </div>
 
-                          <div className="flex items-center space-x-2">
+                          <div className="flex items-center space-x-2" onClick={(e) => e.stopPropagation()}>
                             {vb.status === 'pending' && vb.payment_status !== 'paid' && (
                               <button
-                                onClick={() => setPaymentModalVenueBooking(vb)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setPaymentVenue(vb.venue_details);
+                                  setPaymentDates({ start: vb.start_date, end: vb.end_date });
+                                  setShowPaymentModal(true);
+                                }}
                                 className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-extrabold text-xs shadow-md uppercase tracking-wider"
                               >
                                 Pay Now
@@ -817,9 +981,24 @@ const CustomerDashboard = () => {
                               </a>
                             )}
 
+                            {(vb.status === 'approved' || vb.status === 'pending') && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setChatModalType('venue');
+                                  setChatModalBooking(vb);
+                                }}
+                                className="px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                                title="Direct Message Venue Owner"
+                              >
+                                <MessageSquare className="w-3.5 h-3.5" />
+                                <span>Message Owner</span>
+                              </button>
+                            )}
+
                             {vb.status === 'approved' && !vb.cancel_requested && (
                               <button
-                                onClick={() => handleOpenReviewModal('venue', vb.venue_details)}
+                                onClick={(e) => { e.stopPropagation(); handleOpenReviewModal('venue', vb.venue_details); }}
                                 className="p-2 text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 rounded-xl transition-all border border-amber-500/20"
                                 title="Rate & Review Venue Plot"
                               >
@@ -829,7 +1008,8 @@ const CustomerDashboard = () => {
 
                             {!vb.cancel_requested && vb.status !== 'rejected' && vb.status !== 'cancelled' && (
                               <button
-                                onClick={() => {
+                                onClick={(e) => {
+                                  e.stopPropagation();
                                   setSelectedCancelBooking(vb);
                                   setCancelType('venue');
                                   setCancelModalOpen(true);
@@ -864,22 +1044,29 @@ const CustomerDashboard = () => {
                 </div>
               ) : (
                 wishlist.map((item) => (
-                  <div key={item.id} className="glass-card rounded-2xl overflow-hidden flex flex-col">
+                  <div 
+                    key={item.id} 
+                    onClick={() => setSelectedDetailEvent(item.event_details)}
+                    className="glass-card rounded-2xl overflow-hidden flex flex-col cursor-pointer group hover:border-brand-primary/40 transition-all"
+                  >
                     {item.event_details.image && (
                       <img
                         src={item.event_details.image.startsWith('http') ? item.event_details.image : `${BACKEND_URL}${item.event_details.image}`}
                         alt={item.event_details.title}
-                        className="w-full h-48 object-cover"
+                        className="w-full h-48 object-cover group-hover:scale-105 transition-transform"
                       />
                     )}
                     <div className="p-6 flex flex-col flex-grow">
-                      <h4 className="font-bold text-lg text-dark-text">{item.event_details.title}</h4>
+                      <h4 className="font-bold text-lg text-dark-text group-hover:text-brand-primary transition-colors flex items-center justify-between">
+                        <span>{item.event_details.title}</span>
+                        <span className="text-[10px] text-blue-400 font-bold bg-blue-500/10 px-2 py-0.5 rounded uppercase">Details ↗</span>
+                      </h4>
                       <p className="text-xs text-dark-muted mt-1">{item.event_details.date} | {item.event_details.location}</p>
                       <p className="text-sm font-bold text-brand-primary mt-3">₹{item.event_details.price}</p>
                       
-                      <div className="flex items-center justify-between mt-6 pt-4 border-t border-white/5">
+                      <div className="flex items-center justify-between mt-6 pt-4 border-t border-white/5" onClick={(e) => e.stopPropagation()}>
                         <button
-                          onClick={() => handleRemoveWishlist(item.event)}
+                          onClick={(e) => { e.stopPropagation(); handleRemoveWishlist(item.event); }}
                           className="flex items-center space-x-1.5 text-xs text-red-400 hover:text-red-300 font-semibold"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -918,33 +1105,55 @@ const CustomerDashboard = () => {
                   <p className="text-dark-muted">No notifications received.</p>
                 </div>
               ) : (
-                notifications.map((notif) => (
-                  <div
-                    key={notif.id}
-                    className={`glass-card rounded-2xl p-5 flex items-start justify-between border-l-4 transition-all ${
-                      notif.is_read ? 'border-white/5 opacity-60' : 'border-emerald-500 bg-emerald-500/5'
-                    }`}
-                  >
-                    <div className="flex space-x-3">
-                      <div className={`p-2 rounded-lg ${notif.is_read ? 'bg-white/5 text-dark-muted' : 'bg-emerald-500/10 text-emerald-400'}`}>
-                        {notif.is_read ? <CheckCircle className="w-4 h-4" /> : <Bell className="w-4 h-4" />}
+                notifications.map((notif) => {
+                  const isMessageNotif = (notif.title && notif.title.toLowerCase().includes('message')) || (notif.message && notif.message.toLowerCase().includes('sent a message'));
+
+                  return (
+                    <div
+                      key={notif.id}
+                      className={`glass-card rounded-2xl p-5 border-l-4 transition-all space-y-3 ${
+                        notif.is_read ? 'border-white/5 opacity-80' : 'border-emerald-500 bg-emerald-500/5'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex space-x-3">
+                          <div className={`p-2 rounded-lg ${isMessageNotif ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : notif.is_read ? 'bg-white/5 text-dark-muted' : 'bg-emerald-500/10 text-emerald-400'}`}>
+                            {isMessageNotif ? <MessageSquare className="w-4 h-4" /> : notif.is_read ? <CheckCircle className="w-4 h-4" /> : <Bell className="w-4 h-4" />}
+                          </div>
+                          <div>
+                            <h5 className="font-bold text-sm text-dark-text">{notif.title}</h5>
+                            <p className="text-xs text-dark-muted mt-1 leading-relaxed">{notif.message}</p>
+                            <span className="block text-[10px] text-dark-muted mt-2">{new Date(notif.created_at).toLocaleString()}</span>
+                          </div>
+                        </div>
+                        {!notif.is_read && (
+                          <button
+                            onClick={() => handleMarkNotificationRead(notif.id)}
+                            className="text-[10px] font-bold text-brand-primary hover:text-emerald-400 uppercase tracking-wider"
+                          >
+                            Mark read
+                          </button>
+                        )}
                       </div>
-                      <div>
-                        <h5 className="font-bold text-sm text-dark-text">{notif.title}</h5>
-                        <p className="text-xs text-dark-muted mt-1 leading-relaxed">{notif.message}</p>
-                        <span className="block text-[10px] text-dark-muted mt-2">{new Date(notif.created_at).toLocaleString()}</span>
-                      </div>
+
+                      {isMessageNotif && (
+                        <div className="pt-3 border-t border-white/10 flex items-center justify-between">
+                          <span className="text-[10px] font-extrabold text-blue-400 uppercase tracking-wider flex items-center gap-1.5">
+                            <MessageSquare className="w-3.5 h-3.5" />
+                            <span>Direct Chat Notification</span>
+                          </span>
+                          <button
+                            onClick={() => handleReplyToNotification(notif)}
+                            className="px-3.5 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-md shadow-blue-950/40 cursor-pointer"
+                          >
+                            <MessageSquare className="w-3.5 h-3.5" />
+                            <span>Reply / Send Answer</span>
+                          </button>
+                        </div>
+                      )}
                     </div>
-                    {!notif.is_read && (
-                      <button
-                        onClick={() => handleMarkNotificationRead(notif.id)}
-                        className="text-[10px] font-bold text-brand-primary hover:text-emerald-400 uppercase tracking-wider"
-                      >
-                        Mark read
-                      </button>
-                    )}
-                  </div>
-                ))
+                  );
+                })
               )}
             </motion.div>
           )}
@@ -1454,7 +1663,7 @@ const CustomerDashboard = () => {
                   {cancelType === 'venue' ? (
                     <div className="space-y-4">
                       <p className="text-xs text-dark-muted leading-relaxed">
-                        Cancelling will request a refund of 90% (₹{(parseFloat(selectedCancelBooking.total_price) * 0.9).toFixed(2)}), subject to plot owner approval.
+                        Cancelling will request a 100% full refund of ₹{(parseFloat(selectedCancelBooking.total_price)).toFixed(2)}, subject to plot owner approval.
                       </p>
                     </div>
                   ) : selectedCancelBooking.tickets_count > 1 ? (
@@ -1529,8 +1738,8 @@ const CustomerDashboard = () => {
                 <div className="space-y-4">
                   {cancelType === 'venue' ? (
                     <div className="bg-blue-500/10 border border-blue-500/20 text-blue-400 p-3 rounded-xl text-[10px] leading-relaxed">
-                      <strong>Refund Account:</strong> Please enter your card details below. A 90% refund of ₹{(
-                        parseFloat(selectedCancelBooking.total_price) * 0.9
+                      <strong>Refund Account:</strong> Please enter your card details below. A 100% full refund of ₹{(
+                        parseFloat(selectedCancelBooking.total_price)
                       ).toFixed(2)} will be credited to this card within 5-7 days after owner approval.
                     </div>
                   ) : (
@@ -1781,6 +1990,15 @@ const CustomerDashboard = () => {
         )}
       </AnimatePresence>
 
+      {/* Event Detail Modal */}
+      {selectedDetailEvent && (
+        <EventDetailModal
+          event={selectedDetailEvent}
+          onClose={() => setSelectedDetailEvent(null)}
+          showHostBox={true}
+        />
+      )}
+
       {/* Venue Detail Modal */}
       {selectedDetailVenue && (
         <VenueDetailModal
@@ -1792,6 +2010,14 @@ const CustomerDashboard = () => {
           }}
         />
       )}
+
+      <VenueBookingChatModal
+        booking={chatModalBooking}
+        type={chatModalType}
+        isOpen={!!chatModalBooking}
+        onClose={() => setChatModalBooking(null)}
+        currentUser={user}
+      />
     </div>
   );
 };

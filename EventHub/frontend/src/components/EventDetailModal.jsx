@@ -6,13 +6,22 @@ import {
   ThumbsUp, Check, Mail, Phone, IndianRupee, Users, Tag, ArrowRight
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { BACKEND_URL } from '../api/api';
+import api, { BACKEND_URL } from '../api/api';
 
 const EventDetailModal = ({ event, onClose, onBookNow, isWishlisted, onToggleWishlist, showHostBox = true }) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [isInterested, setIsInterested] = useState(false);
   const [interestedCount, setInterestedCount] = useState(() => Math.floor(100 + Math.random() * 85));
   const [copied, setCopied] = useState(false);
+
+  // Review & Rating State
+  const [localReviews, setLocalReviews] = useState(() => event?.reviews || []);
+  const [newRating, setNewRating] = useState(5);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [newComment, setNewComment] = useState('');
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [reviewError, setReviewError] = useState('');
+  const [reviewSuccess, setReviewSuccess] = useState('');
 
   if (!event) return null;
 
@@ -30,12 +39,52 @@ const EventDetailModal = ({ event, onClose, onBookNow, isWishlisted, onToggleWis
   const hostEmail = event.organizer_details?.email || event.organizer_email || (typeof event.organizer === 'string' ? event.organizer : 'jalppatel1580@gmail.com');
   const hostPhone = event.organizer_details?.phone || event.organizer_phone || event.host_phone || '+91 98765 43210';
 
-  const reviewsCount = event.reviews && Array.isArray(event.reviews) ? event.reviews.length : (event.rating_count !== undefined ? event.rating_count : 0);
-  const ratingAvg = (event.rating_avg !== undefined && event.rating_avg !== null && parseFloat(event.rating_avg) > 0) 
-    ? parseFloat(event.rating_avg).toFixed(1) 
-    : (reviewsCount > 0 && event.reviews 
-        ? (event.reviews.reduce((acc, r) => acc + (r.rating || 5), 0) / reviewsCount).toFixed(1)
-        : null);
+  const reviewsList = localReviews;
+  const reviewsCount = reviewsList.length;
+  const ratingAvg = reviewsCount > 0 
+    ? (reviewsList.reduce((acc, r) => acc + (r.rating || 5), 0) / reviewsCount).toFixed(1) 
+    : (event.rating_avg ? parseFloat(event.rating_avg).toFixed(1) : null);
+
+  const hasUserReviewed = Boolean(
+    isAuthenticated && user && reviewsList.some(r => 
+      r.user === user.id || 
+      r.user_details?.id === user.id || 
+      (r.user_details?.email && r.user_details.email === user.email) ||
+      (r.user_email && r.user_email === user.email)
+    )
+  );
+
+  const handleReviewSubmit = async (e) => {
+    e.preventDefault();
+    if (!isAuthenticated) {
+      setReviewError('Please log in to submit a rating and review.');
+      return;
+    }
+    if (!newComment.trim()) {
+      setReviewError('Please enter a review comment.');
+      return;
+    }
+
+    setSubmittingReview(true);
+    setReviewError('');
+    setReviewSuccess('');
+
+    try {
+      const res = await api.post(`events/${event.id}/review/`, {
+        rating: newRating,
+        comment: newComment.trim()
+      });
+      setReviewSuccess('Thank you! Your rating & review has been posted.');
+      setLocalReviews(prev => [res.data, ...prev]);
+      setNewComment('');
+      setNewRating(5);
+    } catch (err) {
+      console.error(err);
+      setReviewError(err.response?.data?.error || 'Failed to submit review. Please try again.');
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
 
   const handleToggleInterested = () => {
     if (!isInterested) {
@@ -323,6 +372,186 @@ const EventDetailModal = ({ event, onClose, onBookNow, isWishlisted, onToggleWis
                   ></iframe>
                 </div>
               )}
+            </div>
+
+            {/* 6. Customer Ratings & Reviews Section */}
+            <div className="space-y-6 pt-6 border-t border-white/10">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h3 className="text-xs font-black uppercase tracking-wider text-dark-muted flex items-center gap-2">
+                    <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
+                    <span>Customer Ratings & Reviews</span>
+                  </h3>
+                  <p className="text-xs text-dark-muted mt-0.5">Verified attendee feedback and community ratings</p>
+                </div>
+
+                {/* Overall rating pill */}
+                <div className="flex items-center space-x-3 bg-amber-400/10 border border-amber-400/20 px-4 py-2 rounded-2xl w-fit">
+                  <div className="flex items-center space-x-1">
+                    <Star className="w-5 h-5 text-amber-400 fill-amber-400" />
+                    <span className="text-xl font-black text-amber-400">{ratingAvg || 'New'}</span>
+                  </div>
+                  <div className="text-left border-l border-amber-400/20 pl-3">
+                    <p className="text-xs font-bold text-dark-text">{reviewsCount} {reviewsCount === 1 ? 'Review' : 'Reviews'}</p>
+                    <p className="text-[10px] text-amber-300 font-medium">Community Score</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Write a Review Form Box or Already Reviewed Notice */}
+              {hasUserReviewed ? (
+                <div className="p-5 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2 text-emerald-400 font-bold text-xs">
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>You have already submitted a review for this event.</span>
+                    </div>
+                    <span className="text-[10px] font-black bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded uppercase tracking-wider">
+                      Reviewed ✓
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-dark-muted">
+                    Thank you for sharing your feedback! Each user can submit one review per event.
+                  </p>
+                </div>
+              ) : !isAuthenticated ? (
+                <div className="p-5 rounded-2xl border border-white/10 bg-white/[0.02] text-center space-y-2">
+                  <p className="text-xs font-bold text-dark-text">Want to rate and review this event?</p>
+                  <p className="text-[11px] text-dark-muted">Please log in to your EventHub account to leave customer feedback.</p>
+                </div>
+              ) : (
+                <div className="p-5 rounded-2xl border border-white/10 bg-white/[0.02] space-y-4">
+                  <h4 className="text-sm font-bold text-dark-text flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-brand-primary" />
+                    <span>Leave Your Rating & Review</span>
+                  </h4>
+
+                  {reviewSuccess ? (
+                    <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold flex items-center space-x-2">
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>{reviewSuccess}</span>
+                    </div>
+                  ) : (
+                    <form onSubmit={handleReviewSubmit} className="space-y-4">
+                      {reviewError && (
+                        <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-semibold">
+                          {reviewError}
+                        </div>
+                      )}
+
+                      <div>
+                        <label className="block text-[11px] font-bold uppercase tracking-wider text-dark-muted mb-1.5">
+                          Select Rating (1-5 Stars)
+                        </label>
+                        <div className="flex items-center space-x-1.5">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <button
+                              key={star}
+                              type="button"
+                              onMouseEnter={() => setHoverRating(star)}
+                              onMouseLeave={() => setHoverRating(0)}
+                              onClick={() => setNewRating(star)}
+                              className="p-1 transition-transform hover:scale-110 focus:outline-none"
+                            >
+                              <Star
+                                className={`w-6 h-6 ${
+                                  (hoverRating || newRating) >= star
+                                    ? 'text-amber-400 fill-amber-400'
+                                    : 'text-gray-600'
+                                }`}
+                              />
+                            </button>
+                          ))}
+                          <span className="text-xs font-bold text-amber-400 ml-2">
+                            {newRating} / 5 Stars
+                          </span>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold uppercase tracking-wider text-dark-muted mb-1.5">
+                          Your Feedback / Review
+                        </label>
+                        <textarea
+                          rows="3"
+                          value={newComment}
+                          onChange={(e) => setNewComment(e.target.value)}
+                          placeholder="Write your experience about this event..."
+                          className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-xs text-dark-text placeholder-gray-500 focus:outline-none focus:border-brand-primary transition-all resize-none"
+                          required
+                        />
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={submittingReview}
+                        className="bg-brand-primary hover:bg-blue-600 text-white font-bold px-6 py-2.5 rounded-xl text-xs uppercase tracking-wider transition-all shadow-md shadow-blue-500/20 flex items-center space-x-2 disabled:opacity-50"
+                      >
+                        {submittingReview ? (
+                          <span>Posting...</span>
+                        ) : (
+                          <>
+                            <span>Submit Customer Review</span>
+                            <ArrowRight className="w-3.5 h-3.5" />
+                          </>
+                        )}
+                      </button>
+                    </form>
+                  )}
+                </div>
+              )}
+
+              {/* Reviews List */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-black uppercase tracking-wider text-dark-muted">
+                  All Reviews ({reviewsCount})
+                </h4>
+
+                {reviewsList.length === 0 ? (
+                  <div className="text-center py-8 bg-white/[0.01] rounded-2xl border border-white/5 space-y-2">
+                    <Star className="w-8 h-8 text-gray-600 mx-auto" />
+                    <p className="text-xs font-bold text-dark-text">No reviews yet for this event</p>
+                    <p className="text-[11px] text-dark-muted">Be the first customer to leave a review!</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
+                    {reviewsList.map((rev, idx) => {
+                      const reviewerName = rev.user_details?.first_name 
+                        ? `${rev.user_details.first_name} ${rev.user_details.last_name || ''}`
+                        : (rev.user_email || rev.user_details?.email || 'Event Attendee');
+                      const initial = reviewerName[0]?.toUpperCase() || 'U';
+
+                      return (
+                        <div key={rev.id || idx} className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2.5">
+                              <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-600 text-white font-black text-xs flex items-center justify-center uppercase">
+                                {initial}
+                              </div>
+                              <div>
+                                <p className="text-xs font-bold text-dark-text leading-tight">{reviewerName}</p>
+                                <p className="text-[10px] text-dark-muted">
+                                  {rev.created_at ? new Date(rev.created_at).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Verified Customer'}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Rating badge */}
+                            <div className="flex items-center space-x-1 bg-white/5 px-2.5 py-1 rounded-lg border border-white/5">
+                              <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                              <span className="text-xs font-extrabold text-amber-400">{rev.rating || 5}.0</span>
+                            </div>
+                          </div>
+
+                          <p className="text-xs text-dark-text/90 leading-relaxed font-normal bg-white/5 p-3 rounded-xl border border-white/5">
+                            "{rev.comment}"
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
 
           </div>

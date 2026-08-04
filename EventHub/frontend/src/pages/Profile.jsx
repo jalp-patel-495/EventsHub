@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { motion } from 'framer-motion';
 import { User, Phone, Mail, Calendar, Upload, Save, CheckCircle2, Shield, MessageSquare, CornerDownRight, Lock, Eye, EyeOff, KeyRound } from 'lucide-react';
 import api, { BACKEND_URL } from '../api/api';
+import { validateName, validatePhone } from '../utils/validation';
 
 const Profile = () => {
   const { user, updateProfile } = useAuth();
@@ -34,19 +35,37 @@ const Profile = () => {
   const [complaints, setComplaints] = useState([]);
   const [loadingComplaints, setLoadingComplaints] = useState(true);
 
+  // Admin Messages state
+  const [adminMessages, setAdminMessages] = useState([]);
+  const [loadingMessages, setLoadingMessages] = useState(true);
+  const [supportTab, setSupportTab] = useState('queries'); // 'queries' or 'messages'
+
   useEffect(() => {
     const fetchComplaints = async () => {
       try {
         const res = await api.get('events/contact/my-complaints/');
-        setComplaints(res.data.results || res.data);
+        setComplaints(res.data.results || res.data || []);
       } catch (err) {
         console.error("Failed to load complaints:", err);
       } finally {
         setLoadingComplaints(false);
       }
     };
+
+    const fetchAdminMessages = async () => {
+      try {
+        const res = await api.get('notifications/');
+        setAdminMessages(res.data || []);
+      } catch (err) {
+        console.error("Failed to load notifications:", err);
+      } finally {
+        setLoadingMessages(false);
+      }
+    };
+
     if (user) {
       fetchComplaints();
+      fetchAdminMessages();
     }
   }, [user]);
   
@@ -75,31 +94,27 @@ const Profile = () => {
     setSuccessMsg('');
     setErrorMsg('');
 
-    const nameRegex = /^[A-Za-z\s'-]+$/;
-    if (!firstName.trim() || firstName.trim().length < 2) {
-      setErrorMsg('First name must be at least 2 characters long.');
+    const fnErr = validateName(firstName, 'First Name');
+    if (fnErr) {
+      setErrorMsg(fnErr);
       setLoading(false);
       return;
     }
-    if (!nameRegex.test(firstName.trim())) {
-      setErrorMsg('First name must only contain alphabetical characters.');
+
+    const lnErr = validateName(lastName, 'Last Name');
+    if (lnErr) {
+      setErrorMsg(lnErr);
       setLoading(false);
       return;
     }
-    if (!lastName.trim() || lastName.trim().length < 2) {
-      setErrorMsg('Last name must be at least 2 characters long.');
-      setLoading(false);
-      return;
-    }
-    if (!nameRegex.test(lastName.trim())) {
-      setErrorMsg('Last name must only contain alphabetical characters.');
-      setLoading(false);
-      return;
-    }
-    if (phone && !/^\d{10}$/.test(phone)) {
-      setErrorMsg('Phone number must be exactly 10 digits.');
-      setLoading(false);
-      return;
+
+    if (phone && phone.trim()) {
+      const phErr = validatePhone(phone);
+      if (phErr) {
+        setErrorMsg(phErr);
+        setLoading(false);
+        return;
+      }
     }
 
     try {
@@ -596,82 +611,145 @@ const Profile = () => {
             <MessageSquare className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-xl font-bold tracking-tight text-dark-text">Support & Complaints</h2>
-            <p className="text-xs text-dark-muted mt-0.5">Track your submitted queries and official administrative responses</p>
+            <h2 className="text-xl font-bold tracking-tight text-dark-text">Support & Messages</h2>
+            <p className="text-xs text-dark-muted mt-0.5">Track your submitted queries, replies, and direct alerts from the administrator</p>
           </div>
         </div>
 
-        {loadingComplaints ? (
-          <div className="flex flex-col items-center justify-center py-12 space-y-3">
-            <span className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></span>
-            <span className="text-sm text-dark-muted font-medium animate-pulse">Loading inquiries...</span>
-          </div>
-        ) : complaints.length === 0 ? (
-          <div className="text-center py-12 border border-dashed border-white/5 rounded-2xl bg-white/[0.02]">
-            <MessageSquare className="w-10 h-10 text-dark-muted mx-auto mb-3 opacity-60" />
-            <h4 className="text-sm font-bold text-dark-text">No active support queries</h4>
-            <p className="text-xs text-dark-muted mt-1 max-w-sm mx-auto leading-relaxed">
-              If you have any issues or questions about events, venues, or payments, submit a message through our <Link to="/contact" className="text-emerald-400 hover:underline">Contact Support</Link> page.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {complaints.map((complaint) => (
-              <div 
-                key={complaint.id} 
-                className="p-5 rounded-2xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.03] transition-all space-y-4"
-              >
-                {/* Header */}
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                  <div>
-                    <span className="text-xs font-bold text-emerald-400 tracking-wide uppercase px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/10">
-                      {complaint.subject || 'General Inquiry'}
-                    </span>
-                    <span className="text-[10px] text-dark-muted ml-3 font-medium">
-                      Submitted on {formatDate(complaint.created_at)}
-                    </span>
-                  </div>
-                  <div>
-                    {complaint.reply ? (
-                      <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/15">
-                        Replied
-                      </span>
-                    ) : (
-                      <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider px-2 py-0.5 rounded bg-amber-500/15 animate-pulse">
-                        Pending Reply
-                      </span>
-                    )}
-                  </div>
-                </div>
+        {/* Toggle between Support Queries and Direct Messages */}
+        <div className="flex border-b border-white/5 mb-6">
+          <button
+            onClick={() => setSupportTab('queries')}
+            className={`px-4 py-2 text-xs font-bold uppercase tracking-wider border-b-2 transition-all ${
+              supportTab === 'queries'
+                ? 'border-emerald-500 text-emerald-400'
+                : 'border-transparent text-dark-muted hover:text-dark-text'
+            }`}
+          >
+            Support Queries ({complaints.length})
+          </button>
+          <button
+            onClick={() => setSupportTab('messages')}
+            className={`px-4 py-2 text-xs font-bold uppercase tracking-wider border-b-2 transition-all ${
+              supportTab === 'messages'
+                ? 'border-emerald-500 text-emerald-400'
+                : 'border-transparent text-dark-muted hover:text-dark-text'
+            }`}
+          >
+            Direct Messages ({adminMessages.length})
+          </button>
+        </div>
 
-                {/* Message */}
-                <div className="space-y-1.5">
-                  <p className="text-xs font-semibold text-dark-muted uppercase tracking-wider">Your Message</p>
-                  <p className="text-sm text-dark-text bg-white/[0.01] border border-white/[0.02] p-3 rounded-xl leading-relaxed whitespace-pre-line">
-                    {complaint.message}
-                  </p>
-                </div>
-
-                {/* Admin Reply */}
-                {complaint.reply && (
-                  <div className="pl-4 sm:pl-6 border-l-2 border-emerald-500/30 space-y-2 mt-3 bg-emerald-500/[0.01] p-3.5 rounded-r-xl">
-                    <div className="flex items-center space-x-2 text-emerald-400">
-                      <CornerDownRight className="w-3.5 h-3.5" />
-                      <span className="text-xs font-bold uppercase tracking-wider">Official Response</span>
-                      <span className="text-[10px] text-dark-muted font-medium">
-                        • {formatDate(complaint.replied_at)}
+        {supportTab === 'queries' && (
+          loadingComplaints ? (
+            <div className="flex flex-col items-center justify-center py-12 space-y-3">
+              <span className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></span>
+              <span className="text-sm text-dark-muted font-medium animate-pulse">Loading inquiries...</span>
+            </div>
+          ) : complaints.length === 0 ? (
+            <div className="text-center py-12 border border-dashed border-white/5 rounded-2xl bg-white/[0.02]">
+              <MessageSquare className="w-10 h-10 text-dark-muted mx-auto mb-3 opacity-60" />
+              <h4 className="text-sm font-bold text-dark-text">No active support queries</h4>
+              <p className="text-xs text-dark-muted mt-1 max-w-sm mx-auto leading-relaxed">
+                If you have any issues or questions about events, venues, or payments, submit a message through our <Link to="/contact" className="text-emerald-400 hover:underline">Contact Support</Link> page.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {complaints.map((complaint) => (
+                <div 
+                  key={complaint.id} 
+                  className="p-5 rounded-2xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.03] transition-all space-y-4"
+                >
+                  {/* Header */}
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                    <div>
+                      <span className="text-xs font-bold text-emerald-400 tracking-wide uppercase px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/10">
+                        {complaint.subject || 'General Inquiry'}
+                      </span>
+                      <span className="text-[10px] text-dark-muted ml-3 font-medium">
+                        Submitted on {formatDate(complaint.created_at)}
                       </span>
                     </div>
-                    <p className="text-sm text-emerald-300 leading-relaxed whitespace-pre-line">
-                      {complaint.reply}
+                    <div>
+                      {complaint.reply ? (
+                        <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/15">
+                          Replied
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider px-2 py-0.5 rounded bg-amber-500/15 animate-pulse">
+                          Pending Reply
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Message */}
+                  <div className="space-y-1.5">
+                    <p className="text-xs font-semibold text-dark-muted uppercase tracking-wider">Your Message</p>
+                    <p className="text-sm text-dark-text bg-white/[0.01] border border-white/[0.02] p-3 rounded-xl leading-relaxed whitespace-pre-line">
+                      {complaint.message}
                     </p>
                   </div>
-                )}
-              </div>
-            ))}
-          </div>
+
+                  {/* Admin Reply */}
+                  {complaint.reply && (
+                    <div className="pl-4 sm:pl-6 border-l-2 border-emerald-500/30 space-y-2 mt-3 bg-emerald-500/[0.01] p-3.5 rounded-r-xl">
+                      <div className="flex items-center space-x-2 text-emerald-400">
+                        <CornerDownRight className="w-3.5 h-3.5" />
+                        <span className="text-xs font-bold uppercase tracking-wider">Official Response</span>
+                        <span className="text-[10px] text-dark-muted font-medium">
+                          • {formatDate(complaint.replied_at)}
+                        </span>
+                      </div>
+                      <p className="text-sm text-emerald-300 leading-relaxed whitespace-pre-line">
+                        {complaint.reply}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )
         )}
-      </motion.div>
+
+        {supportTab === 'messages' && (
+          loadingMessages ? (
+            <div className="flex flex-col items-center justify-center py-12 space-y-3">
+              <span className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></span>
+              <span className="text-sm text-dark-muted font-medium animate-pulse">Loading administrative alerts...</span>
+            </div>
+          ) : adminMessages.length === 0 ? (
+            <div className="text-center py-12 border border-dashed border-white/5 rounded-2xl bg-white/[0.02]">
+              <MessageSquare className="w-10 h-10 text-dark-muted mx-auto mb-3 opacity-60" />
+              <h4 className="text-sm font-bold text-dark-text">No administrative messages</h4>
+              <p className="text-xs text-dark-muted mt-1 max-w-sm mx-auto leading-relaxed">
+                Direct announcements or custom account notices sent from the EventHub administration team will appear here.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {adminMessages.map((msg) => (
+                <div 
+                  key={msg.id} 
+                  className="p-5 rounded-2xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.03] transition-all space-y-3"
+                >
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs font-bold text-blue-400 tracking-wide uppercase px-2 py-0.5 rounded bg-blue-500/10 border border-blue-500/10">
+                      {msg.title || 'Official Admin Message'}
+                    </span>
+                    <span className="text-[10px] text-dark-muted font-medium">
+                      Received {formatDate(msg.created_at)}
+                    </span>
+                  </div>
+                  <p className="text-sm text-dark-text leading-relaxed whitespace-pre-line bg-white/[0.01] border border-white/[0.02] p-3 rounded-xl">
+                    {msg.message}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )
+        )}  </motion.div>
     </div>
   );
 };

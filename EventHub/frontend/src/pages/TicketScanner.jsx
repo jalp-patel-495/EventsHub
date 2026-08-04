@@ -105,18 +105,59 @@ const TicketScanner = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
+      const endpoint = user?.role === 'admin' 
+        ? 'events/listings/?page_size=1000' 
+        : `events/listings/?organizer=${user?.id}&page_size=1000`;
+
       const [eventsRes, bookingsRes] = await Promise.all([
-        api.get(`events/listings/?organizer=${user.id}`),
+        api.get(endpoint),
         api.get('events/bookings/')
       ]);
-      const fetchedEvents = eventsRes.data.results || eventsRes.data;
-      setEvents(fetchedEvents);
-      
-      const confirmedBookings = bookingsRes.data.filter(b => b.status === 'confirmed');
+
+      let fetchedEvents = eventsRes.data.results || eventsRes.data;
+      if (!Array.isArray(fetchedEvents)) fetchedEvents = [];
+
+      const rawBookings = bookingsRes.data?.results || bookingsRes.data || [];
+      const confirmedBookings = (Array.isArray(rawBookings) ? rawBookings : []).filter(b => b.status === 'confirmed');
+
+      // If specific organizer endpoint returned no events or fewer events than available, fetch all listings to merge
+      const allListingsRes = await api.get('events/listings/?page_size=1000');
+      const allListings = allListingsRes.data.results || allListingsRes.data || [];
+
+      const eventMap = new Map();
+      // Add organizer events first
+      fetchedEvents.forEach(e => eventMap.set(e.id.toString(), e));
+
+      // Also add any listings created by user or linked to existing bookings
+      if (Array.isArray(allListings)) {
+        allListings.forEach(e => {
+          const isUserOrg = e.organizer?.id === user?.id || e.organizer?.email === user?.email || e.organizer === user?.id;
+          if (isUserOrg && !eventMap.has(e.id.toString())) {
+            eventMap.set(e.id.toString(), e);
+          }
+        });
+
+        confirmedBookings.forEach(b => {
+          const eventId = (typeof b.event === 'object' ? b.event?.id : b.event)?.toString();
+          if (eventId && !eventMap.has(eventId)) {
+            const match = allListings.find(l => l.id.toString() === eventId);
+            if (match) {
+              eventMap.set(eventId, match);
+            }
+          }
+        });
+      }
+
+      let finalEventsList = Array.from(eventMap.values());
+      if (finalEventsList.length === 0 && Array.isArray(allListings)) {
+        finalEventsList = allListings;
+      }
+
+      setEvents(finalEventsList);
       setBookings(confirmedBookings);
 
-      if (fetchedEvents.length > 0) {
-        setSelectedEventId(fetchedEvents[0].id.toString());
+      if (finalEventsList.length > 0) {
+        setSelectedEventId(finalEventsList[0].id.toString());
       }
     } catch (err) {
       console.error("Failed to fetch scanner data:", err);

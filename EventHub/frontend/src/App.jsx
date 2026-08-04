@@ -27,6 +27,7 @@ import About from './pages/About';
 import CateringExplore from './pages/CateringExplore';
 import CateringDetail from './pages/CateringDetail';
 import VenueExplore from './pages/VenueExplore';
+import RecommendedPage from './pages/RecommendedPage';
 
 
 // Testimonials shown only above footer on home page
@@ -98,6 +99,12 @@ const TestimonialsAboveFooter = () => {
 };
 
 function App() {
+  // Direct pathname fallback for HashRouter compatibility
+  if (typeof window !== 'undefined' && window.location.pathname.includes('/pay-simulate') && !window.location.hash.includes('/pay-simulate')) {
+    const cleanPath = window.location.pathname.replace('/pay-simulate', '');
+    const baseUrl = (window.location.origin + cleanPath).replace(/\/+$/, '');
+    window.location.replace(`${baseUrl}/#/pay-simulate${window.location.search}`);
+  }
 
   return (
     <Router>
@@ -115,6 +122,7 @@ function App() {
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/explore" element={<EventExplore />} />
+              <Route path="/recommended" element={<RecommendedPage />} />
               <Route path="/events" element={<Navigate to="/explore" replace />} />
               <Route path="/live-feed" element={<LiveEvents />} />
               <Route path="/pay-simulate" element={<PaySimulate />} />
@@ -161,6 +169,22 @@ function App() {
               />
               <Route 
                 path="/organizer/rentals" 
+                element={
+                  <ProtectedRoute allowedRoles={['organizer']}>
+                    <OrganizerDashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/organizer/venues" 
+                element={
+                  <ProtectedRoute allowedRoles={['organizer']}>
+                    <OrganizerDashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/organizer/venue-rentals" 
                 element={
                   <ProtectedRoute allowedRoles={['organizer']}>
                     <OrganizerDashboard />

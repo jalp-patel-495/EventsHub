@@ -11,10 +11,11 @@ from django.db.models import Q
 from django.utils import timezone
 from decimal import Decimal
 
-from .models import Category, Event, Booking, Review, Wishlist, Coupon, ContactQuery
-from .serializers import CategorySerializer, EventSerializer, BookingSerializer, ReviewSerializer, WishlistSerializer, CouponSerializer, ContactQuerySerializer
+from .models import Category, Event, Booking, Review, Wishlist, Coupon, ContactQuery, EventBookingMessage
+from .serializers import CategorySerializer, EventSerializer, BookingSerializer, ReviewSerializer, WishlistSerializer, CouponSerializer, ContactQuerySerializer, EventBookingMessageSerializer
 from notifications.models import Notification
 from events.live_events import get_live_weather, get_live_ahmedabad_events
+from .recommendation_service import get_user_event_recommendations
 
 class CustomPagination(PageNumberPagination):
     page_size = 6
@@ -76,17 +77,26 @@ class EventViewSet(viewsets.ModelViewSet):
         # Filtering by Organizer
         organizer = self.request.query_params.get('organizer')
         if organizer:
-            queryset = queryset.filter(organizer_id=organizer)
+            if str(organizer).isdigit():
+                queryset = queryset.filter(organizer_id=organizer)
+            else:
+                queryset = queryset.filter(organizer__email=organizer)
 
         # Filtering by Min Price
         min_price = self.request.query_params.get('min_price')
         if min_price:
-            queryset = queryset.filter(price__gte=Decimal(min_price))
+            try:
+                queryset = queryset.filter(price__gte=Decimal(str(min_price)))
+            except Exception:
+                pass
 
         # Filtering by Max Price
         max_price = self.request.query_params.get('max_price')
         if max_price:
-            queryset = queryset.filter(price__lte=Decimal(max_price))
+            try:
+                queryset = queryset.filter(price__lte=Decimal(str(max_price)))
+            except Exception:
+                pass
 
         # Filtering by Date Range
         start_date = self.request.query_params.get('start_date')
@@ -125,6 +135,9 @@ class BookingCreateListView(APIView):
         if request.user.role == 'organizer':
             # Organizers see bookings on their events
             bookings = Booking.objects.filter(event__organizer=request.user).order_by('-created_at')
+        elif request.user.role == 'admin':
+            # Admins see all bookings across platform
+            bookings = Booking.objects.all().order_by('-created_at')
         else:
             # Customers see their own bookings
             bookings = Booking.objects.filter(user=request.user).order_by('-created_at')
@@ -296,8 +309,10 @@ class BookingCancelView(APIView):
         is_partial = cancel_count < booking.tickets_count
 
         if is_partial:
+            if booking.tickets_count <= 0:
+                return Response({"error": "Invalid ticket count for booking."}, status=status.HTTP_400_BAD_REQUEST)
             # Calculate price per ticket
-            price_per_ticket = float(booking.total_price) / booking.tickets_count
+            price_per_ticket = float(booking.total_price) / float(booking.tickets_count)
             cancelled_amount = Decimal(f"{price_per_ticket * cancel_count:.2f}")
             
             # Deduct from original booking
@@ -429,15 +444,10 @@ class ReviewCreateView(APIView):
     def post(self, request, event_id):
         event = get_object_or_404(Event, pk=event_id)
         
-        # 1. Enforce that customer has booked and confirmed tickets to this event
-        has_booked = Booking.objects.filter(user=request.user, event=event, status='confirmed').exists()
-        if not has_booked:
-            return Response({"error": "You can only review events you have booked tickets for."}, status=status.HTTP_400_BAD_REQUEST)
-            
-        # 2. Check duplicate review
+        # 1. Check duplicate review
         already_reviewed = Review.objects.filter(user=request.user, event=event).exists()
         if already_reviewed:
-            return Response({"error": "You have already reviewed this event."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "You have already submitted a review for this event."}, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = ReviewSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -865,3 +875,130 @@ class LiveEventsRecentSalesView(APIView):
                 "timestamp": booking.created_at.isoformat() if booking.created_at else None,
             })
         return Response(recent_live_bookings_data, status=status.HTTP_200_OK)
+
+
+class EventBookingMessageView(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get(self, request, booking_id):
+        booking = get_object_or_404(Booking, pk=booking_id)
+        is_customer = (booking.user == request.user)
+        is_organizer = (booking.event.organizer == request.user)
+        is_venue_owner = (booking.event.venue and booking.event.venue.owner == request.user)
+        is_admin = (getattr(request.user, 'role', '') == 'admin' or request.user.is_staff)
+
+        if not (is_customer or is_organizer or is_venue_owner or is_admin):
+            return Response({"error": "You do not have permission to view messages for this booking."}, status=status.HTTP_403_FORBIDDEN)
+
+        messages = EventBookingMessage.objects.filter(booking=booking).select_related('sender').order_by('created_at')
+        return Response(EventBookingMessageSerializer(messages, many=True).data)
+
+    def post(self, request, booking_id):
+        booking = get_object_or_404(Booking, pk=booking_id)
+        is_customer = (booking.user == request.user)
+        is_organizer = (booking.event.organizer == request.user)
+        is_venue_owner = (booking.event.venue and booking.event.venue.owner == request.user)
+        is_admin = (getattr(request.user, 'role', '') == 'admin' or request.user.is_staff)
+
+        if not (is_customer or is_organizer or is_venue_owner or is_admin):
+            return Response({"error": "You do not have permission to send messages for this booking."}, status=status.HTTP_403_FORBIDDEN)
+
+        text = request.data.get('message', '').strip()
+        if not text:
+            return Response({"error": "Message content cannot be empty."}, status=status.HTTP_400_BAD_REQUEST)
+
+        msg = EventBookingMessage.objects.create(
+            booking=booking,
+            sender=request.user,
+            message=text
+        )
+
+        sender_name = request.user.first_name or request.user.email
+
+        # Send notifications
+        if is_customer:
+            # Customer -> Organizer (and Venue Owner if applicable)
+            Notification.objects.create(
+                user=booking.event.organizer,
+                title="New Message from Customer",
+                message=f"{sender_name} sent a message regarding booking #{booking.id} ({booking.event.title}): '{text[:60]}...'"
+            )
+            if booking.event.venue and booking.event.venue.owner and booking.event.venue.owner != booking.event.organizer:
+                Notification.objects.create(
+                    user=booking.event.venue.owner,
+                    title="New Message from Customer",
+                    message=f"{sender_name} sent a message regarding ticket booking #{booking.id} for event at {booking.event.venue.name}: '{text[:60]}...'"
+                )
+        elif is_organizer:
+            # Organizer -> Customer
+            Notification.objects.create(
+                user=booking.user,
+                title="New Message from Organizer",
+                message=f"{sender_name} sent a message regarding your ticket booking #{booking.id} ({booking.event.title}): '{text[:60]}...'"
+            )
+            if booking.event.venue and booking.event.venue.owner and booking.event.venue.owner != request.user:
+                Notification.objects.create(
+                    user=booking.event.venue.owner,
+                    title="New Message from Organizer",
+                    message=f"{sender_name} sent a message regarding ticket booking #{booking.id} ({booking.event.title}): '{text[:60]}...'"
+                )
+        elif is_venue_owner:
+            # Venue Owner -> Customer & Organizer
+            Notification.objects.create(
+                user=booking.user,
+                title="New Message from Venue Owner",
+                message=f"{sender_name} sent a message regarding your ticket booking #{booking.id} ({booking.event.title}): '{text[:60]}...'"
+            )
+            if booking.event.organizer != request.user:
+                Notification.objects.create(
+                    user=booking.event.organizer,
+                    title="New Message from Venue Owner",
+                    message=f"{sender_name} sent a message regarding ticket booking #{booking.id} ({booking.event.title}): '{text[:60]}...'"
+                )
+
+        return Response(EventBookingMessageSerializer(msg).data, status=status.HTTP_201_CREATED)
+
+
+class EventRecommendationsView(APIView):
+    """
+    API Endpoint for fetching AI-powered event recommendations.
+    
+    Route: GET /api/events/recommendations/
+    Query Params: limit (optional, default 5)
+    
+    Behavior:
+    1. Returns top 5 personalized event recommendations based on user's bookings & wishlist content similarity using Scikit-Learn.
+    2. If user is unauthenticated or has no booking history, returns trending & top-rated events.
+    """
+    permission_classes = (permissions.AllowAny,)
+
+    def get(self, request):
+        limit = request.query_params.get('limit', 5)
+        try:
+            limit = int(limit)
+        except ValueError:
+            limit = 5
+
+        user = request.user if request.user.is_authenticated else None
+        
+        # Get AI recommendations from recommendation service
+        recommended_events = get_user_event_recommendations(user=user, limit=limit)
+        
+        # Serialize recommendations
+        serializer = EventSerializer(recommended_events, many=True, context={'request': request})
+        
+        has_history = False
+        if user and user.is_authenticated:
+            from events.models import Booking, Wishlist
+            has_history = (
+                Booking.objects.filter(user=user, status='confirmed').exists() or 
+                Wishlist.objects.filter(user=user).exists()
+            )
+
+        return Response({
+            "recommendations": serializer.data,
+            "count": len(serializer.data),
+            "recommendation_type": "personalized" if has_history else "trending"
+        }, status=status.HTTP_200_OK)
+
+

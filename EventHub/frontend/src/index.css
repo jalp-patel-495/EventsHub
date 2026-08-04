@@ -6,11 +6,11 @@
 
 :root {
   --bg-color: #0A0E1A;
-  --text-color: #F8FAFC;
+  --text-color: #fcf8f8;
   --card-color: #121A2E;
   --border-color: #1E293B;
   --muted-color: #94A3B8;
-  --glass-nav-bg: rgba(10, 14, 26, 0.75);
+  --glass-nav-bg: rgba(26, 10, 10, 0.75);
   --glass-panel-bg: rgba(18, 26, 46, 0.6);
   --glass-card-bg: rgba(18, 26, 46, 0.45);
   --glass-input-bg: rgba(10, 14, 26, 0.5);

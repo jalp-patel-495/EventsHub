@@ -7,10 +7,23 @@ from .serializers import ChatMessageSerializer
 
 User = get_user_model()
 
+from urllib.parse import parse_qs
+from rest_framework_simplejwt.tokens import AccessToken
+
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.room_name = self.scope['url_route']['kwargs']['room_name']
         self.room_group_name = f"chat_{self.room_name}"
+
+        # Extract JWT Token from query parameters if present
+        query_string = self.scope.get('query_string', b'').decode('utf-8')
+        params = parse_qs(query_string)
+        token_key = params.get('token', [None])[0]
+
+        if token_key:
+            user = await self.get_user_from_token(token_key)
+            if user:
+                self.scope['user'] = user
 
         # Join room group
         await self.channel_layer.group_add(
@@ -19,6 +32,15 @@ class ChatConsumer(AsyncWebsocketConsumer):
         )
 
         await self.accept()
+
+    @database_sync_to_async
+    def get_user_from_token(self, token_key):
+        try:
+            token = AccessToken(token_key)
+            user_id = token['user_id']
+            return User.objects.get(id=user_id)
+        except Exception:
+            return None
 
     async def disconnect(self, close_code):
         # Leave room group

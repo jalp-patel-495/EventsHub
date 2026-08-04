@@ -2,7 +2,7 @@ import React from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { User, Calendar, MapPin, Sparkles, ArrowRight, Music, Code, Rocket, Briefcase, Utensils, Dumbbell, GraduationCap, Building2, Gamepad2, Palette, Handshake, Heart } from 'lucide-react';
+import { User, Calendar, MapPin, Sparkles, ArrowRight, Music, Code, Rocket, Briefcase, Utensils, Dumbbell, GraduationCap, Building2, Gamepad2, Palette, Handshake, Heart, Laugh } from 'lucide-react';
 import About from './About';
 import ThreeDEventBackground from '../components/ThreeDEventBackground';
 import ThreeDPageScrollTicket from '../components/ThreeDPageScrollTicket';
@@ -19,7 +19,8 @@ const categoriesData = [
   { name: 'Gaming', icon: Gamepad2, color: 'text-blue-400', bg: 'bg-blue-500/10' },
   { name: 'Art', icon: Palette, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
   { name: 'Workshop', icon: Handshake, color: 'text-indigo-400', bg: 'bg-indigo-500/10' },
-  { name: 'Charity', icon: Heart, color: 'text-pink-400', bg: 'bg-pink-500/10' }
+  { name: 'Charity', icon: Heart, color: 'text-pink-400', bg: 'bg-pink-500/10' },
+  { name: 'Comedy', icon: Laugh, color: 'text-amber-400', bg: 'bg-amber-500/10' }
 ];
 
 const LandingPage = () => {
@@ -31,7 +32,7 @@ const LandingPage = () => {
   const heroY = useTransform(scrollYProgress, [0, 0.20], [0, -40]);
 
   if (isAuthenticated && user) {
-    const dashboardPath = user.role === 'admin' ? '/admin-dashboard' : user.role === 'organizer' ? '/organizer/events' : user.role === 'plot_owner' ? '/venues/manage' : '/bookings';
+    const dashboardPath = user.role === 'admin' ? '/admin-dashboard' : user.role === 'organizer' ? '/organizer/events' : user.role === 'plot_owner' ? '/venues/dashboard' : '/bookings';
     return <Navigate to={dashboardPath} replace />;
   }
 
@@ -109,7 +110,7 @@ const LandingPage = () => {
               {isAuthenticated ? (
                 <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
                   <Link
-                    to={user?.role === 'admin' ? '/admin-dashboard' : user?.role === 'organizer' ? '/organizer/events' : user?.role === 'plot_owner' ? '/venues/manage' : '/bookings'}
+                    to={user?.role === 'admin' ? '/admin-dashboard' : user?.role === 'organizer' ? '/organizer/events' : user?.role === 'plot_owner' ? '/venues/dashboard' : '/bookings'}
                     className="w-full sm:w-auto flex items-center justify-center space-x-2 bg-gradient-to-r from-brand-primary to-rose-600 text-white font-medium px-8 py-3.5 rounded-xl hover:from-brand-primary hover:to-rose-700 shadow-lg shadow-brand-primary/20 transition-all transform hover:-translate-y-0.5"
                   >
                     <span>Go to Dashboard</span>
