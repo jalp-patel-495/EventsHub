@@ -17,7 +17,7 @@ EventHub is a modern, responsive web application designed for discovering, booki
 ## 🛠️ Technology Stack
 - **Frontend**: React, TailwindCSS, Vite, Lucide Icons
 - **Backend**: Python, Django REST Framework, SQLite
-- **Authentication**: JWT (JSON Web Tokens) with OTP Verification
+- **Authentication**: JWT (JSON Web Tokens) with OTP Verification, SMTP Modul
 
 ---
 
