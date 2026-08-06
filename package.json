@@ -2,6 +2,7 @@
   "name": "eventhub-monorepo",
   "version": "1.0.0",
   "private": true,
+  "author": "Jalp Patel, Sumit Gohel",
   "scripts": {
     "build": "cd EventHub/frontend && npm install && npm run build"
   }
