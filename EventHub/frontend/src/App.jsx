@@ -107,7 +107,7 @@ function App() {
   }
 
   return (
-    <Router basename={import.meta.env.BASE_URL || '/'}>
+    <Router>
       <AuthProvider>
         <div className="flex flex-col min-h-screen bg-dark-bg text-dark-text relative theme-bg">
           <Navbar />
