@@ -1,5 +1,9 @@
+<<<<<<< HEAD
 # 🎪 EVENTHUB
 <!-- YOLO achievement trigger -->
+=======
+# 🎪 EVENSTHUB
+>>>>>>> 574827031b0bb92f76fed6eea6dbc56834156f67
 
 > **Connecting Experiences & Venues to Everyone.**
 
@@ -428,7 +432,7 @@ VITE_WS_BASE_URL=ws://localhost:8000/ws
 ## Lead Developers & Authors
 
 - **Jalp Patel** ([@jalp-patel-495](https://github.com/jalp-patel-495))
-- **Sumit Gohel** ([@Sumitgohel07](https://github.com/Sumitgohel07))
+- **Gohel Sumit** ([@Sumitgohel07](https://github.com/Sumitgohel07))
 
 ---
 
@@ -444,7 +448,7 @@ If you find this project helpful or inspiring, please give it a **⭐ Star** on 
 
 ---
 
-## EventHub
+## EventsHub
 
 **Connecting Experiences & Venues to Everyone.**
 
@@ -453,4 +457,4 @@ If you find this project helpful or inspiring, please give it a **⭐ Star** on 
 ## 👥 Contributors
 
 - **Jalp Patel** ([@jalp-patel-495](https://github.com/jalp-patel-495))
-- **Sumit Gohel** ([@Sumitgohel07](https://github.com/Sumitgohel07))
+- **Gohel Sumit** ([@Sumitgohel07](https://github.com/Sumitgohel07))
