@@ -6,6 +6,51 @@ import { motion } from 'framer-motion';
 import { Building, Star, MapPin, Search, ArrowRight, Filter, RefreshCw, CheckCircle2 } from 'lucide-react';
 import VenueDetailModal from '../components/VenueDetailModal';
 
+const DEFAULT_SAMPLE_VENUES = [
+  {
+    id: 201,
+    title: "Shree Ram Royal Party Lawn & Convention Centre",
+    description: "Spacious 50,000 sq.ft lush green party plot with grand entrance, AC changing rooms, and ample parking space for 1000+ vehicles.",
+    address: "SG Highway, near Vaishno Devi Circle, Ahmedabad",
+    capacity: 3500,
+    price_per_day: "150000.00",
+    image: "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?q=80&w=1200&auto=format&fit=crop",
+    facility: "party_lawn",
+    has_catering: true,
+    has_dj: true,
+    has_decor: true,
+    owner_name: "Shree Ram Conventions"
+  },
+  {
+    id: 202,
+    title: "The Grand Imperial Banquet & Ballroom",
+    description: "Luxury indoor AC banquet hall featuring crystal chandeliers, premium acoustic sound system, and stage lighting for weddings and corporate galas.",
+    address: "Sindhu Bhavan Road, Bodakdev, Ahmedabad",
+    capacity: 1200,
+    price_per_day: "95000.00",
+    image: "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=1200&auto=format&fit=crop",
+    facility: "banquet",
+    has_catering: true,
+    has_dj: true,
+    has_decor: true,
+    owner_name: "Imperial Hospitality"
+  },
+  {
+    id: 203,
+    title: "Heritage Riverfront Open Air Arena",
+    description: "Scenic riverside venue plot with breathtaking views of Sabarmati Riverfront, ideal for musical concerts and cultural events.",
+    address: "Sabarmati Riverfront East, Ashram Road, Ahmedabad",
+    capacity: 6000,
+    price_per_day: "200000.00",
+    image: "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?q=80&w=1200&auto=format&fit=crop",
+    facility: "party_lawn",
+    has_catering: false,
+    has_dj: true,
+    has_decor: false,
+    owner_name: "Riverfront Authorities"
+  }
+];
+
 const VenueExplore = () => {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
@@ -35,9 +80,19 @@ const VenueExplore = () => {
       if (hasDecor) params.has_decor = 'true';
 
       const res = await api.get('venues/listings/', { params });
-      setVenues(res.data);
+      const data = res.data.results || res.data || [];
+      if (Array.isArray(data) && data.length > 0) {
+        setVenues(data);
+      } else if (!search && !facility && !minPrice && !maxPrice) {
+        setVenues(DEFAULT_SAMPLE_VENUES);
+      } else {
+        setVenues([]);
+      }
     } catch (err) {
       console.error('Error fetching venues:', err);
+      if (!search && !facility && !minPrice && !maxPrice) {
+        setVenues(DEFAULT_SAMPLE_VENUES);
+      }
     } finally {
       setLoading(false);
     }

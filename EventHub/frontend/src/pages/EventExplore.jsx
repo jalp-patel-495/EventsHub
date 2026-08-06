@@ -7,6 +7,69 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import BookingModal from '../components/BookingModal';
 import EventDetailModal from '../components/EventDetailModal';
 
+const DEFAULT_SAMPLE_EVENTS = [
+  {
+    id: 101,
+    title: "Ahmedabad Live Sunburn Music Fest 2026",
+    description: "Experience the biggest EDM night of Gujarat featuring international DJs, laser light shows, and food stalls at YMCA Club Grounds.",
+    category_name: "Music",
+    date: "2026-10-15",
+    time: "18:00:00",
+    location: "YMCA Club, SG Highway, Ahmedabad",
+    ticket_price: "999.00",
+    total_tickets: 5000,
+    available_tickets: 4200,
+    image: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=1200&auto=format&fit=crop",
+    is_approved: true,
+    organizer_name: "Sunburn Events"
+  },
+  {
+    id: 102,
+    title: "Tech Summit Gujarat 2026",
+    description: "Annual artificial intelligence, Web3, and startup ecosystem conference featuring top founders, tech talks, and investor networking.",
+    category_name: "Tech",
+    date: "2026-11-20",
+    time: "09:30:00",
+    location: "Riverfront Event Centre, Ahmedabad",
+    ticket_price: "499.00",
+    total_tickets: 2000,
+    available_tickets: 1850,
+    image: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?q=80&w=1200&auto=format&fit=crop",
+    is_approved: true,
+    organizer_name: "TechGujarat Community"
+  },
+  {
+    id: 103,
+    title: "Grand Garba Night & Cultural Carnival",
+    description: "Traditional Navratri & Garba celebration featuring live orchestra, traditional food courts, and celebrity performances.",
+    category_name: "Cultural",
+    date: "2026-10-02",
+    time: "20:00:00",
+    location: "Karnavati Club Grounds, SG Highway, Ahmedabad",
+    ticket_price: "750.00",
+    total_tickets: 8000,
+    available_tickets: 6100,
+    image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=1200&auto=format&fit=crop",
+    is_approved: true,
+    organizer_name: "Gujarat Cultural Board"
+  },
+  {
+    id: 104,
+    title: "Standup Comedy Unplugged Live",
+    description: "An evening of non-stop laughter with top standup comedians performing live in Ahmedabad.",
+    category_name: "Comedy",
+    date: "2026-09-18",
+    time: "19:30:00",
+    location: "Town Hall Auditorium, Ellisbridge, Ahmedabad",
+    ticket_price: "599.00",
+    total_tickets: 1200,
+    available_tickets: 430,
+    image: "https://images.unsplash.com/photo-1585699324551-f6c309eedeca?q=80&w=1200&auto=format&fit=crop",
+    is_approved: true,
+    organizer_name: "Laugh Factory India"
+  }
+];
+
 const EventExplore = () => {
   const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
@@ -97,10 +160,23 @@ const EventExplore = () => {
       if (endDate) url += `&end_date=${endDate}`;
 
       const response = await api.get(url);
-      setEvents(response.data.results || response.data);
-      setTotalCount(response.data.count || response.data.length);
+      const data = response.data.results || response.data || [];
+      if (Array.isArray(data) && data.length > 0) {
+        setEvents(data);
+        setTotalCount(response.data.count || data.length);
+      } else if (!search && !category && !minPrice && !maxPrice) {
+        setEvents(DEFAULT_SAMPLE_EVENTS);
+        setTotalCount(DEFAULT_SAMPLE_EVENTS.length);
+      } else {
+        setEvents([]);
+        setTotalCount(0);
+      }
     } catch (err) {
       console.error("Error loading events list:", err);
+      if (!search && !category && !minPrice && !maxPrice) {
+        setEvents(DEFAULT_SAMPLE_EVENTS);
+        setTotalCount(DEFAULT_SAMPLE_EVENTS.length);
+      }
     } finally {
       setLoading(false);
     }
