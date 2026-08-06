@@ -1,0 +1,7 @@
+{
+  "buildCommand": "cd EventHub/frontend && npm install && npm run build",
+  "outputDirectory": "EventHub/frontend/dist",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
