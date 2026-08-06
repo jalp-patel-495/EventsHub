@@ -1,9 +1,5 @@
-<<<<<<< HEAD
 # 🎪 EVENTHUB
 <!-- YOLO achievement trigger -->
-=======
-# 🎪 EVENSTHUB
->>>>>>> 574827031b0bb92f76fed6eea6dbc56834156f67
 
 > **Connecting Experiences & Venues to Everyone.**
 
