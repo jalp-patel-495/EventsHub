@@ -1,5 +1,5 @@
 import React from 'react';
-import { HashRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './routes/ProtectedRoute';
 import Navbar from './components/Navbar';
@@ -107,7 +107,7 @@ function App() {
   }
 
   return (
-    <Router>
+    <Router basename={import.meta.env.BASE_URL || '/'}>
       <AuthProvider>
         <div className="flex flex-col min-h-screen bg-dark-bg text-dark-text relative theme-bg">
           <Navbar />
