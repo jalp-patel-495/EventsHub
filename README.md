@@ -423,10 +423,10 @@ VITE_WS_BASE_URL=ws://localhost:8000/ws
 
 ---
 
-## Lead Developer & Author
+## Lead Developers & Authors
 
-**Jalp Patel**
-- GitHub: [@jalp-patel-495](https://github.com/jalp-patel-495)
+- **Jalp Patel** ([@jalp-patel-495](https://github.com/jalp-patel-495))
+- **Sumit Gohel** ([@Sumitgohel07](https://github.com/Sumitgohel07))
 
 ---
 
@@ -451,3 +451,4 @@ If you find this project helpful or inspiring, please give it a **⭐ Star** on 
 ## 👥 Contributors
 
 - **Jalp Patel** ([@jalp-patel-495](https://github.com/jalp-patel-495))
+- **Sumit Gohel** ([@Sumitgohel07](https://github.com/Sumitgohel07))

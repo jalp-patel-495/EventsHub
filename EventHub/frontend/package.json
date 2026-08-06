@@ -2,6 +2,7 @@
   "name": "frontend",
   "private": true,
   "version": "0.0.0",
+  "author": "Jalp Patel, Sumit Gohel",
   "homepage": "https://jalp-patel-495.github.io/EventsHub",
   "type": "module",
   "scripts": {
