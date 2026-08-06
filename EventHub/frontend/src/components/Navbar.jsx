@@ -319,17 +319,17 @@ const Navbar = () => {
               to={isAuthenticated ? (user?.role === 'admin' ? '/admin-dashboard' : user?.role === 'organizer' ? '/organizer/events' : user?.role === 'plot_owner' ? '/venues/dashboard' : '/bookings') : '/'} 
               className="flex items-center space-x-3 group"
             >
-              <div className="relative flex items-center justify-center w-8.5 h-8.5 rounded-xl bg-gradient-to-tr from-rose-500 via-pink-500 to-amber-500 text-white shadow-lg shadow-pink-500/20 group-hover:scale-105 transition-transform duration-300">
-                <Ticket className="w-4.5 h-4.5 animate-pulse" />
-                <div className="absolute inset-0 rounded-xl bg-gradient-to-tr from-rose-500 via-pink-500 to-amber-500 blur-[2px] opacity-40 group-hover:opacity-75 transition-opacity duration-300 -z-10"></div>
+              <div className="relative flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 text-white shadow-lg shadow-blue-600/30 group-hover:scale-105 transition-all duration-300">
+                <Ticket className="w-5 h-5 animate-pulse text-white" />
+                <div className="absolute inset-0 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 blur-md opacity-50 group-hover:opacity-80 transition-opacity duration-300 -z-10"></div>
               </div>
-              <span className="font-extrabold text-xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-rose-500 via-pink-500 to-amber-500 font-sans">
+              <span className="font-extrabold text-xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-sky-300 to-indigo-300 drop-shadow-[0_2px_10px_rgba(59,130,246,0.4)] font-sans">
                 AHMEDABAD EVENT HUB
               </span>
             </Link>
 
             {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center space-x-6">
+            <div className="hidden md:flex items-center space-x-2 lg:space-x-3">
               {navLinks.map((link) => {
                 const isRentalLink = link.name === 'Rental Requests' || link.name === 'Approvals';
                 const isRefundLink = link.name === 'Refund Requests' || link.name === 'Refund Ticket Requests';
@@ -339,8 +339,10 @@ const Navbar = () => {
                   <Link
                     key={link.name}
                     to={link.path}
-                    className={`text-sm font-medium transition-colors hover:text-brand-primary relative flex items-center space-x-1.5 ${
-                      isActive(link.path) ? 'text-brand-primary' : 'text-dark-muted'
+                    className={`text-sm font-semibold transition-all duration-200 relative flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl ${
+                      isActive(link.path) 
+                        ? 'text-white font-bold bg-blue-600/90 shadow-md shadow-blue-600/30 border border-blue-400/30' 
+                        : 'text-slate-300 hover:text-white hover:bg-white/10'
                     }`}
                   >
                     <span>{link.name}</span>
@@ -358,8 +360,10 @@ const Navbar = () => {
                 <Link
                   key={link.name}
                   to={link.path}
-                  className={`flex items-center space-x-1 text-sm font-medium transition-colors hover:text-brand-primary ${
-                    isActive(link.path) ? 'text-brand-primary' : 'text-dark-muted'
+                  className={`flex items-center space-x-1 text-sm font-semibold transition-all duration-200 px-3.5 py-1.5 rounded-xl ${
+                    isActive(link.path) 
+                      ? 'text-white font-bold bg-blue-600/90 shadow-md shadow-blue-600/30 border border-blue-400/30' 
+                      : 'text-slate-300 hover:text-white hover:bg-white/10'
                   }`}
                 >
                   {link.icon}
@@ -369,11 +373,11 @@ const Navbar = () => {
             </div>
 
             {/* Auth Actions (Desktop) */}
-            <div className="hidden md:flex items-center space-x-4">
+            <div className="hidden md:flex items-center space-x-3">
               {/* Theme Toggle Button */}
               <button
                 onClick={toggleTheme}
-                className="p-2 text-dark-muted hover:text-dark-text bg-white/5 hover:bg-white/10 rounded-full border border-white/5 transition-all focus:outline-none flex items-center justify-center"
+                className="p-2 text-amber-400 hover:text-amber-300 bg-white/5 hover:bg-white/10 rounded-xl border border-white/10 transition-all focus:outline-none flex items-center justify-center shadow-inner"
                 title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
               >
                 {theme === 'dark' ? <Sun className="w-4.5 h-4.5 text-amber-400 animate-pulse" /> : <Moon className="w-4.5 h-4.5 text-indigo-400" />}
@@ -560,12 +564,12 @@ const Navbar = () => {
                 </>
               ) : (
                 <>
-                  <Link to="/login" className="text-sm font-medium text-dark-muted hover:text-dark-text transition-colors">
+                  <Link to="/login" className="text-sm font-semibold text-slate-300 hover:text-white transition-colors px-3.5 py-1.5 rounded-xl hover:bg-white/10">
                     Sign In
                   </Link>
                   <Link
                     to="/register"
-                    className="text-sm font-medium bg-gradient-to-r from-brand-primary to-rose-600 text-white px-4 py-2 rounded-lg hover:from-brand-primary hover:to-rose-700 shadow-md shadow-brand-primary/20 transition-all transform hover:-translate-y-0.5"
+                    className="text-sm font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:via-indigo-500 hover:to-purple-500 text-white px-5 py-2 rounded-xl shadow-lg shadow-blue-600/30 hover:shadow-indigo-500/40 hover:scale-105 transition-all duration-300"
                   >
                     Sign Up
                   </Link>
