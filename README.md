@@ -426,6 +426,8 @@ VITE_WS_BASE_URL=ws://localhost:8000/ws
 
 **Jalp Patel**
 - GitHub: [@jalp-patel-495](https://github.com/jalp-patel-495)
+**Gohel Sumit**
+- GitHub: [@Sumitgohel07](https://github.com/Sumitgohel07)
 
 ---
 
