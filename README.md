@@ -1,4 +1,4 @@
-# 🎪 EVENTHUB
+# 🎪 EVENSTHUB
 
 > **Connecting Experiences & Venues to Everyone.**
 
@@ -444,7 +444,7 @@ If you find this project helpful or inspiring, please give it a **⭐ Star** on 
 
 ---
 
-## EventHub
+## EventsHub
 
 **Connecting Experiences & Venues to Everyone.**
 
