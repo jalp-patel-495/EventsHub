@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Render build script for Django backend
+# Exit on error
 set -o errexit
 
 pip install -r requirements.txt

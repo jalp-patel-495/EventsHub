@@ -18,13 +18,7 @@ SECRET_KEY = os.environ.get("SECRET_KEY", "django-insecure-^luu2j=*a**3hu@8%_w0a
 
 DEBUG = os.environ.get("DEBUG", "True") == "True"
 
-ALLOWED_HOSTS = [
-    '*',
-    '.vercel.app',
-    '.now.sh',
-    'localhost',
-    '127.0.0.1',
-]
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0']
 
 _env_hosts = os.environ.get("ALLOWED_HOSTS", "")
 if _env_hosts:
@@ -32,6 +26,9 @@ if _env_hosts:
         _h_clean = _h.strip()
         if _h_clean and _h_clean not in ALLOWED_HOSTS:
             ALLOWED_HOSTS.append(_h_clean)
+elif DEBUG:
+    ALLOWED_HOSTS.append('*')
+
 
 
 # Application definition
@@ -234,9 +231,24 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
-# CORS Configuration
-CORS_ALLOW_ALL_ORIGINS = True  # In production, restrict this to frontend domain
+# CORS & CSRF Configuration
+CORS_ALLOW_ALL_ORIGINS = True  # Can be restricted in production via CORS_ALLOWED_ORIGINS
 CORS_ALLOW_CREDENTIALS = True
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "https://*.onrender.com",
+    "https://*.vercel.app",
+]
+
+_env_csrf = os.environ.get("CSRF_TRUSTED_ORIGINS", "")
+if _env_csrf:
+    for _c in _env_csrf.split(","):
+        _c_clean = _c.strip()
+        if _c_clean and _c_clean not in CSRF_TRUSTED_ORIGINS:
+            CSRF_TRUSTED_ORIGINS.append(_c_clean)
+
 
 # Internationalization
 LANGUAGE_CODE = "en-us"

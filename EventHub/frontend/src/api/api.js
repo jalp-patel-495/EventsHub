@@ -4,15 +4,6 @@ const getBaseApiUrl = () => {
   if (import.meta.env.VITE_API_URL) {
     return import.meta.env.VITE_API_URL;
   }
-  if (typeof window !== 'undefined' && window.location && window.location.hostname.endsWith('github.io')) {
-    return 'http://127.0.0.1:8000/api/';
-  }
-  if (typeof window !== 'undefined' && window.location && window.location.origin) {
-    // If running in browser production (e.g. Vercel) without explicit VITE_API_URL
-    if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-      return 'https://eventshub-1.onrender.com/api/';
-    }
-  }
   return 'http://127.0.0.1:8000/api/';
 };
 
