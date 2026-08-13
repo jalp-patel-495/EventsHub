@@ -11,10 +11,16 @@ The platform delivers a seamless end-to-end experience featuring AI-powered even
 
 # 🏆 GitHub Badges & Achievements
 
-
+[![Live Demo](https://img.shields.io/badge/Live_Demo-events--hub--khaki.vercel.app-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://events-hub-khaki.vercel.app/)
+[![API Backend](https://img.shields.io/badge/Backend-Render-46E3B7?style=for-the-badge&logo=render&logoColor=white)](https://eventhub-backend-s1pp.onrender.com/)
+[![Database](https://img.shields.io/badge/Database-Neon_Postgres-00E599?style=for-the-badge&logo=postgresql&logoColor=white)](https://neon.tech/)
 [![Top Language](https://img.shields.io/github/languages/top/jalp-patel-495/EventsHub?style=for-the-badge)](https://github.com/jalp-patel-495/EventsHub)
 [![Repo Size](https://img.shields.io/github/repo-size/jalp-patel-495/EventsHub?style=for-the-badge)](https://github.com/jalp-patel-495/EventsHub)
 [![Stars](https://img.shields.io/github/stars/jalp-patel-495/EventsHub?style=for-the-badge)](https://github.com/jalp-patel-495/EventsHub)
+
+> 🚀 **Live Website**: [https://events-hub-khaki.vercel.app/](https://events-hub-khaki.vercel.app/)  
+> ⚡ **Live Backend API**: [https://eventhub-backend-s1pp.onrender.com/](https://eventhub-backend-s1pp.onrender.com/)
+
 
 ---
 
